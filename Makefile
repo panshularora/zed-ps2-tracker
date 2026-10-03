@@ -7,6 +7,7 @@
 #   make latency  single-threaded tracker latency p50 / p95 / p99 / max on this CPU
 #   make oracle   visibility-oracle ceiling (gt boxes with vis > 0 submitted as a tracker)
 #   make ablate   ablation table + stress plots + latency for configs/ablations/manifest.yaml
+#   make gates    gate-event metrics (crossings, attribution, tailgating) on the ablate outputs
 #   make smoke    the phase-1 pipeline check: MOT17 train (full) and val-half, public FRCNN dets
 #
 # Defaults reproduce the README smoke numbers; override e.g.
@@ -23,7 +24,7 @@ NAME    ?= bytetrack_public
 OUT     ?= outputs/$(DATASET)_$(SPLIT)
 BENCH    = $(if $(filter MOT20,$(DATASET)),MOT20,MOT17)
 
-.PHONY: setup check lint format typecheck test data eval stress latency oracle smoke ablate clean
+.PHONY: setup check lint format typecheck test data eval stress latency oracle smoke ablate gates clean
 
 setup:
 	uv venv -p 3.11 .venv
@@ -90,3 +91,10 @@ JOBS ?= 6
 ablate: $(DATA)/MOT17/train
 	$(PY) -m eval.ablate --manifest configs/ablations/manifest.yaml --out outputs/ablate \
 		--report docs/results/ablation --jobs $(JOBS)
+
+# `make gates`: gate-event metrics (eval/gate_events.py) on the `make ablate` outputs
+gates:
+	$(PY) -m eval.gate_events --gates configs/gates/mot17_val_half.yaml \
+		--gt-dir outputs/ablate/bytetrack/gt --include-gt \
+		--runs $(foreach n,bytetrack ocsort deep_ocsort hybrid_sort botsort buffer90 ours_vis ours_delayed_k5 ours_vis_botsort botsort_buffer90,outputs/ablate/$(n)/trackers/$(n)) \
+		--out docs/results/gate_events

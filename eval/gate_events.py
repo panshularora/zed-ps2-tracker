@@ -6,7 +6,8 @@ Features" (CVPR 2013), and add identity attribution and tailgating on top.
 
 Definitions (all in image pixels and frames):
 
-* A **gate** is a segment ``a → b``. Its normal ``n`` is ``b − a`` rotated by +90°. A point ``p``
+* A **gate** is a segment ``a → b``. Its normal ``n`` is ``b − a`` rotated by +90° in image
+  coordinates (x right, y down), so for ``a`` left of ``b`` it points down the image. A point ``p``
   has signed distance ``s = (p − a) · n̂``, and it counts only while its projection falls inside
   the segment.
 * Each track (gt or tracker) is reduced to its **bottom-centre** point per frame, the foot
@@ -63,13 +64,16 @@ class Event:
 def load_gates(path: Path) -> tuple[dict[str, list[Gate]], dict[str, Any]]:
     """``{sequence: [Gate, ...]}`` and the protocol parameters (h, delta, tailgate seconds)."""
     raw = yaml.safe_load(path.read_text())
-    gates = {seq: [Gate(g["name"], tuple(g["a"]), tuple(g["b"])) for g in gs]  # type: ignore[misc]
-             for seq, gs in raw["sequences"].items()}  # fmt: skip
-    return gates, raw["params"]
+    gates = {
+        seq: [Gate(g["name"], (g["a"][0], g["a"][1]), (g["b"][0], g["b"][1])) for g in gs]
+        for seq, gs in raw["sequences"].items()
+    }
+    params: dict[str, Any] = raw["params"]
+    return gates, params
 
 
 def bottom_centre(tlwh: np.ndarray) -> np.ndarray:
-    return np.c_[tlwh[:, 0] + tlwh[:, 2] / 2, tlwh[:, 1] + tlwh[:, 3]]
+    return np.asarray(np.c_[tlwh[:, 0] + tlwh[:, 2] / 2, tlwh[:, 1] + tlwh[:, 3]])
 
 
 def crossings(rows: np.ndarray, gate: Gate, h: float) -> list[Event]:
@@ -112,16 +116,21 @@ def match_events(gt: list[Event], tr: list[Event], delta: int) -> list[tuple[int
     return [(int(i), int(j)) for i, j in zip(r, c, strict=True) if cost[i, j] < 1e9]
 
 
-def tailgates(events: list[Event], window: int) -> list[Event]:
-    """Second crossing of each pair of different ids, same gate and direction, within window."""
+def tailgate_pairs(events: list[Event], window: int) -> list[tuple[Event, int]]:
+    """``(second crossing, first crossing's id)`` for every tailgate: two different ids crossing
+    the same gate in the same direction within ``window`` frames."""
     out = []
     for i, e in enumerate(events):
-        for prev in events[:i]:
-            if (prev.gate == e.gate and prev.direction == e.direction
-                    and prev.track_id != e.track_id and 0 <= e.frame - prev.frame <= window):  # fmt: skip
-                out.append(e)
+        for prev in reversed(events[:i]):
+            same = prev.gate == e.gate and prev.direction == e.direction
+            if same and prev.track_id != e.track_id and 0 <= e.frame - prev.frame <= window:
+                out.append((e, prev.track_id))
                 break
     return out
+
+
+def tailgates(events: list[Event], window: int) -> list[Event]:
+    return [e for e, _ in tailgate_pairs(events, window)]
 
 
 def id_bijection(gt: np.ndarray, tr: np.ndarray) -> dict[int, int]:
@@ -153,13 +162,13 @@ def gt_pedestrians(gt: np.ndarray, benchmark: str) -> np.ndarray:
     keep = gt[:, 7] == 1
     if benchmark.upper() == "MOT17":
         keep &= gt[:, 6] == 1
-    return gt[keep]
+    return np.asarray(gt[keep])
 
 
 def evaluate_sequence(gt: np.ndarray, tr: np.ndarray, gates: list[Gate], params: dict[str, Any],
                       fps: float) -> dict[str, Any]:  # fmt: skip
     h, delta = float(params["hysteresis_px"]), int(params["delta_frames"])
-    window = int(round(float(params["tailgate_seconds"]) * fps))
+    window = round(float(params["tailgate_seconds"]) * fps)
     ge = sorted((e for g in gates for e in crossings(gt, g, h)), key=lambda e: e.frame)
     te = sorted((e for g in gates for e in crossings(tr, g, h)), key=lambda e: e.frame)
     m = match_events(ge, te, delta)
