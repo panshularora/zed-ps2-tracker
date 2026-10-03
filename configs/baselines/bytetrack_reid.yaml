@@ -1,0 +1,11 @@
+# ByteTrackLike + BoT-SORT-style IoU / re-ID fusion (needs a Stage A cache with embeddings).
+# No camera-motion compensation, so this is NOT BoT-SORT; it is the appearance baseline that
+# our visibility-gated variant will be compared against.
+inherit: bytetrack.yaml
+name: bytetrack_like
+appearance:
+  enabled: true
+  alpha: 0.9
+  proximity_thresh: 0.5
+  appearance_thresh: 0.25
+  min_visibility: 0.0
