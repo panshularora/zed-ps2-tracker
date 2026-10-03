@@ -21,8 +21,9 @@ To commit frame ``f``:
    first association, then run the buffered frames ``f+1 … f+K`` unchanged. The score is the sum,
    over frames ``f … f+K`` and over the cluster's tracks, of each track's association cost that
    frame, or ``miss_penalty`` when it is unmatched or gone. An alternative replaces the immediate
-   choice only if its score is lower by more than ``min_gain``. Clusters are decided one at a time, with the other clusters left to the
-   solver.
+   choice only if its score is lower by more than ``min_gain``. Clusters are decided one at a
+   time, with the other clusters left to the solver. Options: ``confirmed_only`` keeps lost
+   tracks out of clusters; ``same_tracks`` only considers re-assignments (e.g. identity swaps).
 5. Commit frame ``f`` with the chosen hypotheses forced and emit its output.
 
 ``K = 0`` (or no ambiguity) reproduces the immediate tracker exactly. The algorithmic delay is

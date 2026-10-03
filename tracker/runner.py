@@ -54,12 +54,19 @@ def build_tracker(
         )
         if cfg.delayed.enabled:
             d = cfg.delayed
-            trk = DelayedTracker(inner, max_delay_frames=d.max_delay_frames, margin=d.margin,
-                                 max_cluster=d.max_cluster, max_hypotheses=d.max_hypotheses,
-                                 miss_penalty=d.miss_penalty, min_gain=d.min_gain,
-                                 confirmed_only=d.confirmed_only, same_tracks=d.same_tracks)  # fmt: skip
-            info["delayed"] = {"K_frames": d.max_delay_frames,
-                               "K_ms": round(1000.0 * d.max_delay_frames / frame_rate, 1)}  # fmt: skip
+            trk = DelayedTracker(
+                inner,
+                max_delay_frames=d.max_delay_frames,
+                margin=d.margin,
+                max_cluster=d.max_cluster,
+                max_hypotheses=d.max_hypotheses,
+                miss_penalty=d.miss_penalty,
+                min_gain=d.min_gain,
+                confirmed_only=d.confirmed_only,
+                same_tracks=d.same_tracks,
+            )
+            k_ms = round(1000.0 * d.max_delay_frames / frame_rate, 1)
+            info["delayed"] = {"K_frames": d.max_delay_frames, "K_ms": k_ms}
         else:
             trk = inner
     elif cfg.delayed.enabled:
