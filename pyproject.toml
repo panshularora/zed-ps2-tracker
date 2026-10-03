@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zed-ps2-tracker"
+version = "0.1.0"
+description = "Identity-preserving online multi-object tracking through dense occlusion (Zed Digital PS-2)"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Panshul Arora" }]
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# lapjv backend for the assignment step (optional; scipy is the default and is bit-identical in tests)
+lap = ["lap>=0.5.12"]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "mypy>=1.10",
+    "types-PyYAML",
+    "lap>=0.5.12",
+]
+
+[tool.setuptools]
+# `trackeval` is the official TrackEval code, vendored under third_party/ (MIT, see third_party/trackeval/LICENSE).
+packages = ["tracker", "eval", "models"]
+
+[tool.setuptools.package-data]
+tracker = ["py.typed"]
+
+# ---------------------------------------------------------------- ruff
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["third_party"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "NPY", "PT", "C4"]
+ignore = [
+    "RUF001", "RUF002", "RUF003",  # allow unicode (×, σ) in docstrings/comments
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["tracker", "eval", "models"]
+known-third-party = ["trackeval"]
+
+# ---------------------------------------------------------------- mypy
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "third_party/trackeval"
+
+[[tool.mypy.overrides]]
+module = ["tracker.*"]
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["trackeval", "trackeval.*", "lap", "scipy.*", "torch", "torch.*", "torchreid", "torchreid.*", "yolox", "yolox.*", "cv2"]
+ignore_missing_imports = true
+follow_imports = "skip"
+
+# ---------------------------------------------------------------- pytest
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "data: needs MOT17 labels under data/ (skipped if absent)",
+]

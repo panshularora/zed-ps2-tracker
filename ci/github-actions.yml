@@ -1,0 +1,25 @@
+# CI for zed-ps2-tracker.
+#
+# NOTE: this file lives in ci/ because the token used to create the repo lacks the `workflow`
+# scope. To enable it, add it through the GitHub UI as .github/workflows/ci.yml
+# (Add file -> Create new file -> paste), or `git mv ci/github-actions.yml .github/workflows/ci.yml`
+# from a machine whose credentials have the `workflow` scope.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - name: Set up env
+        run: |
+          uv venv -p 3.11 .venv
+          uv pip install -p .venv -e ".[dev]"
+      - name: make check (ruff, mypy --strict tracker/, pytest)
+        run: make check
