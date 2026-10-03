@@ -4,15 +4,17 @@
 This is Zed Digital problem statement 2 (PS-2): every person crossing a crowded gate should keep
 **one ID from approach to exit**, even when they are hidden behind someone else for a while.
 
-> **Status: phase 1 complete.** Built so far:
-> * the tracker core (a ByteTrack-style baseline on our own typed components);
-> * the full evaluation stack (TrackEval, stress bins, latency, visibility oracle);
-> * the GPU Stage A pipeline with a DGX runbook;
-> * the documentation.
+> **Status: phase 2 done on CPU with public detections** (PRs #6–#13). Built so far:
+> * five baselines ported to **exact upstream parity** (ByteTrack-like, OC-SORT, Deep OC-SORT,
+>   Hybrid-SORT, BoT-SORT);
+> * our two components, a depth-order **visibility estimate** and an ambiguity-aware **delayed
+>   assignment**, both evaluated honestly;
+> * `make ablate`, the gate-event metrics (`make gates`) and a static **viewer** (`make viewer`).
 >
-> The novel components (visibility estimate, ambiguity-aware delayed assignment) are specified
-> in [docs/algorithm.md](docs/algorithm.md) and come in phase 2. All numbers below are **real
-> and labelled**. No result in this README uses our method yet.
+> **Headline:** on public detections without re-ID, visibility helps exactly as much as a longer
+> buffer, and the delayed assignment is a **no-go**. Both are reported, not hidden. The next step
+> is the GPU session, which brings YOLOX detections and re-ID: see
+> [docs/next_gpu_session.md](docs/next_gpu_session.md). No number in this README uses YOLOX.
 
 ## Why this matters for Zed's gate products
 
@@ -53,12 +55,21 @@ flowchart LR
 
 Details: [docs/architecture.md](docs/architecture.md) and [docs/algorithm.md](docs/algorithm.md).
 
+Modules (file-by-file map in [docs/modules.md](docs/modules.md)):
+
+* `tracker/`: the online tracker. Kalman, costs, assignment, lifecycle, gallery, `visibility.py`,
+  `delayed.py`, `cmc.py`, `baselines/` (OC-SORT family, Hybrid-SORT), and `bytetrack.py`
+  (ByteTrack-like, plus BoT-SORT via parity switches). NumPy + SciPy only, `mypy --strict`.
+* `eval/`: splits, TrackEval, stress, latency, oracle, `ablate.py`, `go_no_go.py`, `corrupt.py`,
+  `visibility_eval.py`, `gate_events.py`, `export_viewer.py`.
+* `models/`, `scripts/dgx/`: Stage A on GPU. `viewer/`: static Vite/React viewer.
+
 ## Quickstart
 
 ```bash
 git clone https://github.com/panshularora/zed-ps2-tracker && cd zed-ps2-tracker
 make setup        # .venv with Python 3.11 (uv) + package + dev tools
-make check        # ruff + mypy (strict on tracker/) + 120 tests
+make check        # ruff + mypy (strict on tracker/) + 167 tests
 make data         # MOT17 + MOT20 labels and public detections only (no images, ~30 MB)
 make smoke        # MOT17 train (full) + val-half with public dets: TrackEval + stress + latency
 ```
@@ -70,12 +81,66 @@ make eval    DATASET=MOT17 SPLIT=val_half CONFIG=configs/baselines/bytetrack.yam
 make eval    DATASET=MOT20 CONFIG=configs/baselines/bytetrack_mot20.yaml DETS=<cache dir>
 make latency DATASET=MOT17 SPLIT=full
 make oracle  DATASET=MOT17          # visibility-0 ceiling
+make ablate                         # ablation table + stress plots -> docs/results/ablation/
+make gates                          # after make ablate: gate events on the frozen MOT17 lines
+make viewer                         # export clips + build viewer/dist/index.html (needs Node 20)
 python -m tracker.cli --caches <cache dir> --config configs/baselines/bytetrack.yaml \
     --out results/x --jsonl          # MOT txt + per-frame JSON (tracks + pending)
 ```
 
 The GPU side is in [docs/dgx_guide.md](docs/dgx_guide.md): `bash scripts/dgx/setup.sh`, one
 `run.sh` per dataset, then `finalize.sh`.
+
+## Results (phase 2): MOT17 val-half, public FRCNN detections, no re-ID
+
+> Same caveat as phase 1: these are public detections with IoU-only association, so they are
+> **not** comparable to published YOLOX numbers. Latency is single-threaded `update()` time on
+> the CPU box. Reproduce with `make ablate`. Details: [docs/results/ablation/](docs/results/ablation/).
+
+| Tracker | HOTA | IDF1 | MOTA | IDSW | AssA | DetA | p50 / p95 / max ms |
+|---|---|---|---|---|---|---|---|
+| ByteTrackLike | 50.1 | 56.3 | 47.5 | 191 | 58.3 | 43.3 | 0.93 / 1.89 / 3.0 |
+| OC-SORT | 49.8 | 56.2 | 46.0 | 154 | 59.4 | 41.9 | 0.73 / 1.55 / 2.6 |
+| Deep OC-SORT (no emb, CMC) | 50.6 | 57.6 | 46.2 | **112** | 61.1 | 42.0 | 0.97 / 2.23 / 4.0 |
+| Hybrid-SORT | 50.2 | 56.9 | 46.5 | 152 | 59.5 | 42.4 | 1.20 / 2.66 / 4.6 |
+| BoT-SORT (CMC) | 51.6 | 58.8 | 48.0 | 197 | 61.0 | 43.9 | 0.95 / 1.92 / 2.9 |
+| ByteTrackLike, buffer 90 (control) | 51.0 | 57.2 | 47.6 | 183 | 60.4 | 43.3 | 1.18 / 2.72 / 3.8 |
+| ByteTrackLike + visibility | 51.0 | 57.3 | 47.6 | 183 | 60.4 | 43.3 | 1.07 / 2.19 / 3.6 |
+| ByteTrackLike + delayed K=5 (near-online) | 48.8 | 54.3 | 47.4 | 215 | 55.6 | 43.0 | 1.26 / 18.00 / 69.5 |
+| ByteTrackLike + visibility + delayed K=5 | 49.6 | 55.1 | 47.5 | 203 | 57.5 | 43.0 | 1.52 / 20.33 / 63.2 |
+| BoT-SORT + visibility | **52.5** | **59.8** | 48.0 | 180 | **63.3** | 43.8 | 1.09 / 2.27 / 3.0 |
+| BoT-SORT, buffer 90 (control) | 52.4 | 59.5 | 48.0 | 180 | 63.0 | 43.8 | 1.07 / 2.19 / 7.2 |
+
+Stress plots by gt visibility and by density:
+[stress_visibility.png](docs/results/ablation/stress_visibility.png),
+[stress_density.png](docs/results/ablation/stress_density.png).
+
+**Visibility estimate** (`tracker/visibility.py`, scored against gt column 9 by
+[docs/results/visibility/](docs/results/visibility/)): MAE 0.074, Spearman 0.613, AUROC
+(v < 0.5) 0.938, AP 0.460. The detector score alone gives MAE 0.107 / Spearman 0.429 / AUROC
+0.947 / AP 0.293. As a tracking signal it is **indistinguishable from a 90-frame buffer** (rows
+above). Its intended use, gating appearance updates, needs embeddings and is not yet tested.
+
+**Delayed assignment: NO-GO** ([docs/results/go_no_go.md](docs/results/go_no_go.md), criteria
+fixed in advance). With K = 3/5/8, ID switches rise on every condition. Corrupted gt (seed 0):
+273 → 375/395/389. FRCNN: 191 → 212/215/217. SDP: 291 → 335/311/339. DPM: 89 → 90/94/97. HOTA is
+lower or within ±0.2. p95 compute rises from 2–4 ms to 13–157 ms, plus the K/fps output delay.
+It stays out of any headline configuration.
+
+**Gate events** (`make gates`, lines frozen in `configs/gates/mot17_val_half.yaml`, details in
+[docs/results/gate_events/](docs/results/gate_events/)). The check run, gt as tracker, scores 0
+error. Baselines reach crossing recall 56–60 %, attribution error 14–33 %, count error 28–40 %
+and tailgate P/R 80 / 44 %. MOT17-02/04/09 contain only **25 crossings and 9 tailgates**, too few
+to rank trackers, so the gate clip from the GPU session is needed.
+
+**Viewer** (`make viewer` → single-file `viewer/dist/index.html`, opens offline):
+
+| ByteTrack vs BoT-SORT, MOT17-04 | held decisions (delayed K=5) | gt vs ByteTrack, MOT17-09 |
+|---|---|---|
+| ![](docs/media/viewer_mot17-04_bytetrack_vs_botsort.png) | ![](docs/media/viewer_mot17-04_held_decisions.png) | ![](docs/media/viewer_mot17-09_gt_vs_bytetrack.png) |
+
+Implementation deviations, pitfalls and negative results:
+[docs/implementation_notes.md](docs/implementation_notes.md).
 
 ## Results (phase 1)
 
@@ -169,6 +234,14 @@ detector and perfect identities that never coast) gives:
    `run.json` next to each result records the config, git commit, inputs and whether the
    detector saw the eval half.
 
+## Roadmap
+
+1. **GPU session** ([docs/next_gpu_session.md](docs/next_gpu_session.md)): YOLOX detections and
+   re-ID caches; re-run `make ablate` and the go/no-go on them; visibility-gated appearance;
+   delayed look-ahead with re-ID; MOT20 / DanceTrack; the gate clip.
+2. **Integration notes and a live `serve/` prototype** (phase 3), then the presentation
+   deliverables (phase 4). Full table in [docs/roadmap.md](docs/roadmap.md).
+
 ## Documentation
 
 | Doc | Contents |
@@ -178,12 +251,16 @@ detector and perfect identities that never coast) gives:
 | [docs/modules.md](docs/modules.md) | every file |
 | [docs/evaluation.md](docs/evaluation.md) | metrics, splits, no-test-server policy, stress and latency methods, online-only rule, leakage, vis-0 cap |
 | [docs/dgx_guide.md](docs/dgx_guide.md) | GPU runbook and bring-back checklist |
+| [docs/implementation_notes.md](docs/implementation_notes.md) | deviations from upstream, pitfalls, negative results |
+| [docs/next_gpu_session.md](docs/next_gpu_session.md) | what to run on the GPU next, and why |
+| [docs/results/](docs/results/) | parity, visibility, go/no-go, ablation, gate events |
+| [viewer/README.md](viewer/README.md) | the static viewer |
 | [docs/licenses.md](docs/licenses.md) | data / weights / code licences |
 | [docs/decisions.md](docs/decisions.md) | ADRs |
 | [docs/glossary.md](docs/glossary.md) | terms |
-| [docs/roadmap.md](docs/roadmap.md) | phases 2a, 2b (gate events), 3, 4 |
+| [docs/roadmap.md](docs/roadmap.md) | roadmap and status by phase |
 | [docs/research/](docs/research/) | Research Lab briefs |
-| [docs/integration/](docs/integration/), [demo/](demo/) | placeholders for the integration write-up, videos, deck and the static viewer |
+| [docs/integration/](docs/integration/), [demo/](demo/) | placeholders for the integration write-up, videos and deck |
 
 ## Licensing
 

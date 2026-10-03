@@ -13,7 +13,10 @@ docstring that is the authoritative description; this page is the map.
 | `assignment.py` | thresholded rectangular assignment (scipy or `lap`, same results); the `Assigner` protocol that the delayed assignment will implement | `linear_assignment`, `HungarianAssigner`, `Matching`, `Assigner` |
 | `lifecycle.py` | explicit track FSM with validated transitions, plus the per-track record | `TrackState`, `ALLOWED_TRANSITIONS`, `Track`, `LifecycleConfig` |
 | `gallery.py` | appearance memory per track; EMA with a visibility gate | `AppearanceMemory`, `EmaAppearance` |
-| `visibility.py` | per-detection visibility estimator interface; phase 1 is constant, `depth_order` raises `NotImplementedError` until phase 2 | `VisibilityEstimator`, `ConstantVisibility`, `build_visibility` |
+| `visibility.py` | per-detection visibility estimators: constant, and `depth_order` (bottom-edge depth order + border crop, fused with the detector score) | `VisibilityEstimator`, `ConstantVisibility`, `DepthOrderVisibility`, `build_visibility` |
+| `delayed.py` | near-online K-frame look-ahead over ambiguity clusters, wrapping a cloned `ByteTrackLike`; exports `PendingDecision`s (**no-go**, see results) | `DelayedTracker` |
+| `cmc.py` | camera-motion compensation from pre-computed affine files (BoT-SORT / Deep OC-SORT format) | `FileCMC`, `SparseOptFlowCMC`, `build_cmc` |
+| `baselines/` | ports: `sort_kf.py` (SORT KF), `ocsort.py` (OC-SORT, Deep OC-SORT), `hybrid_sort.py`, `common.py`. BoT-SORT is `ByteTrackLike` plus the parity switches (`configs/baselines/botsort.yaml`) | `OCSortTracker`, `HybridSortTracker`, `OruKalmanFilter` |
 | `bytetrack.py` | the baseline tracker: ByteTrack's two-stage association on the components above, with optional BoT-SORT-style re-ID fusion | `ByteTrackLike.update(dets) → FrameResult` |
 | `config.py` | typed YAML config: strict keys and types, `inherit:`, dotted `-o key=value` overrides | `TrackerConfig`, `load_config`, `config_from_dict`, `config_to_dict` |
 | `io.py` | Stage A cache schema v1 (save/load/validate), MOTChallenge `det.txt` reader, MOT results writer, per-frame JSONL export (`zed-ps2-frames/v1`: tracks + `pending`) | `SequenceCache`, `CacheMeta`, `save_cache`, `load_cache`, `load_mot_det_txt`, `write_mot_results`, `write_frames_jsonl` |
@@ -30,7 +33,12 @@ docstring that is the authoritative description; this page is the map.
 | `latency.py` | single-threaded latency protocol (p50/p95/p99/max, CPU model, by detections per frame) |
 | `oracle.py` | gt-as-tracker ceiling with visibility > τ (the visibility-0 cap) |
 | `run.py` | orchestrates split → track → TrackEval → stress and writes `run.json` with provenance and the leakage flag |
-| `gate_events.py` | *planned (phase 2b)*: virtual entry line, crossings, counting/attribution error, tailgating P/R |
+| `gate_events.py` | virtual entry lines (frozen YAML), crossings with hysteresis, count / event P/R / attribution error, tailgating P/R (`make gates`) |
+| `visibility_eval.py` | scores visibility estimates against gt column 9 (MAE, Spearman, AUROC/AP) |
+| `corrupt.py` | synthetic detection corruption (drops, jitter, false positives) from gt, for the go/no-go |
+| `go_no_go.py` | pre-registered go/no-go protocol for the delayed assignment |
+| `ablate.py` | `make ablate`: runs `configs/ablations/manifest.yaml`, writes md/csv/json + stress plots |
+| `export_viewer.py` | exports tracker outputs, gt, pending decisions and gate events as viewer clips (`.json.gz`) |
 
 ## `models/`: Stage A (GPU; torch only here)
 
@@ -60,8 +68,10 @@ docstring that is the authoritative description; this page is the map.
 | `baselines/bytetrack.yaml` | ByteTrack code defaults (MOT17) |
 | `baselines/bytetrack_mot20.yaml` | `--mot20`: no score fusion, match 0.7 |
 | `baselines/bytetrack_reid.yaml` | + BoT-SORT-style IoU/re-ID fusion (needs embeddings; no camera-motion compensation) |
-| `ours/` | phase 2: visibility-gated appearance, delayed assignment |
-| `ablations/` | phase 2: one switch at a time |
+| `baselines/{ocsort,deep_ocsort,hybrid_sort,botsort}*.yaml` | the ported baselines (MOT17 and `_mot20`), upstream values cited inline |
+| `ours/visibility.yaml`, `ours/delayed.yaml` | phase 2 components (delayed v2 frozen for the go/no-go) |
+| `ablations/` | `manifest.yaml` (the `make ablate` rows) and the buffer-90 control |
+| `gates/mot17_val_half.yaml` | frozen gate lines for MOT17-02/04/09 |
 
 ## `tests/`
 
@@ -73,6 +83,12 @@ docstring that is the authoritative description; this page is the map.
 | `test_stage_a.py`, `test_dgx_helpers.py` | Stage A orchestration with fake models; split and SOMPT22 helpers |
 | `test_eval.py` | splits, TrackEval wrapper, stress totals against TrackEval, oracle, and the MOT17-09 regression (marker `data`) |
 | `test_package.py` | imports and version |
+
+## `viewer/`
+
+A static Vite + React + TypeScript viewer, built into one `dist/index.html` (`make viewer`), that
+opens over `file://`. It shows two trackers side by side with a timeline of ID-switch and crossing
+marks, dashed held decisions and gate counters. See [../viewer/README.md](../viewer/README.md).
 
 ## Other
 
