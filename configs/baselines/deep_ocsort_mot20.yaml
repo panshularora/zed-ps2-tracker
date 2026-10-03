@@ -1,0 +1,4 @@
+# Deep OC-SORT MOT20: README run uses --track_thresh 0.4.
+inherit: deep_ocsort.yaml
+detection:
+  high_thresh: 0.4

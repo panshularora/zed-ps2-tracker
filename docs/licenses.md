@@ -58,3 +58,11 @@ benchmarking only.
 3. The re-ID model needs the same treatment, or must be replaced by a model trained on licensed
    data.
 4. Any code from BoT-SORT has to come only from its tracker files.
+
+## Attribution file
+
+The top-level `NOTICE` lists every ported and vendored third-party component (ByteTrack, OC-SORT,
+BoT-SORT, Deep OC-SORT, Hybrid-SORT, TrackEval, the pre-computed CMC affines) with its MIT
+copyright line, and repeats the non-commercial-research restriction on datasets and weights.
+The project's own licence is still to be chosen (Apache-2.0 proposed); until then there is no
+top-level `LICENSE` file.

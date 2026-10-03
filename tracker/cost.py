@@ -12,15 +12,22 @@ import numpy.typing as npt
 from tracker.types import FloatArray
 
 
-def iou_matrix(a_xyxy: FloatArray, b_xyxy: FloatArray) -> FloatArray:
+def iou_matrix(a_xyxy: FloatArray, b_xyxy: FloatArray, plus_one: bool = False) -> FloatArray:
     """Pairwise IoU between ``(N, 4)`` and ``(M, 4)`` ``xyxy`` boxes; returns ``(N, M)``.
 
-    Degenerate (zero-area) boxes have IoU 0 with everything.
+    Degenerate (zero-area) boxes have IoU 0 with everything. ``plus_one`` uses the pixel-inclusive
+    convention of ``cython_bbox.bbox_overlaps`` (``w = x2 − x1 + 1``), which ByteTrack and
+    BoT-SORT use; it is applied to the intersection and both areas exactly as there.
     """
     a = np.asarray(a_xyxy, dtype=np.float64).reshape(-1, 4)
     b = np.asarray(b_xyxy, dtype=np.float64).reshape(-1, 4)
     if a.shape[0] == 0 or b.shape[0] == 0:
         return np.zeros((a.shape[0], b.shape[0]))
+    if plus_one:
+        a = a.copy()
+        b = b.copy()
+        a[:, 2:] += 1.0
+        b[:, 2:] += 1.0
     ix1 = np.maximum(a[:, None, 0], b[None, :, 0])
     iy1 = np.maximum(a[:, None, 1], b[None, :, 1])
     ix2 = np.minimum(a[:, None, 2], b[None, :, 2])
@@ -34,9 +41,9 @@ def iou_matrix(a_xyxy: FloatArray, b_xyxy: FloatArray) -> FloatArray:
     return np.asarray(iou, dtype=np.float64)
 
 
-def iou_cost(tracks_xyxy: FloatArray, dets_xyxy: FloatArray) -> FloatArray:
+def iou_cost(tracks_xyxy: FloatArray, dets_xyxy: FloatArray, plus_one: bool = False) -> FloatArray:
     """``1 − IoU``."""
-    return 1.0 - iou_matrix(tracks_xyxy, dets_xyxy)
+    return 1.0 - iou_matrix(tracks_xyxy, dets_xyxy, plus_one)
 
 
 def fuse_score(cost: FloatArray, det_scores: FloatArray) -> FloatArray:

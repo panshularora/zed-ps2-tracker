@@ -1,0 +1,30 @@
+# Deep OC-SORT (Maggiolino et al., ICIP 2023): OC-SORT + CMC + dynamic appearance (score-dependent
+# EMA) + adaptive weighting of the appearance term. Without embeddings (public dets) the
+# appearance term is 0, i.e. OC-SORT minus BYTE plus CMC.
+# Source: GerardMaggiolino/Deep-OC-SORT @ 6bb51d0, trackers/integrated_ocsort_embedding/
+# {ocsort.py, association.py, cmc.py}, args in main.py / README "Deep OC-SORT" runs
+# (`--grid_off --new_kf_off --w_assoc_emb 0.75 --aw_param 0.5`). MIT, Copyright (c) 2023 Gerard Maggiolino.
+# The README's numbers also use --post (offline linear interpolation); we do NOT.
+inherit: ocsort.yaml
+name: deep_ocsort
+detection:
+  high_thresh: 0.6        # main.py --track_thresh 0.6
+lifecycle:
+  min_hits: 3             # OCSort(min_hits=3)
+  track_buffer: 30        # OCSort(max_age=30)
+ocsort:
+  iou_threshold: 0.3      # main.py --iou_thresh 0.3
+  delta_t: 3              # --deltat 3
+  inertia: 0.2            # --inertia 0.2
+  use_byte: false         # Deep OC-SORT has no BYTE round
+  w_assoc_emb: 0.75       # --w_assoc_emb 0.75 (README MOT17 run)
+  alpha_fixed_emb: 0.95   # --alpha_fixed_emb 0.95
+  adaptive_weighting: true  # aw on (README runs do not pass --aw_off)
+  aw_param: 0.5           # --aw_param 0.5
+appearance:
+  enabled: true           # use embeddings when the cache has them (public det.txt has none)
+cmc:
+  method: auto            # CMCComputer(method="file") over cache/cmc_files (same files as BoT-SORT)
+output:
+  min_box_area: 100       # upstream main.py --min_box_area 10; common filter is 100 (brief §6.7)
+  max_aspect_ratio: 1.6   # main.py --aspect_ratio_thresh 1.6

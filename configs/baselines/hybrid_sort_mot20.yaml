@@ -1,0 +1,4 @@
+# Hybrid-SORT MOT20: exps/example/mot/yolox_x_mix_mot20_ch_hybrid_sort.py / README use track_thresh 0.4.
+inherit: hybrid_sort.yaml
+detection:
+  high_thresh: 0.4
