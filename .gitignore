@@ -15,3 +15,5 @@ outputs/
 *.npz
 !tests/fixtures/*.npz
 data
+viewer/node_modules/
+viewer/dist/
