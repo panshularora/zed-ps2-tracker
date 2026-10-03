@@ -13,3 +13,4 @@ cache/
 outputs/
 *.npz
 !tests/fixtures/*.npz
+data
