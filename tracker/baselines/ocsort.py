@@ -179,7 +179,7 @@ class OCSortTracker:
         self.delta_t = oc.delta_t
         self.inertia = oc.inertia
         self.cmc: CMC = cmc or NoCMC()
-        self.visibility = visibility or build_visibility(cfg.visibility.estimator)
+        self.visibility = visibility or build_visibility(cfg.visibility)
         self.trackers: list[OCTrack] = []
         self.frame_count = 0
         self._next_id = 1
@@ -196,7 +196,7 @@ class OCSortTracker:
         oc = self.cfg.ocsort
         xyxy = detections.xyxy
         scores = detections.scores
-        vis_all = self.visibility(xyxy)
+        vis_all = self.visibility(xyxy, scores)
         dets_all = np.concatenate([xyxy, scores[:, None]], axis=1)
         remain = scores > self.det_thresh
         second = (scores > self.low_thresh) & (scores < self.det_thresh)

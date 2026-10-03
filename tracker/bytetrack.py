@@ -24,13 +24,21 @@ tentative ones) is Kalman-predicted each frame, and IDs are per-tracker-instance
 
 from __future__ import annotations
 
+import dataclasses
+
 import numpy as np
 import numpy.typing as npt
 
 from tracker.assignment import Assigner, HungarianAssigner, Matching
 from tracker.cmc import CMC, NoCMC
 from tracker.config import TrackerConfig
-from tracker.cost import cosine_cost, fuse_iou_appearance, fuse_score, iou_cost
+from tracker.cost import (
+    cosine_cost,
+    fuse_iou_appearance,
+    fuse_score,
+    iou_cost,
+    visibility_softened_iou_cost,
+)
 from tracker.gallery import EmaAppearance
 from tracker.kalman import KalmanFilterXYWH
 from tracker.lifecycle import LifecycleConfig, Track, TrackState
@@ -80,11 +88,15 @@ class ByteTrackLike:
             ),
             confirm_on_first_frame=lc.confirm_on_first_frame,
         )
+        self._lc_occluded = dataclasses.replace(
+            self.lifecycle,
+            max_time_lost=round(
+                self.lifecycle.max_time_lost * self.cfg.visibility.occluded_buffer_scale
+            ),
+        )
         self.kf = KalmanFilterXYWH(self.cfg.kalman)
         self.assign: Assigner = assigner or HungarianAssigner(self.cfg.association.backend)
-        self.visibility: VisibilityEstimator = visibility or build_visibility(
-            self.cfg.visibility.estimator
-        )
+        self.visibility: VisibilityEstimator = visibility or build_visibility(self.cfg.visibility)
         self.cmc: CMC = cmc or NoCMC()
         self.tracks: list[Track] = []
         self.frame_id = 0
@@ -103,10 +115,21 @@ class ByteTrackLike:
         return np.stack([t.xyxy for t in tracks])
 
     def _cost(
-        self, tracks: list[Track], dets: Detections, *, use_score: bool, use_appearance: bool
+        self,
+        tracks: list[Track],
+        dets: Detections,
+        *,
+        use_score: bool,
+        use_appearance: bool,
+        vis: FloatArray | None = None,
+        soften: bool = False,
     ) -> FloatArray:
-        c = iou_cost(self._boxes(tracks), dets.xyxy, self.cfg.association.iou_plus_one)
+        plus_one = self.cfg.association.iou_plus_one
+        c = iou_cost(self._boxes(tracks), dets.xyxy, plus_one)
         iou_only = c
+        beta = self.cfg.visibility.soften_weight
+        if soften and beta > 0 and vis is not None:
+            c = visibility_softened_iou_cost(self._boxes(tracks), dets.xyxy, vis, beta, plus_one)
         if use_score and self.cfg.association.fuse_score:
             c = fuse_score(c, dets.scores)
         if use_appearance and tracks and len(dets) and dets.embeddings is not None:
@@ -115,6 +138,9 @@ class ByteTrackLike:
                 track_emb = np.stack([m.embedding for m in mem if m is not None])
                 app = cosine_cost(track_emb, dets.embeddings)
                 ac = self.cfg.appearance
+                if ac.cost_min_visibility > 0 and vis is not None:
+                    app = app.copy()
+                    app[:, vis < ac.cost_min_visibility] = 2.0  # max cosine distance: ignored
                 c = fuse_iou_appearance(
                     iou_only,
                     app,
@@ -149,7 +175,7 @@ class ByteTrackLike:
         cfg = self.cfg
         use_app = cfg.appearance.enabled and dets.embeddings is not None
 
-        vis_all = self.visibility(dets.xyxy)
+        vis_all = self.visibility(dets.xyxy, dets.scores)
         s = dets.scores
         hi_mask = s > cfg.detection.high_thresh
         lo_mask = (s > cfg.detection.low_thresh) & (s < cfg.detection.high_thresh)
@@ -180,7 +206,9 @@ class ByteTrackLike:
 
         # 3. first association: confirmed + lost ↔ high
         m1 = self.assign(
-            self._cost(pool, d_high, use_score=True, use_appearance=use_app),
+            self._cost(
+                pool, d_high, use_score=True, use_appearance=use_app, vis=v_high, soften=True
+            ),
             cfg.association.match_thresh,
         )
         self._apply_matches(pool, d_high, v_high, m1)
@@ -188,7 +216,9 @@ class ByteTrackLike:
         # 4. second association: unmatched *confirmed* ↔ low, IoU only
         r_tracked = [pool[i] for i in m1.unmatched_rows if pool[i].state is TrackState.CONFIRMED]
         m2 = self.assign(
-            self._cost(r_tracked, d_low, use_score=False, use_appearance=False),
+            self._cost(
+                r_tracked, d_low, use_score=False, use_appearance=False, vis=v_low, soften=True
+            ),
             cfg.association.second_match_thresh,
         )
         self._apply_matches(r_tracked, d_low, v_low, m2)
@@ -205,7 +235,7 @@ class ByteTrackLike:
         left = m1.unmatched_cols
         d_left, v_left = d_high.subset(left), v_high[left]
         m3 = self.assign(
-            self._cost(tentative, d_left, use_score=True, use_appearance=use_app),
+            self._cost(tentative, d_left, use_score=True, use_appearance=use_app, vis=v_left),
             cfg.association.unconfirmed_match_thresh,
         )
         self._apply_matches(tentative, d_left, v_left, m3)
@@ -227,7 +257,8 @@ class ByteTrackLike:
                 if self.frame_id - t.last_frame > self.lifecycle.max_time_lost:
                     t.removal_flagged = True  # marked removed, but still in lost_stracks once more
                     continue
-            t.expire_if_stale(self.frame_id, self.lifecycle)
+            occluded = t.visibility < self.cfg.visibility.occluded_thresh
+            t.expire_if_stale(self.frame_id, self._lc_occluded if occluded else self.lifecycle)
         self._remove_duplicates()
         self.tracks = [t for t in self.tracks if t.state is not TrackState.REMOVED]
 

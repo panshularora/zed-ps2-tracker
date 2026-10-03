@@ -1,0 +1,352 @@
+[
+ {
+  "name": "r04",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=3.0",
+   "visibility.occluded_thresh=0.7"
+  ],
+  "HOTA": 53.80348503266996,
+  "IDF1": 61.361180336545885,
+  "MOTA": 51.47841868269214,
+  "IDSW": 292.0,
+  "AssA": 62.32307906668656,
+  "DetA": 46.699128202503225
+ },
+ {
+  "name": "r09",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.25",
+   "visibility.occluded_buffer_scale=3.0",
+   "visibility.occluded_thresh=0.7"
+  ],
+  "HOTA": 53.767176403838924,
+  "IDF1": 61.3564442680251,
+  "MOTA": 51.44760045884911,
+  "IDSW": 297.0,
+  "AssA": 62.23141602537734,
+  "DetA": 46.70521665905336
+ },
+ {
+  "name": "r14",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.5",
+   "visibility.occluded_buffer_scale=3.0",
+   "visibility.occluded_thresh=0.7"
+  ],
+  "HOTA": 53.73319797553603,
+  "IDF1": 61.25607699176505,
+  "MOTA": 51.44075196466177,
+  "IDSW": 299.0,
+  "AssA": 62.16275059298081,
+  "DetA": 46.69878592366836
+ },
+ {
+  "name": "r19",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=1.0",
+   "visibility.occluded_buffer_scale=3.0",
+   "visibility.occluded_thresh=0.7"
+  ],
+  "HOTA": 53.53085280497968,
+  "IDF1": 61.07395122811271,
+  "MOTA": 51.41849435855291,
+  "IDSW": 290.0,
+  "AssA": 61.73683483382788,
+  "DetA": 46.67624792460458
+ },
+ {
+  "name": "r02",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=2.0",
+   "visibility.occluded_thresh=0.7"
+  ],
+  "HOTA": 53.43124827743161,
+  "IDF1": 60.95971237303277,
+  "MOTA": 51.46985806495796,
+  "IDSW": 292.0,
+  "AssA": 61.49549239354272,
+  "DetA": 46.67819788554603
+ },
+ {
+  "name": "r08",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.25",
+   "visibility.occluded_buffer_scale=3.0",
+   "visibility.occluded_thresh=0.5"
+  ],
+  "HOTA": 53.4153769276552,
+  "IDF1": 60.80349364240894,
+  "MOTA": 51.43219134692759,
+  "IDSW": 296.0,
+  "AssA": 61.472627526909875,
+  "DetA": 46.657534339489786
+ },
+ {
+  "name": "r07",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.25",
+   "visibility.occluded_buffer_scale=2.0",
+   "visibility.occluded_thresh=0.7"
+  ],
+  "HOTA": 53.40667346619795,
+  "IDF1": 61.00218345426877,
+  "MOTA": 51.43903984111493,
+  "IDSW": 297.0,
+  "AssA": 61.43506762636379,
+  "DetA": 46.68073470872752
+ },
+ {
+  "name": "r13",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.5",
+   "visibility.occluded_buffer_scale=3.0",
+   "visibility.occluded_thresh=0.5"
+  ],
+  "HOTA": 53.379228973717915,
+  "IDF1": 60.70322061369174,
+  "MOTA": 51.42534285274025,
+  "IDSW": 298.0,
+  "AssA": 61.40125145426582,
+  "DetA": 46.64973065853193
+ },
+ {
+  "name": "r12",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.5",
+   "visibility.occluded_buffer_scale=2.0",
+   "visibility.occluded_thresh=0.7"
+  ],
+  "HOTA": 53.37906440871758,
+  "IDF1": 60.93868865833893,
+  "MOTA": 51.43219134692759,
+  "IDSW": 300.0,
+  "AssA": 61.382420158478965,
+  "DetA": 46.67390310406162
+ },
+ {
+  "name": "r03",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=3.0",
+   "visibility.occluded_thresh=0.5"
+  ],
+  "HOTA": 53.347913784298285,
+  "IDF1": 60.67210023050369,
+  "MOTA": 51.4612974472238,
+  "IDSW": 291.0,
+  "AssA": 61.337474186729764,
+  "DetA": 46.64580451746246
+ },
+ {
+  "name": "r17",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=1.0",
+   "visibility.occluded_buffer_scale=2.0",
+   "visibility.occluded_thresh=0.7"
+  ],
+  "HOTA": 53.17621178322647,
+  "IDF1": 60.72668363804675,
+  "MOTA": 51.411645864365575,
+  "IDSW": 292.0,
+  "AssA": 60.941311417326794,
+  "DetA": 46.66470778231241
+ },
+ {
+  "name": "r18",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=1.0",
+   "visibility.occluded_buffer_scale=3.0",
+   "visibility.occluded_thresh=0.5"
+  ],
+  "HOTA": 53.157470198811005,
+  "IDF1": 60.50740610121672,
+  "MOTA": 51.4082216172719,
+  "IDSW": 287.0,
+  "AssA": 60.92645168406053,
+  "DetA": 46.63295253874223
+ },
+ {
+  "name": "r06",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.25",
+   "visibility.occluded_buffer_scale=2.0",
+   "visibility.occluded_thresh=0.5"
+  ],
+  "HOTA": 53.05290252027734,
+  "IDF1": 60.45747308981825,
+  "MOTA": 51.42876709983393,
+  "IDSW": 295.0,
+  "AssA": 60.67078729249808,
+  "DetA": 46.63730262462044
+ },
+ {
+  "name": "r11",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.5",
+   "visibility.occluded_buffer_scale=2.0",
+   "visibility.occluded_thresh=0.5"
+  ],
+  "HOTA": 53.025201357258354,
+  "IDF1": 60.394751350755314,
+  "MOTA": 51.42020648209975,
+  "IDSW": 298.0,
+  "AssA": 60.620486467463465,
+  "DetA": 46.62875318033803
+ },
+ {
+  "name": "r01",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=2.0",
+   "visibility.occluded_thresh=0.5"
+  ],
+  "HOTA": 52.971176680354745,
+  "IDF1": 60.274637401422815,
+  "MOTA": 51.45273682948962,
+  "IDSW": 292.0,
+  "AssA": 60.50017426725493,
+  "DetA": 46.629411465370794
+ },
+ {
+  "name": "r16",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=1.0",
+   "visibility.occluded_buffer_scale=2.0",
+   "visibility.occluded_thresh=0.5"
+  ],
+  "HOTA": 52.80317044949335,
+  "IDF1": 60.171060753020015,
+  "MOTA": 51.39966099953772,
+  "IDSW": 288.0,
+  "AssA": 60.13368100176181,
+  "DetA": 46.62351110803938
+ },
+ {
+  "name": "r05",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.25",
+   "visibility.occluded_buffer_scale=1.0",
+   "visibility.occluded_thresh=0.5"
+  ],
+  "HOTA": 52.74624700276188,
+  "IDF1": 59.637470901689085,
+  "MOTA": 51.370554899241526,
+  "IDSW": 302.0,
+  "AssA": 60.074304185124916,
+  "DetA": 46.55825516049614
+ },
+ {
+  "name": "r10",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.5",
+   "visibility.occluded_buffer_scale=1.0",
+   "visibility.occluded_thresh=0.5"
+  ],
+  "HOTA": 52.716324069729346,
+  "IDF1": 59.56916424923616,
+  "MOTA": 51.36884277569469,
+  "IDSW": 303.0,
+  "AssA": 60.01762126880109,
+  "DetA": 46.55087543632478
+ },
+ {
+  "name": "baseline",
+  "overrides": [],
+  "HOTA": 52.66502929364633,
+  "IDF1": 59.475025652907874,
+  "MOTA": 51.392812505350385,
+  "IDSW": 299.0,
+  "AssA": 59.906874819205825,
+  "DetA": 46.549134370894926
+ },
+ {
+  "name": "r00",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=1.0",
+   "visibility.occluded_thresh=0.5"
+  ],
+  "HOTA": 52.66502929364633,
+  "IDF1": 59.475025652907874,
+  "MOTA": 51.392812505350385,
+  "IDSW": 299.0,
+  "AssA": 59.906874819205825,
+  "DetA": 46.549134370894926
+ },
+ {
+  "name": "r15",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=1.0",
+   "visibility.occluded_buffer_scale=1.0",
+   "visibility.occluded_thresh=0.5"
+  ],
+  "HOTA": 52.55382329123225,
+  "IDF1": 59.39925899788285,
+  "MOTA": 51.33288818121115,
+  "IDSW": 295.0,
+  "AssA": 59.66159316590287,
+  "DetA": 46.54777603385353
+ }
+]

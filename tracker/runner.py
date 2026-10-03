@@ -16,6 +16,7 @@ from tracker.cmc import build_cmc
 from tracker.config import TrackerConfig
 from tracker.io import CacheMeta, SequenceCache
 from tracker.types import Detections, FrameResult
+from tracker.visibility import build_visibility
 
 
 @dataclass(frozen=True)
@@ -43,18 +44,19 @@ def build_tracker(
     ``meta`` (sequence, split, image size) is needed for file-based CMC.
     """
     cmc, cmc_desc = build_cmc(cfg.cmc.method, meta)
+    vis = build_visibility(cfg.visibility, meta)
     info: dict[str, Any] = {"cmc": cmc_desc}
     trk: Tracker
     if cfg.name in ("bytetrack_like", "bytetrack", "botsort"):
-        trk = ByteTrackLike(cfg, frame_rate=frame_rate, cmc=cmc)
+        trk = ByteTrackLike(cfg, frame_rate=frame_rate, cmc=cmc, visibility=vis)
     elif cfg.name in ("ocsort", "deep_ocsort"):
         if cfg.name == "ocsort" and cfg.cmc.method != "none":
             raise ValueError("OC-SORT has no CMC; use deep_ocsort or cmc.method: none")
-        trk = OCSortTracker(cfg, frame_rate, cmc=cmc)
+        trk = OCSortTracker(cfg, frame_rate, cmc=cmc, visibility=vis)
     elif cfg.name == "hybrid_sort":
         if cfg.cmc.method != "none":
             raise ValueError("Hybrid-SORT (IoU variant) has no CMC; set cmc.method: none")
-        trk = HybridSortTracker(cfg, frame_rate)
+        trk = HybridSortTracker(cfg, frame_rate, visibility=vis)
     else:
         raise ValueError(f"unknown tracker {cfg.name!r}; known: {TRACKER_NAMES}")
     return trk, info

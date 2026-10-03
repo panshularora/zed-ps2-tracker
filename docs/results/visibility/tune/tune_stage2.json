@@ -1,0 +1,332 @@
+[
+ {
+  "name": "r03",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=3.0",
+   "visibility.occluded_thresh=1.01"
+  ],
+  "HOTA": 53.81056010304193,
+  "IDF1": 61.41987561201535,
+  "MOTA": 51.46985806495796,
+  "IDSW": 301.0,
+  "AssA": 62.34441919815089,
+  "DetA": 46.69544676156745
+ },
+ {
+  "name": "buffer90",
+  "overrides": [
+   "lifecycle.track_buffer=90"
+  ],
+  "HOTA": 53.81056010304193,
+  "IDF1": 61.41987561201535,
+  "MOTA": 51.46985806495796,
+  "IDSW": 301.0,
+  "AssA": 62.34441919815089,
+  "DetA": 46.69544676156745
+ },
+ {
+  "name": "r00",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=3.0",
+   "visibility.occluded_thresh=0.7"
+  ],
+  "HOTA": 53.80348503266996,
+  "IDF1": 61.361180336545885,
+  "MOTA": 51.47841868269214,
+  "IDSW": 292.0,
+  "AssA": 62.32307906668656,
+  "DetA": 46.699128202503225
+ },
+ {
+  "name": "r01",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=3.0",
+   "visibility.occluded_thresh=0.8"
+  ],
+  "HOTA": 53.802243911731786,
+  "IDF1": 61.393584526999454,
+  "MOTA": 51.48355505333265,
+  "IDSW": 292.0,
+  "AssA": 62.32089343448236,
+  "DetA": 46.69867377352983
+ },
+ {
+  "name": "r07",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=4.0",
+   "visibility.occluded_thresh=1.01"
+  ],
+  "HOTA": 53.799245109748576,
+  "IDF1": 61.4156384046225,
+  "MOTA": 51.474994435598475,
+  "IDSW": 299.0,
+  "AssA": 62.31261436314984,
+  "DetA": 46.69986023970516
+ },
+ {
+  "name": "buffer120",
+  "overrides": [
+   "lifecycle.track_buffer=120"
+  ],
+  "HOTA": 53.799245109748576,
+  "IDF1": 61.4156384046225,
+  "MOTA": 51.474994435598475,
+  "IDSW": 299.0,
+  "AssA": 62.31261436314984,
+  "DetA": 46.69986023970516
+ },
+ {
+  "name": "r02",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=3.0",
+   "visibility.occluded_thresh=0.9"
+  ],
+  "HOTA": 53.793012146260196,
+  "IDF1": 61.384762975950245,
+  "MOTA": 51.48184292978581,
+  "IDSW": 293.0,
+  "AssA": 62.30015314229283,
+  "DetA": 46.69861633112139
+ },
+ {
+  "name": "r04",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=4.0",
+   "visibility.occluded_thresh=0.7"
+  ],
+  "HOTA": 53.79219459301348,
+  "IDF1": 61.36203246294989,
+  "MOTA": 51.48184292978581,
+  "IDSW": 292.0,
+  "AssA": 62.29257368814757,
+  "DetA": 46.70263145940373
+ },
+ {
+  "name": "r05",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=4.0",
+   "visibility.occluded_thresh=0.8"
+  ],
+  "HOTA": 53.7910560178238,
+  "IDF1": 61.39155364428272,
+  "MOTA": 51.48869142397315,
+  "IDSW": 290.0,
+  "AssA": 62.289378107681195,
+  "DetA": 46.70308727125236
+ },
+ {
+  "name": "r15",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=10.0",
+   "visibility.occluded_thresh=1.01"
+  ],
+  "HOTA": 53.78670318555605,
+  "IDF1": 61.41310340265067,
+  "MOTA": 51.46985806495796,
+  "IDSW": 299.0,
+  "AssA": 62.28916721412918,
+  "DetA": 46.69607660467809
+ },
+ {
+  "name": "r11",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=6.0",
+   "visibility.occluded_thresh=1.01"
+  ],
+  "HOTA": 53.786667514830135,
+  "IDF1": 61.411575314522615,
+  "MOTA": 51.46814594141114,
+  "IDSW": 299.0,
+  "AssA": 62.29098704465223,
+  "DetA": 46.69461335894794
+ },
+ {
+  "name": "buffer180",
+  "overrides": [
+   "lifecycle.track_buffer=180"
+  ],
+  "HOTA": 53.786667514830135,
+  "IDF1": 61.411575314522615,
+  "MOTA": 51.46814594141114,
+  "IDSW": 299.0,
+  "AssA": 62.29098704465223,
+  "DetA": 46.69461335894794
+ },
+ {
+  "name": "r08",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=6.0",
+   "visibility.occluded_thresh=0.7"
+  ],
+  "HOTA": 53.782813870581094,
+  "IDF1": 61.358649509885,
+  "MOTA": 51.47328231205164,
+  "IDSW": 292.0,
+  "AssA": 62.27767180445633,
+  "DetA": 46.697789264682015
+ },
+ {
+  "name": "r12",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=10.0",
+   "visibility.occluded_thresh=0.7"
+  ],
+  "HOTA": 53.782813870581094,
+  "IDF1": 61.358649509885,
+  "MOTA": 51.47328231205164,
+  "IDSW": 292.0,
+  "AssA": 62.27767180445633,
+  "DetA": 46.697789264682015
+ },
+ {
+  "name": "r06",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=4.0",
+   "visibility.occluded_thresh=0.9"
+  ],
+  "HOTA": 53.7818222158222,
+  "IDF1": 61.382732385047966,
+  "MOTA": 51.48697930042631,
+  "IDSW": 291.0,
+  "AssA": 62.26863964648048,
+  "DetA": 46.70302982202233
+ },
+ {
+  "name": "r09",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=6.0",
+   "visibility.occluded_thresh=0.8"
+  ],
+  "HOTA": 53.78167537300836,
+  "IDF1": 61.38816913832075,
+  "MOTA": 51.480130806238975,
+  "IDSW": 290.0,
+  "AssA": 62.27447652964487,
+  "DetA": 46.69824512685102
+ },
+ {
+  "name": "r13",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=10.0",
+   "visibility.occluded_thresh=0.8"
+  ],
+  "HOTA": 53.78167537300836,
+  "IDF1": 61.38816913832075,
+  "MOTA": 51.480130806238975,
+  "IDSW": 290.0,
+  "AssA": 62.27447652964487,
+  "DetA": 46.69824512685102
+ },
+ {
+  "name": "r14",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=10.0",
+   "visibility.occluded_thresh=0.9"
+  ],
+  "HOTA": 53.7724764395499,
+  "IDF1": 61.38087677516098,
+  "MOTA": 51.480130806238975,
+  "IDSW": 291.0,
+  "AssA": 62.25191951262495,
+  "DetA": 46.699650949323214
+ },
+ {
+  "name": "r10",
+  "overrides": [
+   "visibility.estimator=depth_order",
+   "visibility.score_fusion=product",
+   "visibility.occluder_min_score=0.1",
+   "visibility.soften_weight=0.0",
+   "visibility.occluded_buffer_scale=6.0",
+   "visibility.occluded_thresh=0.9"
+  ],
+  "HOTA": 53.772440754594655,
+  "IDF1": 61.379348365400524,
+  "MOTA": 51.47841868269214,
+  "IDSW": 291.0,
+  "AssA": 62.25373797680596,
+  "DetA": 46.69818769533208
+ },
+ {
+  "name": "buffer60",
+  "overrides": [
+   "lifecycle.track_buffer=60"
+  ],
+  "HOTA": 53.46626935258003,
+  "IDF1": 61.03010918716224,
+  "MOTA": 51.46300957077062,
+  "IDSW": 297.0,
+  "AssA": 61.57213458665897,
+  "DetA": 46.68035081306625
+ },
+ {
+  "name": "baseline",
+  "overrides": [],
+  "HOTA": 52.66502929364633,
+  "IDF1": 59.475025652907874,
+  "MOTA": 51.392812505350385,
+  "IDSW": 299.0,
+  "AssA": 59.906874819205825,
+  "DetA": 46.549134370894926
+ }
+]
