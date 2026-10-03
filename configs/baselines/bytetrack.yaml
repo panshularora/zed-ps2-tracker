@@ -1,0 +1,29 @@
+# ByteTrack (Zhang et al., 2021) re-implemented on our components: two-stage high/low-score
+# association on IoU (+ score fusion), BoT-SORT-style xywh Kalman filter, no appearance.
+# Thresholds are ByteTrack's published MOT17 values.
+name: bytetrack_like
+detection:
+  high_thresh: 0.6        # τ_high: first association
+  low_thresh: 0.1         # τ_low: second association floor
+  new_track_thresh: 0.7   # τ_new: births
+association:
+  match_thresh: 0.8
+  second_match_thresh: 0.5
+  unconfirmed_match_thresh: 0.7
+  fuse_score: true        # ByteTrack turns this off for MOT20
+  duplicate_iou_dist: 0.15
+  backend: scipy
+lifecycle:
+  min_hits: 2
+  tentative_max_misses: 0
+  track_buffer: 30        # frames at 30 fps; scaled by frame_rate / 30
+  confirm_on_first_frame: true
+appearance:
+  enabled: false
+visibility:
+  estimator: constant
+delayed:
+  enabled: false          # planned (phase 2)
+output:
+  min_box_area: 10
+  max_aspect_ratio: 1.6
