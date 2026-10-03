@@ -1,0 +1,20 @@
+# Stage A (GPU) Python deps, on top of torch/torchvision installed by setup.sh.
+numpy>=1.24,<2.3
+scipy>=1.10
+pyyaml>=6.0
+opencv-python-headless>=4.8
+loguru            # ByteTrack yolox
+thop              # ByteTrack yolox.utils imports it
+tabulate
+tqdm
+ninja
+pycocotools       # only for the optional MOT20 fine-tune
+tensorboard       # torchreid imports torch.utils.tensorboard
+yacs
+h5py
+six
+future
+gdown             # SOMPT22 Google Drive folder
+imageio-ffmpeg    # static ffmpeg fallback for clip export
+Pillow
+matplotlib
