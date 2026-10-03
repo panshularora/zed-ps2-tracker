@@ -1,0 +1,21 @@
+:root { color-scheme: dark; }
+body { margin: 0; background: #0E1013; color: #E6E8EB; font: 14px Inter, system-ui, sans-serif; }
+.app { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.toolbar select, .toolbar button, .open { background: #161A1F; color: #E6E8EB; border: 1px solid #262B33; border-radius: 4px; padding: 4px 8px; font: inherit; }
+.open input { display: none; }
+.frame, .counters { font-variant-numeric: tabular-nums; color: #8A929C; }
+.frame b, .counters b { color: #E6E8EB; }
+.panels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 900px) { .panels { grid-template-columns: 1fr; } }
+.panel { background: #161A1F; border: 1px solid #262B33; border-radius: 4px; overflow: hidden; }
+.panel header { display: flex; justify-content: space-between; padding: 6px 10px; }
+.panel .title { font-weight: 600; }
+.panel canvas { display: block; width: 100%; }
+.timeline { background: #161A1F; border: 1px solid #262B33; border-radius: 4px; padding: 8px 10px; }
+.timeline input { width: 100%; }
+.marks { position: relative; height: 18px; margin: 4px 7px 0; }
+.mark { position: absolute; top: 2px; width: 3px; height: 14px; border: 0; padding: 0; transform: translateX(-1px); cursor: pointer; border-radius: 1px; }
+.cursor { position: absolute; top: 0; width: 1px; height: 18px; background: #E6E8EB; }
+.error { color: #E5484D; padding: 20px; }
+.empty { padding: 20px; color: #8A929C; }

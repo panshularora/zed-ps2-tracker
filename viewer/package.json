@@ -1,0 +1,29 @@
+{
+  "name": "zed-ps2-viewer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "embed": "node scripts/embed.mjs data",
+    "prebuild": "node scripts/embed.mjs data",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "screenshots": "node scripts/screenshots.mjs ../docs/media"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.17.6",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.5.2",
+    "playwright-core": "1.53.0",
+    "typescript": "5.6.3",
+    "vite": "6.3.5",
+    "vite-plugin-singlefile": "2.2.0",
+    "vitest": "3.2.4"
+  }
+}

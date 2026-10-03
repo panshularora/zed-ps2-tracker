@@ -8,6 +8,7 @@
 #   make oracle   visibility-oracle ceiling (gt boxes with vis > 0 submitted as a tracker)
 #   make ablate   ablation table + stress plots + latency for configs/ablations/manifest.yaml
 #   make gates    gate-event metrics (crossings, attribution, tailgating) on the ablate outputs
+#   make viewer   export demo clips + build the static viewer (viewer/dist/index.html)
 #   make smoke    the phase-1 pipeline check: MOT17 train (full) and val-half, public FRCNN dets
 #
 # Defaults reproduce the README smoke numbers; override e.g.
@@ -24,7 +25,7 @@ NAME    ?= bytetrack_public
 OUT     ?= outputs/$(DATASET)_$(SPLIT)
 BENCH    = $(if $(filter MOT20,$(DATASET)),MOT20,MOT17)
 
-.PHONY: setup check lint format typecheck test data eval stress latency oracle smoke ablate gates clean
+.PHONY: setup check lint format typecheck test data eval stress latency oracle smoke ablate gates viewer clean
 
 setup:
 	uv venv -p 3.11 .venv
@@ -98,3 +99,12 @@ gates:
 		--gt-dir outputs/ablate/bytetrack/gt --include-gt \
 		--runs $(foreach n,bytetrack ocsort deep_ocsort hybrid_sort botsort buffer90 ours_vis ours_delayed_k5 ours_vis_botsort botsort_buffer90,outputs/ablate/$(n)/trackers/$(n)) \
 		--out docs/results/gate_events
+
+# `make viewer`: export demo clips and build the static viewer (viewer/dist/index.html)
+viewer:
+	$(PY) -m eval.export_viewer --seq MOT17-04-FRCNN MOT17-09-FRCNN \
+		--gates configs/gates/mot17_val_half.yaml --include-gt --out viewer/data \
+		--tracker bytetrack=configs/baselines/bytetrack.yaml \
+		--tracker botsort=configs/baselines/botsort.yaml \
+		--tracker delayed_k5=configs/ours/delayed.yaml
+	cd viewer && npm ci && npm run build
