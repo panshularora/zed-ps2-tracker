@@ -178,8 +178,8 @@ def test_reports_are_causal_and_deterministic() -> None:
     assert a[:40] == c
 
 
-def test_delayed_assignment_not_built() -> None:
-    with pytest.raises(NotImplementedError):
+def test_delayed_requires_wrapper() -> None:
+    with pytest.raises(ValueError, match="DelayedTracker"):
         ByteTrackLike(load_config(overrides=["delayed.enabled=true"]))
 
 

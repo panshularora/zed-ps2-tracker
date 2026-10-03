@@ -6,5 +6,7 @@ Configs for our method. Each novel component is a flag on top of a baseline conf
 |---|---|---|
 | `visibility.yaml` | depth-order × score visibility, longer buffer for occluded lost tracks | measured: `docs/results/visibility/README.md` |
 
-`delayed.enabled: true` still raises `NotImplementedError` until the delayed-decision PR lands, so
-a config can never silently fall back to the baseline.
+| `delayed.yaml` | K-frame look-ahead on ambiguous associations (near-online, ByteTrackLike only) | measured: `docs/results/go_no_go.md` |
+
+`delayed.enabled: true` on any tracker other than ByteTrackLike raises, so a config can never
+silently fall back to the baseline.

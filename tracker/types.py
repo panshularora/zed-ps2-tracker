@@ -106,10 +106,11 @@ class TrackOutput:
 
 @dataclass(frozen=True)
 class PendingDecision:
-    """An association decision the tracker is deliberately holding open.
+    """An ambiguous association that :class:`tracker.delayed.DelayedTracker` held open.
 
-    Phase 1 never produces these (assignment is immediate). The delayed-assignment component
-    (phase 2) fills them so the demo viewer can draw pending hypotheses as dashed links.
+    It is attached to the committed result of ``opened_frame``. The decision was taken with
+    look-ahead up to ``deadline_frame`` (= opened + K), so the viewer can draw the candidates as
+    dashed boxes with a countdown.
     """
 
     track_id: int
@@ -117,6 +118,11 @@ class PendingDecision:
     candidate_costs: tuple[float, ...]
     opened_frame: int
     deadline_frame: int
+    chosen_index: int = -1
+    """Index into the candidates that was committed; -1 = left unmatched in this association."""
+    competing_track_ids: tuple[int, ...] = ()
+    changed: bool = False
+    """True if the look-ahead overrode the immediate solver's choice for this cluster."""
 
 
 @dataclass(frozen=True)

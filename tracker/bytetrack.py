@@ -24,7 +24,10 @@ tentative ones) is Kalman-predicted each frame, and IDs are per-tracker-instance
 
 from __future__ import annotations
 
+import copy
 import dataclasses
+from collections.abc import Callable
+from dataclasses import dataclass
 
 import numpy as np
 import numpy.typing as npt
@@ -64,6 +67,24 @@ def apply_gmc(
     return means, covs
 
 
+Stage1Hook = Callable[[list[Track], FloatArray], FloatArray]
+"""Rewrites the first-association cost matrix (rows = tracks, cols = high detections)."""
+
+
+@dataclass(frozen=True)
+class Stage1Record:
+    """What the first association saw this frame (read by :mod:`tracker.delayed`)."""
+
+    track_ids: tuple[int, ...]
+    lost: tuple[bool, ...]
+    """Per row: the track was lost (not confirmed) before this frame."""
+    cost: FloatArray
+    """Cost matrix before any hook."""
+    dets_tlwh: FloatArray
+    matches: npt.NDArray[np.int64]
+    thresh: float
+
+
 class ByteTrackLike:
     """Online tracker. Call :meth:`update` once per frame, in order."""
 
@@ -75,10 +96,16 @@ class ByteTrackLike:
         assigner: Assigner | None = None,
         visibility: VisibilityEstimator | None = None,
         cmc: CMC | None = None,
+        allow_delayed: bool = False,
     ) -> None:
+        """``allow_delayed`` is set by :class:`tracker.delayed.DelayedTracker`, which wraps this
+        class. Built on its own with ``delayed.enabled`` it raises instead of silently running
+        the immediate baseline."""
         self.cfg = config or TrackerConfig()
-        if self.cfg.delayed.enabled:
-            raise NotImplementedError("delayed (ambiguity-aware) assignment is planned for phase 2")
+        if self.cfg.delayed.enabled and not allow_delayed:
+            raise ValueError(
+                "delayed.enabled: build through tracker.runner.build_tracker (DelayedTracker)"
+            )
         lc = self.cfg.lifecycle
         self.lifecycle = LifecycleConfig(
             min_hits=lc.min_hits,
@@ -101,6 +128,21 @@ class ByteTrackLike:
         self.tracks: list[Track] = []
         self.frame_id = 0
         self._next_id = 1
+        self.stage1_hook: Stage1Hook | None = None
+        self.record = False
+        """When True, fill :attr:`last_stage1` and :attr:`match_costs` every frame."""
+        self.last_stage1: Stage1Record | None = None
+        self.match_costs: dict[int, float] = {}
+        """track_id → association cost of its match this frame (any stage)."""
+
+    def clone(self) -> ByteTrackLike:
+        """Independent copy of the tracking state; stateless helpers (KF, CMC, estimator,
+        assigner, config) are shared."""
+        new = copy.copy(self)
+        new.tracks = copy.deepcopy(self.tracks)
+        new.match_costs = {}
+        new.stage1_hook = None
+        return new
 
     # ------------------------------------------------------------------ helpers
     def _new_id(self) -> int:
@@ -151,11 +193,18 @@ class ByteTrackLike:
         return c
 
     def _apply_matches(
-        self, tracks: list[Track], dets: Detections, vis: FloatArray, m: Matching
+        self,
+        tracks: list[Track],
+        dets: Detections,
+        vis: FloatArray,
+        m: Matching,
+        cost: FloatArray | None = None,
     ) -> None:
         use_app = self.cfg.appearance.enabled and dets.embeddings is not None
         for r, c in m.matches:
             t = tracks[int(r)]
+            if self.record and cost is not None:
+                self.match_costs[t.track_id] = float(cost[r, c])
             t.mark_matched(self.kf, dets.tlwh[c], float(dets.scores[c]), self.frame_id,
                            self.lifecycle)  # fmt: skip
             t.visibility = float(vis[c])
@@ -205,23 +254,27 @@ class ByteTrackLike:
         pool = [t for t in live if t.state in (TrackState.CONFIRMED, TrackState.LOST)]
 
         # 3. first association: confirmed + lost ↔ high
-        m1 = self.assign(
-            self._cost(
-                pool, d_high, use_score=True, use_appearance=use_app, vis=v_high, soften=True
-            ),
-            cfg.association.match_thresh,
+        self.match_costs = {}
+        c1 = self._cost(
+            pool, d_high, use_score=True, use_appearance=use_app, vis=v_high, soften=True
         )
-        self._apply_matches(pool, d_high, v_high, m1)
+        c1_used = c1 if self.stage1_hook is None else self.stage1_hook(pool, c1.copy())
+        m1 = self.assign(c1_used, cfg.association.match_thresh)
+        if self.record:
+            self.last_stage1 = Stage1Record(
+                tuple(t.track_id for t in pool),
+                tuple(t.state is TrackState.LOST for t in pool), c1, d_high.tlwh, m1.matches,
+                cfg.association.match_thresh,
+            )  # fmt: skip
+        self._apply_matches(pool, d_high, v_high, m1, c1)
 
         # 4. second association: unmatched *confirmed* ↔ low, IoU only
         r_tracked = [pool[i] for i in m1.unmatched_rows if pool[i].state is TrackState.CONFIRMED]
-        m2 = self.assign(
-            self._cost(
-                r_tracked, d_low, use_score=False, use_appearance=False, vis=v_low, soften=True
-            ),
-            cfg.association.second_match_thresh,
+        c2 = self._cost(
+            r_tracked, d_low, use_score=False, use_appearance=False, vis=v_low, soften=True
         )
-        self._apply_matches(r_tracked, d_low, v_low, m2)
+        m2 = self.assign(c2, cfg.association.second_match_thresh)
+        self._apply_matches(r_tracked, d_low, v_low, m2, c2)
 
         # 5. unmatched confirmed → lost
         for i in m2.unmatched_rows:
@@ -234,11 +287,9 @@ class ByteTrackLike:
         # 6. tentative ↔ leftover high
         left = m1.unmatched_cols
         d_left, v_left = d_high.subset(left), v_high[left]
-        m3 = self.assign(
-            self._cost(tentative, d_left, use_score=True, use_appearance=use_app, vis=v_left),
-            cfg.association.unconfirmed_match_thresh,
-        )
-        self._apply_matches(tentative, d_left, v_left, m3)
+        c3 = self._cost(tentative, d_left, use_score=True, use_appearance=use_app, vis=v_left)
+        m3 = self.assign(c3, cfg.association.unconfirmed_match_thresh)
+        self._apply_matches(tentative, d_left, v_left, m3, c3)
         for i in m3.unmatched_rows:
             tentative[int(i)].mark_missed(self.lifecycle)
 
