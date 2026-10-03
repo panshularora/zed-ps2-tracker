@@ -1,4 +1,5 @@
-# ByteTrack's MOT20 setting: no score fusion (very crowded scenes).
+# ByteTrack's MOT20 setting (--mot20): no score fusion and match_thresh 0.7.
 inherit: bytetrack.yaml
 association:
+  match_thresh: 0.7
   fuse_score: false

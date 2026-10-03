@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from tracker.bytetrack import ByteTrackLike
-from tracker.config import TrackerConfig, load_config
+from tracker.config import TrackerConfig, config_from_dict, load_config
 from tracker.types import Detections
 
 
@@ -119,9 +119,20 @@ def test_lost_track_removed_after_buffer() -> None:
     assert list(out[1]) == [2]
 
 
-def test_frame_rate_scales_buffer() -> None:
-    assert ByteTrackLike(frame_rate=15).lifecycle.max_time_lost == 15
-    assert ByteTrackLike(frame_rate=60).lifecycle.max_time_lost == 60
+def test_frame_rate_buffer_scaling_is_opt_in() -> None:
+    assert ByteTrackLike(frame_rate=15).lifecycle.max_time_lost == 30  # ByteTrack behaviour
+    cfg = config_from_dict({"lifecycle": {"scale_buffer_by_fps": True}})
+    assert ByteTrackLike(cfg, frame_rate=15).lifecycle.max_time_lost == 15
+    assert ByteTrackLike(cfg, frame_rate=60).lifecycle.max_time_lost == 60
+
+
+def test_score_equal_to_high_thresh_is_in_neither_set() -> None:
+    trk = ByteTrackLike()
+    trk.update(frame([(10, 10, 40, 100)], [0.9]))
+    trk.update(frame([(10, 10, 40, 100)], [0.9]))
+    # exactly 0.6: neither high nor low, so the track is not updated this frame
+    res = trk.update(frame([(12, 10, 40, 100)], [0.6]))
+    assert len(res.tracks) == 0
 
 
 def test_output_filters() -> None:

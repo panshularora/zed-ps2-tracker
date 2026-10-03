@@ -22,14 +22,15 @@ class DetectionConfig:
     high_thresh: float = 0.6
     """Detections with score > high_thresh go to the first association (ByteTrack τ_high)."""
     low_thresh: float = 0.1
-    """Detections with low_thresh < score ≤ high_thresh go to the second association."""
+    """Detections with low_thresh < score < high_thresh go to the second association (a score
+    exactly equal to high_thresh is in neither set, as in ByteTrack)."""
     new_track_thresh: float = 0.7
     """Unmatched high detections above this start a new (tentative) track."""
 
 
 @dataclass(frozen=True)
 class AssociationConfig:
-    match_thresh: float = 0.8
+    match_thresh: float = 0.9
     """Max cost for the first (high-score) association."""
     second_match_thresh: float = 0.5
     """Max IoU cost for the second (low-score) association."""
@@ -47,7 +48,10 @@ class LifecycleSection:
     min_hits: int = 2
     tentative_max_misses: int = 0
     track_buffer: int = 30
-    """Lost-track lifetime at 30 fps; scaled by ``frame_rate / 30`` per sequence."""
+    """Lost-track lifetime in frames at 30 fps."""
+    scale_buffer_by_fps: bool = False
+    """Scale ``track_buffer`` by ``frame_rate / 30``. ByteTrack's evaluator never passes the frame
+    rate, so its effective buffer is always 30 frames (default false, matching that)."""
     confirm_on_first_frame: bool = True
 
 
@@ -78,7 +82,7 @@ class DelayedAssignmentConfig:
 
 @dataclass(frozen=True)
 class OutputConfig:
-    min_box_area: float = 10.0
+    min_box_area: float = 100.0
     max_aspect_ratio: float = 1.6
     """Drop reported boxes with w / h above this (ByteTrack's MOT 'vertical' filter); 0 = off."""
 

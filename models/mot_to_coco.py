@@ -17,16 +17,9 @@ from pathlib import Path
 
 import numpy as np
 
+from eval.splits import half_range
 
-def half_range(n: int, split: str) -> tuple[int, int]:
-    """Inclusive 1-based frame range of a half split."""
-    if split == "train_half":
-        return 1, n // 2 + 1
-    if split == "val_half":
-        return n // 2 + 2, n
-    if split == "train":
-        return 1, n
-    raise ValueError(split)
+__all__ = ["convert", "half_range"]
 
 
 def convert(root: Path, split: str) -> dict[str, object]:

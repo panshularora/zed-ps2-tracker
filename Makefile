@@ -1,20 +1,28 @@
-# zed-ps2-tracker — developer entry points.
-#   make setup   create .venv (Python 3.11) and install the package + dev tools
-#   make check   lint + format check + mypy --strict tracker/ + tests   (what CI runs)
-#   make data    download MOT17 labels + public detections only (~10 MB zip, no images)
-#   make eval    run the configured tracker on MOT17 train public dets and score with TrackEval
-#   make stress  IDF1 / IDsw binned by gt visibility and people-per-frame (needs `make eval` first)
-#   make latency per-frame tracker latency p50 / p95 / max on this machine
+# zed-ps2-tracker: developer entry points.
+#   make setup    create .venv (Python 3.11) and install the package + dev tools
+#   make check    lint + format check + mypy (strict on tracker/) + tests   (what CI runs)
+#   make data     download MOT17 + MOT20 labels and public detections only (no images, ~30 MB)
+#   make eval     track DATASET/SPLIT with CONFIG on DETS, score with TrackEval, stress bins
+#   make stress   re-run the stress bins on existing outputs of `make eval`
+#   make latency  single-threaded tracker latency p50 / p95 / p99 / max on this CPU
+#   make oracle   visibility-oracle ceiling (gt boxes with vis > 0 submitted as a tracker)
+#   make smoke    the phase-1 pipeline check: MOT17 train (full) and val-half, public FRCNN dets
+#
+# Defaults reproduce the README smoke numbers; override e.g.
+#   make eval DATASET=MOT20 CONFIG=configs/baselines/bytetrack_mot20.yaml
+#   make eval DETS=/path/to/cache/MOT17/ablation/train NAME=bytetrack_yolox
 
 PY      ?= .venv/bin/python
 DATA    ?= data
-OUT     ?= outputs
+DATASET ?= MOT17
+SPLIT   ?= val_half
+DETS    ?= public
 CONFIG  ?= configs/baselines/bytetrack.yaml
-TRACKER ?= bytetrack_frcnn_public
-SPLIT   ?= train
-DETS    ?= FRCNN
+NAME    ?= bytetrack_public
+OUT     ?= outputs/$(DATASET)_$(SPLIT)
+BENCH    = $(if $(filter MOT20,$(DATASET)),MOT20,MOT17)
 
-.PHONY: setup check lint format typecheck test data eval stress latency clean
+.PHONY: setup check lint format typecheck test data eval stress latency oracle smoke clean
 
 setup:
 	uv venv -p 3.11 .venv
@@ -37,7 +45,7 @@ test:
 
 check: lint typecheck test
 
-data: $(DATA)/MOT17/train
+data: $(DATA)/MOT17/train $(DATA)/MOT20/train
 
 $(DATA)/MOT17/train:
 	mkdir -p $(DATA)
@@ -45,19 +53,32 @@ $(DATA)/MOT17/train:
 	unzip -q -o $(DATA)/MOT17Labels.zip -d $(DATA)/MOT17
 	rm -f $(DATA)/MOT17Labels.zip
 
-eval: $(DATA)/MOT17/train
-	$(PY) -m eval.run_mot --config $(CONFIG) --mot-root $(DATA)/MOT17 --split $(SPLIT) \
-		--dets $(DETS) --tracker-name $(TRACKER) --out $(OUT)
-	$(PY) -m eval.trackeval_runner --gt-root $(DATA)/MOT17 --split $(SPLIT) --dets $(DETS) \
-		--trackers-root $(OUT)/trackers --tracker-name $(TRACKER) --out $(OUT)/metrics
+$(DATA)/MOT20/train:
+	mkdir -p $(DATA)
+	curl -fSL -o $(DATA)/MOT20Labels.zip https://motchallenge.net/data/MOT20Labels.zip
+	unzip -q -o $(DATA)/MOT20Labels.zip -d $(DATA)/MOT20
+	rm -f $(DATA)/MOT20Labels.zip
 
-stress: $(DATA)/MOT17/train
-	$(PY) -m eval.stress --gt-root $(DATA)/MOT17 --split $(SPLIT) --dets $(DETS) \
-		--trackers-root $(OUT)/trackers --tracker-name $(TRACKER) --out $(OUT)/stress
+eval: $(DATA)/$(DATASET)/train
+	$(PY) -m eval.run --dataset $(DATASET) --root $(DATA)/$(DATASET) --split $(SPLIT) \
+		--dets $(DETS) --config $(CONFIG) --name $(NAME) --out $(OUT)
 
-latency: $(DATA)/MOT17/train
-	$(PY) -m eval.latency --config $(CONFIG) --mot-root $(DATA)/MOT17 --split $(SPLIT) \
-		--dets $(DETS) --out $(OUT)/latency
+stress:
+	$(PY) -m eval.stress --gt $(OUT)/gt --trackers $(OUT)/trackers --tracker-name $(NAME) \
+		--benchmark $(BENCH) --out $(OUT)/stress/$(NAME)
+
+latency: $(DATA)/$(DATASET)/train
+	OMP_NUM_THREADS=1 $(PY) -m eval.latency --dataset $(DATASET) --root $(DATA)/$(DATASET) \
+		--split $(SPLIT) --dets $(DETS) --config $(CONFIG) --out $(OUT)/latency/$(NAME).json
+
+oracle: $(DATA)/$(DATASET)/train
+	$(PY) -m eval.oracle --dataset $(DATASET) --root $(DATA)/$(DATASET) --split $(SPLIT) \
+		--tau 0 0.1 0.25 --out $(OUT)/oracle
+
+smoke: $(DATA)/MOT17/train
+	$(MAKE) eval SPLIT=full
+	$(MAKE) eval SPLIT=val_half
+	$(MAKE) latency SPLIT=full
 
 clean:
-	rm -rf $(OUT) .mypy_cache .ruff_cache .pytest_cache
+	rm -rf outputs .mypy_cache .ruff_cache .pytest_cache
