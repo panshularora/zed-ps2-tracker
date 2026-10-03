@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Identity-preserving online multi-object tracking through dense occlusion (Zed Digital PS-2)"
 readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
 authors = [{ name = "Panshul Arora" }]
 dependencies = [
     "numpy>=1.24",
