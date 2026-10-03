@@ -65,17 +65,25 @@ def load_inputs(seq_dir: Path, dataset: str, dets: str) -> SequenceCache:
 def run(
     dataset: str, root: Path, split: str, dets: str, config: Path, overrides: list[str],
     name: str, out: Path, evaluate: bool = True, stress: bool = True,
+    det_variant: str = "FRCNN", score_map: str = "none",
 ) -> dict[str, Any]:  # fmt: skip
+    """``score_map = logistic`` maps raw detector scores with ``1 / (1 + e^-s)``. That is needed
+    for MOT17 DPM, whose public scores are unbounded (about -0.5 to 4.8)."""
     cfg = load_config(config, overrides)
     gt_dir = out / "gt"
-    names = prepare_gt(root, dataset, split, gt_dir)
+    names = prepare_gt(root, dataset, split, gt_dir, det_variant)
     trk_dir = out / "trackers" / name
     (trk_dir / "data").mkdir(parents=True, exist_ok=True)
     lat_all: list[Any] = []
     per_seq: dict[str, dict[str, Any]] = {}
     saw: list[bool] = []
-    for seq_dir in find_sequences(root, dataset):
+    for seq_dir in find_sequences(root, dataset, det_variant):
         cache = crop_cache(load_inputs(seq_dir, dataset, dets), split)
+        if score_map == "logistic":
+            sc = (1.0 / (1.0 + np.exp(-cache.score.astype(np.float64)))).astype(np.float32)
+            cache = SequenceCache(cache.meta, cache.frame, cache.tlwh, sc, cache.emb)
+        elif score_map != "none":
+            raise ValueError(f"unknown score_map {score_map!r}")
         saw.append(bool(cache.meta.detector_saw_eval_half))
         res = run_sequence(cache, cfg)
         write_mot_results(trk_dir / "data" / f"{seq_dir.name}.txt", res.results)
@@ -86,7 +94,8 @@ def run(
         lat_all.append(res.latency_ms)
     info: dict[str, Any] = {
         "dataset": dataset, "split": split, "sequences": names, "dets": dets,
-        "detector_saw_eval_half": any(saw), "config_file": str(config), "overrides": overrides,
+        "detector_saw_eval_half": any(saw), "det_variant": det_variant,
+        "score_map": score_map, "config_file": str(config), "overrides": overrides,
         "config": config_to_dict(cfg), "git_commit": git_commit(),
         "latency_note": "tracker update() only (no detector, no I/O); not a pinned-thread "
                         "measurement; use `python -m eval.latency` for the reported numbers",
@@ -134,9 +143,22 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--no-eval", action="store_true")
     p.add_argument("--no-stress", action="store_true")
+    p.add_argument(
+        "--det-variant",
+        default="FRCNN",
+        choices=["FRCNN", "SDP", "DPM"],
+        help="MOT17 public detector copy",
+    )
+    p.add_argument(
+        "--score-map",
+        default="none",
+        choices=["none", "logistic"],
+        help="logistic: map unbounded scores (MOT17 DPM) into (0, 1)",
+    )
     a = p.parse_args(argv)
     run(a.dataset, a.root, a.split, a.dets, a.config, a.override, a.name, a.out,
-        evaluate=not a.no_eval, stress=not a.no_stress)  # fmt: skip
+        evaluate=not a.no_eval, stress=not a.no_stress, det_variant=a.det_variant,
+        score_map=a.score_map)  # fmt: skip
     return 0
 
 

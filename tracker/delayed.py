@@ -252,19 +252,20 @@ class DelayedTracker:
         res = trial.update(d0)
         rec = trial.last_stage1
         clusters: list[Cluster] = []
-        if rec is not None and future:
+        if rec is not None:
             clusters, skipped = find_clusters(
                 rec, self.margin, self.max_cluster, self.confirmed_only
             )
             self.stats.skipped_large += skipped
-        if not clusters:
+        f = trial.frame_id
+        if clusters:  # recorded with K = 0 too: the "flagged windows" of the go/no-go
+            self.stats.ambiguous_frames += 1
+            self.stats.clusters += len(clusters)
+            self.stats.trigger_frames.append(f)
+        if not clusters or not future:
             self.state = trial
             return res
         assert rec is not None
-        f = trial.frame_id
-        self.stats.ambiguous_frames += 1
-        self.stats.clusters += len(clusters)
-        self.stats.trigger_frames.append(f)
         chosen: list[tuple[Cluster, Hypothesis]] = []
         any_change = False
         for cl in clusters:
