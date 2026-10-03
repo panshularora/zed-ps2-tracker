@@ -101,11 +101,24 @@ class VisibilityConfig:
 
 @dataclass(frozen=True)
 class DelayedAssignmentConfig:
-    """Bounded-latency ambiguity-aware assignment. **Planned (phase 2), not built.**"""
+    """Bounded-delay ambiguity-aware assignment (:mod:`tracker.delayed`, ByteTrackLike only)."""
 
     enabled: bool = False
     max_delay_frames: int = 3
+    """K: frame ``f`` is committed after frame ``f + K`` arrives (algorithmic delay K/fps)."""
     margin: float = 0.05
+    """Near-tie margin on the first-association cost."""
+    max_cluster: int = 4
+    """Clusters with more tracks or detections than this are left to the immediate solver."""
+    max_hypotheses: int = 6
+    miss_penalty: float = 1.0
+    """Look-ahead cost per frame for a cluster track that is unmatched or removed."""
+    min_gain: float = 0.0
+    """An alternative must beat the immediate choice's look-ahead score by more than this."""
+    confirmed_only: bool = False
+    """Only confirmed tracks take part in ambiguity clusters (lost tracks are left alone)."""
+    same_tracks: bool = False
+    """Only consider re-assignments among the tracks the immediate solver matched (swaps)."""
 
 
 @dataclass(frozen=True)
