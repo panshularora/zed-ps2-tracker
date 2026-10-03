@@ -18,7 +18,10 @@ dependencies = [
 [project.optional-dependencies]
 # lapjv backend for the assignment step (optional; scipy is the default and is bit-identical in tests)
 lap = ["lap>=0.5.12"]
+# figures (go/no-go curve, stress plots of `make ablate`)
+plots = ["matplotlib>=3.8"]
 dev = [
+    "matplotlib>=3.8",
     "pytest>=8.0",
     "ruff>=0.6",
     "mypy>=1.10",

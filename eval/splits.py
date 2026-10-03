@@ -98,21 +98,27 @@ def write_seqmap(path: Path, names: Iterable[str]) -> None:
     path.write_text("name\n" + "".join(f"{n}\n" for n in names))
 
 
-def find_sequences(root: Path, dataset: str) -> list[Path]:
-    """Sequences with gt: ``<root>/train/<seq>`` (``<root>/val`` for DanceTrack)."""
+def find_sequences(root: Path, dataset: str, variant: str = "FRCNN") -> list[Path]:
+    """Sequences with gt: ``<root>/train/<seq>`` (``<root>/val`` for DanceTrack).
+
+    ``variant`` picks the MOT17 public-detector copy (FRCNN, SDP or DPM; same images and gt)."""
     sub = "val" if dataset.lower() == "dancetrack" else "train"
     train = root / sub if (root / sub).is_dir() else root
-    pattern = "*-FRCNN" if dataset.upper() == "MOT17" else "*"
+    if variant not in ("FRCNN", "SDP", "DPM"):
+        raise ValueError(f"unknown MOT17 detector variant {variant!r}")
+    pattern = f"*-{variant}" if dataset.upper() == "MOT17" else "*"
     seqs = sorted(d for d in train.glob(pattern) if (d / "gt" / "gt.txt").exists())
     if not seqs:
         raise FileNotFoundError(f"no {dataset} sequences with gt under {train}")
     return seqs
 
 
-def prepare_gt(root: Path, dataset: str, split: str, out: Path) -> list[str]:
+def prepare_gt(
+    root: Path, dataset: str, split: str, out: Path, variant: str = "FRCNN"
+) -> list[str]:
     """Write a TrackEval GT folder (``out/<seq>/...`` + ``out/seqmap.txt``); return seq names."""
     names = []
-    for seq in find_sequences(root, dataset):
+    for seq in find_sequences(root, dataset, variant):
         write_gt_split(seq, out, split)
         names.append(seq.name)
     write_seqmap(out / "seqmap.txt", names)

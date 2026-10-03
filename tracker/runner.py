@@ -64,6 +64,8 @@ def build_tracker(
                 min_gain=d.min_gain,
                 confirmed_only=d.confirmed_only,
                 same_tracks=d.same_tracks,
+                score_scope=d.score_scope,
+                birth_penalty=d.birth_penalty,
             )
             k_ms = round(1000.0 * d.max_delay_frames / frame_rate, 1)
             info["delayed"] = {"K_frames": d.max_delay_frames, "K_ms": k_ms}

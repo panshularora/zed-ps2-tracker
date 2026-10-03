@@ -1,7 +1,9 @@
 # Ours, delayed decision only: ByteTrackLike + K-frame look-ahead on ambiguous first associations
 # (tracker/delayed.py). Near-online: algorithmic delay K frames = 1000*K/fps ms.
-# Variant chosen on MOT17 train_half, public FRCNN, K = 5 (docs/results/go_no_go.md):
-# confirmed_only (lost tracks stay out of clusters) was the only variant not below the baseline.
+# Variant chosen on train_half only (docs/results/go_no_go/tune_train_half.md):
+#  v1 (public FRCNN, K=5): confirmed_only was the only variant not below the baseline.
+#  v2 (corrupted gt seed 100, K=3): scoring every first-association track (score_scope: all),
+#     swaps only (same_tracks) and a birth penalty had the fewest IDSW, but still more than K=0.
 inherit: ../baselines/bytetrack.yaml
 delayed:
   enabled: true
@@ -12,4 +14,6 @@ delayed:
   miss_penalty: 1.0
   min_gain: 0.0
   confirmed_only: true
-  same_tracks: false
+  same_tracks: true
+  score_scope: all
+  birth_penalty: 1.0
