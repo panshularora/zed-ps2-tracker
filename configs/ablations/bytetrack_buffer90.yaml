@@ -1,0 +1,5 @@
+# Control for configs/ours/visibility.yaml: a 3x longer lost-track buffer for every track,
+# no visibility. If this matches ours, the gain comes from the buffer, not from visibility.
+inherit: ../baselines/bytetrack.yaml
+lifecycle:
+  track_buffer: 90

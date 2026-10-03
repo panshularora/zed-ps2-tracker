@@ -41,6 +41,48 @@ def iou_matrix(a_xyxy: FloatArray, b_xyxy: FloatArray, plus_one: bool = False) -
     return np.asarray(iou, dtype=np.float64)
 
 
+def ioa_matrix(a_xyxy: FloatArray, b_xyxy: FloatArray) -> FloatArray:
+    """Intersection over the area of ``b`` (``(N, M)``): the share of each ``b`` inside ``a``."""
+    a = np.asarray(a_xyxy, dtype=np.float64).reshape(-1, 4)
+    b = np.asarray(b_xyxy, dtype=np.float64).reshape(-1, 4)
+    if a.shape[0] == 0 or b.shape[0] == 0:
+        return np.zeros((a.shape[0], b.shape[0]))
+    iw = np.clip(
+        np.minimum(a[:, None, 2], b[None, :, 2]) - np.maximum(a[:, None, 0], b[None, :, 0]),
+        0.0,
+        None,
+    )
+    ih = np.clip(
+        np.minimum(a[:, None, 3], b[None, :, 3]) - np.maximum(a[:, None, 1], b[None, :, 1]),
+        0.0,
+        None,
+    )
+    area_b = np.clip(b[:, 2] - b[:, 0], 0.0, None) * np.clip(b[:, 3] - b[:, 1], 0.0, None)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        out = np.where(area_b[None, :] > 0, iw * ih / area_b[None, :], 0.0)
+    return np.asarray(out, np.float64)
+
+
+def visibility_softened_iou_cost(
+    tracks_xyxy: FloatArray,
+    dets_xyxy: FloatArray,
+    det_vis: FloatArray,
+    beta: float,
+    plus_one: bool = False,
+) -> FloatArray:
+    """``1 − [(1 − w)·IoU + w·IoA_det]`` with ``w_j = β·(1 − v̂_j)`` per detection (ours).
+
+    A partly hidden person is detected as the visible part only, so its IoU with the full
+    predicted box is low even when the match is right. Containment (IoA of the detection inside
+    the predicted box) does not suffer from that. ``β = 0`` gives plain ``1 − IoU``.
+    """
+    iou = iou_matrix(tracks_xyxy, dets_xyxy, plus_one)
+    if beta == 0.0 or iou.size == 0:
+        return 1.0 - iou
+    w = np.clip(beta * (1.0 - np.asarray(det_vis, np.float64).reshape(1, -1)), 0.0, 1.0)
+    return np.asarray(1.0 - ((1.0 - w) * iou + w * ioa_matrix(tracks_xyxy, dets_xyxy)))
+
+
 def iou_cost(tracks_xyxy: FloatArray, dets_xyxy: FloatArray, plus_one: bool = False) -> FloatArray:
     """``1 − IoU``."""
     return 1.0 - iou_matrix(tracks_xyxy, dets_xyxy, plus_one)

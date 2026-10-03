@@ -1,0 +1,16 @@
+# Ours, visibility only: ByteTrackLike + per-detection visibility from boxes (depth order x score).
+# Frozen from MOT17 train_half (public FRCNN), scripts/research/tune_visibility.py,
+# docs/results/visibility/tune/. Stage 1 showed the softened IoU does not help (beta = 0 best);
+# a 3x longer lost-track buffer for tracks last seen at v < 0.7 gave +1.1 HOTA on train_half,
+# the same as a 3x longer buffer for every track (control: configs/ablations/bytetrack_buffer90.yaml).
+inherit: ../baselines/bytetrack.yaml
+name: bytetrack_like
+visibility:
+  estimator: depth_order
+  score_fusion: product        # train_half: Spearman 0.495 -> 0.560
+  occluder_min_score: 0.1      # train_half: best AUROC v<0.5 (flat 0.0-0.95)
+  grid: 16
+  border: true
+  soften_weight: 0.0           # train_half: 0.25 / 0.5 / 1.0 all lower HOTA
+  occluded_buffer_scale: 3.0
+  occluded_thresh: 0.7

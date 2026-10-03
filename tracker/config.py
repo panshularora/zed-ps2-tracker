@@ -73,12 +73,30 @@ class AppearanceConfig:
     proximity_thresh: float = 0.5
     appearance_thresh: float = 0.25
     min_visibility: float = 0.0
-    """Skip EMA updates below this estimated visibility (0 = never skip; phase 2 hook)."""
+    """Skip EMA updates below this estimated visibility (0 = never skip)."""
+    cost_min_visibility: float = 0.0
+    """Ignore the appearance term for detections with estimated visibility below this
+    (they are matched on motion/IoU only). 0 = never."""
 
 
 @dataclass(frozen=True)
 class VisibilityConfig:
     estimator: Literal["constant", "depth_order"] = "constant"
+    occluder_min_score: float = 0.0
+    """Only detections with score ≥ this occlude others (``depth_order``)."""
+    grid: int = 16
+    """Sampling lattice per box side for the covered fraction."""
+    border: bool = True
+    """Count the part of a box outside the image as invisible (as MOT gt does)."""
+    score_fusion: Literal["none", "product"] = "none"
+    """``product``: multiply the geometric estimate by the detector score (scores in [0, 1])."""
+    soften_weight: float = 0.0
+    """β in the visibility-softened IoU: ``(1 − w)·IoU + w·IoA_det`` with ``w = β(1 − v̂_det)``,
+    used in the first and second association. 0 = plain IoU (off)."""
+    occluded_buffer_scale: float = 1.0
+    """Lost tracks whose last matched detection had ``v̂ < occluded_thresh`` keep their slot
+    ``occluded_buffer_scale ×`` longer (1 = off)."""
+    occluded_thresh: float = 0.5
 
 
 @dataclass(frozen=True)

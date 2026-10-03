@@ -204,7 +204,7 @@ class HybridSortTracker:
         self.delta_t = oc.delta_t
         self.inertia = oc.inertia
         self.asso = hmiou if oc.asso == "hmiou" else iou_batch
-        self.visibility = visibility or build_visibility(cfg.visibility.estimator)
+        self.visibility = visibility or build_visibility(cfg.visibility)
         self.trackers: list[HybridTrack] = []
         self.frame_count = 0
         self._next_id = 1
@@ -214,7 +214,7 @@ class HybridSortTracker:
         self.frame_count += 1
         oc = self.cfg.ocsort
         xyxy, scores = detections.xyxy, detections.scores
-        vis_all = self.visibility(xyxy)
+        vis_all = self.visibility(xyxy, scores)
         dets_all = np.concatenate([xyxy, scores[:, None]], axis=1)
         second = (scores > self.low_thresh) & (scores < self.det_thresh)
         remain = scores > self.det_thresh
