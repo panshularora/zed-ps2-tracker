@@ -6,6 +6,7 @@
 #   make stress   re-run the stress bins on existing outputs of `make eval`
 #   make latency  single-threaded tracker latency p50 / p95 / p99 / max on this CPU
 #   make oracle   visibility-oracle ceiling (gt boxes with vis > 0 submitted as a tracker)
+#   make ablate   ablation table + stress plots + latency for configs/ablations/manifest.yaml
 #   make smoke    the phase-1 pipeline check: MOT17 train (full) and val-half, public FRCNN dets
 #
 # Defaults reproduce the README smoke numbers; override e.g.
@@ -22,7 +23,7 @@ NAME    ?= bytetrack_public
 OUT     ?= outputs/$(DATASET)_$(SPLIT)
 BENCH    = $(if $(filter MOT20,$(DATASET)),MOT20,MOT17)
 
-.PHONY: setup check lint format typecheck test data eval stress latency oracle smoke clean
+.PHONY: setup check lint format typecheck test data eval stress latency oracle smoke ablate clean
 
 setup:
 	uv venv -p 3.11 .venv
@@ -82,3 +83,10 @@ smoke: $(DATA)/MOT17/train
 
 clean:
 	rm -rf outputs .mypy_cache .ruff_cache .pytest_cache
+
+# `make ablate`: every entry of configs/ablations/manifest.yaml (parallel tracking, then sequential
+# single-threaded latency) -> docs/results/ablation/{ablation.md,csv,json, stress_*.png}
+JOBS ?= 6
+ablate: $(DATA)/MOT17/train
+	$(PY) -m eval.ablate --manifest configs/ablations/manifest.yaml --out outputs/ablate \
+		--report docs/results/ablation --jobs $(JOBS)

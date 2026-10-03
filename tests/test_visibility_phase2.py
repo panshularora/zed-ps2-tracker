@@ -75,3 +75,23 @@ def test_auroc_and_ap() -> None:
     m = metrics(np.array([0.2, 0.9, 1.0]), np.array([0.1, 0.8, 1.0]))
     assert m["mae"] == pytest.approx(0.2 / 3)
     assert m["auroc_vis_lt_0.5"] == 1.0
+
+
+def test_occluded_buffer_scale_with_removal_lag() -> None:
+    """The BoT-SORT parity path (removal_lag) honours the occluded buffer too."""
+
+    def lives(scale: float) -> int:
+        cfg = _cfg(scale)
+        cfg["lifecycle"]["removal_lag"] = True
+        trk = ByteTrackLike(config_from_dict(cfg), frame_rate=30, visibility=_Half())  # type: ignore[arg-type]
+        box = Detections(np.array([[100, 100, 40, 100.0]]), np.array([0.9]))
+        for _ in range(5):
+            trk.update(box)
+        empty = Detections(np.zeros((0, 4)), np.zeros(0))
+        for k in range(1, 40):
+            trk.update(empty)
+            if not trk.tracks:
+                return k
+        return 40
+
+    assert lives(3.0) > lives(1.0)
