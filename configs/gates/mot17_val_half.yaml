@@ -1,0 +1,19 @@
+# Frozen virtual gate lines for eval/gate_events.py, MOT17 val_half (static-camera sequences only:
+# a moving camera has no fixed line). Chosen from image geometry alone (fixed fractions of the
+# 1920x1080 frame), not from where tracks or errors are: h60 = horizontal line at 60 % of the
+# height, full width; v50 = vertical line at the centre from 30 % of the height to the bottom.
+# Frozen in PR 11 and not changed after any tracker was scored on them.
+params:
+  hysteresis_px: 10       # side changes only beyond +/-10 px of the line
+  delta_frames: 15        # gt and tracker events match within 15 frames
+  tailgate_seconds: 1.0   # two ids, same gate and direction, within 1 s
+sequences:
+  MOT17-02-FRCNN:
+    - {name: h60, a: [0, 648], b: [1920, 648]}
+    - {name: v50, a: [960, 324], b: [960, 1080]}
+  MOT17-04-FRCNN:
+    - {name: h60, a: [0, 648], b: [1920, 648]}
+    - {name: v50, a: [960, 324], b: [960, 1080]}
+  MOT17-09-FRCNN:
+    - {name: h60, a: [0, 648], b: [1920, 648]}
+    - {name: v50, a: [960, 324], b: [960, 1080]}
