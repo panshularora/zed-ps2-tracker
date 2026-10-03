@@ -41,6 +41,8 @@ class AssociationConfig:
     duplicate_iou_dist: float = 0.15
     """Confirmed/lost track pairs closer than this (1 − IoU) are de-duplicated."""
     backend: Literal["scipy", "lap"] = "scipy"
+    iou_plus_one: bool = False
+    """Pixel-inclusive IoU (``cython_bbox``: ``w = x2 − x1 + 1``) as in ByteTrack/BoT-SORT code."""
 
 
 @dataclass(frozen=True)
@@ -53,6 +55,14 @@ class LifecycleSection:
     """Scale ``track_buffer`` by ``frame_rate / 30``. ByteTrack's evaluator never passes the frame
     rate, so its effective buffer is always 30 frames (default false, matching that)."""
     confirm_on_first_frame: bool = True
+    removal_lag: bool = False
+    """Reproduce ByteTrack/BoT-SORT's removal bookkeeping: a lost track marked removed at frame t
+    stays in ``lost_stracks`` (``sub_stracks`` runs before ``removed_stracks.extend``), so it can
+    still be re-found at t + 1; because its id is then in ``removed_stracks`` for good, the next
+    time it is lost it is dropped at once."""
+    predict_tentative: bool = True
+    """Kalman-predict tentative (unconfirmed) tracks every frame. ByteTrack and BoT-SORT do not
+    (only confirmed + lost tracks are predicted); ``botsort.yaml`` sets this false."""
 
 
 @dataclass(frozen=True)
@@ -81,10 +91,48 @@ class DelayedAssignmentConfig:
 
 
 @dataclass(frozen=True)
+class OCSortSection:
+    """Parameters of the SORT-family baselines (OC-SORT, Deep OC-SORT, Hybrid-SORT).
+
+    These trackers also read ``detection.high_thresh`` (their ``det_thresh``),
+    ``detection.low_thresh`` (BYTE stage), ``lifecycle.min_hits`` and ``lifecycle.track_buffer``
+    (their ``max_age``). Each baseline YAML cites the upstream file for every value.
+    """
+
+    iou_threshold: float = 0.3
+    delta_t: int = 3
+    inertia: float = 0.2
+    """OCM weight (``vdc_weight``); 0 disables observation-centric momentum."""
+    use_byte: bool = False
+    oru: bool = True
+    """Observation-centric re-update when a coasting track is re-observed."""
+    ocr: bool = True
+    """Observation-centric recovery (second IoU round on last observations)."""
+    asso: Literal["iou", "hmiou"] = "iou"
+    w_assoc_emb: float = 0.75
+    alpha_fixed_emb: float = 0.95
+    adaptive_weighting: bool = True
+    aw_param: float = 0.5
+    tcm_first_weight: float = 1.0
+    tcm_byte_weight: float = 1.0
+
+
+@dataclass(frozen=True)
+class CMCSection:
+    method: Literal["none", "file", "auto"] = "none"
+    """Camera-motion compensation: ``file`` = vendored pre-computed affines (error if missing),
+    ``auto`` = use them when they exist for the sequence/split, else off."""
+
+
+@dataclass(frozen=True)
 class OutputConfig:
     min_box_area: float = 100.0
     max_aspect_ratio: float = 1.6
     """Drop reported boxes with w / h above this (ByteTrack's MOT 'vertical' filter); 0 = off."""
+    report_tentative: bool = False
+    """Also report tentative (unconfirmed) tracks updated this frame. BoT-SORT does this
+    (``output_stracks = [t for t in self.tracked_stracks]``, the is_activated filter is commented
+    out); ByteTrack does not."""
 
 
 @dataclass(frozen=True)
@@ -98,6 +146,8 @@ class TrackerConfig:
     delayed: DelayedAssignmentConfig = field(default_factory=DelayedAssignmentConfig)
     kalman: KalmanConfig = field(default_factory=KalmanConfig)
     output: OutputConfig = field(default_factory=OutputConfig)
+    ocsort: OCSortSection = field(default_factory=OCSortSection)
+    cmc: CMCSection = field(default_factory=CMCSection)
 
 
 T = TypeVar("T")

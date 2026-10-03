@@ -1,0 +1,69 @@
+zed-ps2-tracker
+Copyright (c) 2026 Panshul Arora
+
+The project's own licence has not been chosen yet (Apache-2.0 has been proposed), so there is
+no top-level LICENSE file at the moment. Until there is one, no licence is granted for the
+project's own code. This NOTICE lists the third-party work the repository contains or is
+derived from, and the terms that apply to it.
+
+-------------------------------------------------------------------------------------------
+Ported tracker code (re-implemented in tracker/, following the reference implementations
+closely; each ported file names its source file and commit in its header)
+-------------------------------------------------------------------------------------------
+
+ByteTrack (https://github.com/ifzhang/ByteTrack, commit d1bf019)
+    MIT License. Copyright (c) 2021 Yifu Zhang
+    Used for: tracker/bytetrack.py (two-stage BYTE association, lifecycle, output filter).
+
+OC-SORT (https://github.com/noahcao/OC_SORT, commit 8462e7e)
+    MIT License. Copyright (c) 2021 Yifu Zhang
+    (OC-SORT's LICENSE file carries this copyright line, inherited from ByteTrack.)
+    Used for: tracker/baselines/sort_kf.py, tracker/baselines/ocsort.py (OCM, ORU, OCR).
+
+BoT-SORT (https://github.com/NirAharon/BoT-SORT, commit 2519854)
+    MIT License. Copyright (c) 2022 Nir Aharon
+    Used for: tracker/kalman.py (xywh Kalman filter noise model), tracker/cost.py (IoU/ReID
+    fusion), tracker/cmc.py and tracker/baselines/botsort.py (camera-motion compensation).
+    Not used: BoT-SORT's yolov7/ directory (GPL-3.0), which is not part of this repository.
+
+Deep OC-SORT (https://github.com/GerardMaggiolino/Deep-OC-SORT, commit 6bb51d0)
+    MIT License. Copyright (c) 2023 Gerard Maggiolino
+    Used for: tracker/baselines/ocsort.py (dynamic appearance, adaptive weighting, CMC on the
+    SORT state).
+
+Hybrid-SORT (https://github.com/ymzis69/HybridSORT, commit 396f8d3)
+    MIT License. Copyright (c) 2021 Yifu Zhang
+    (Hybrid-SORT's LICENSE file carries this copyright line, inherited from ByteTrack.)
+    Used for: tracker/baselines/hybrid_sort.py (TCM, ROCM, HMIoU).
+
+-------------------------------------------------------------------------------------------
+Vendored third-party files (copied unmodified)
+-------------------------------------------------------------------------------------------
+
+TrackEval (https://github.com/JonathonLuiten/TrackEval, commit 12c8791), third_party/trackeval/
+    MIT License. Copyright (c) 2020 Jonathon Luiten
+    See third_party/trackeval/LICENSE and third_party/trackeval/README.md.
+
+Pre-computed camera-motion affines, third_party/cmc_files/
+    From BoT-SORT (MIT, Copyright (c) 2022 Nir Aharon) and
+    Deep OC-SORT (MIT, Copyright (c) 2023 Gerard Maggiolino).
+    See third_party/cmc_files/README.md and the LICENSE.* files next to them.
+
+The full MIT licence text for each project is in its LICENSE file (copied verbatim under
+third_party/ for vendored code). MIT requires that the copyright notice and permission notice
+be kept in all copies or substantial portions of the software. This NOTICE and those files do
+that.
+
+-------------------------------------------------------------------------------------------
+Datasets and model weights: NON-COMMERCIAL RESEARCH USE ONLY
+-------------------------------------------------------------------------------------------
+
+The repository does not contain datasets or detector/re-ID weights. The ones the scripts
+download or expect (MOT17, MOT20, DanceTrack, CrowdHuman, MSMT17, and the YOLOX / ByteTrack / OSNet
+checkpoints trained on them) come with their own terms. Most of them allow non-commercial
+research use only. Anything produced with them, including detection caches, tracker outputs,
+metrics and demo media, falls under the same restrictions.
+Before any commercial use, see docs/licenses.md for the per-asset terms and the obligations
+that follow from them.
+
+The project does not include, and must not import, AGPL-3.0 code (e.g. Ultralytics, BoxMOT).

@@ -28,7 +28,7 @@ dev = [
 
 [tool.setuptools]
 # `trackeval` is the official TrackEval code, vendored under third_party/ (MIT, see third_party/trackeval/LICENSE).
-packages = ["tracker", "eval", "models"]
+packages = ["tracker", "tracker.baselines", "eval", "models"]
 
 [tool.setuptools.package-data]
 tracker = ["py.typed"]

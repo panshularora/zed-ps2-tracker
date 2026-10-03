@@ -73,6 +73,8 @@ class Track:
     appearance: AppearanceMemory | None = None
     visibility: float = 1.0
     history: list[TrackState] = field(default_factory=list)
+    removal_flagged: bool = False
+    """Only with ``lifecycle.removal_lag``: upstream already put this id in ``removed_stracks``."""
 
     # ------------------------------------------------------------------ geometry
     @property

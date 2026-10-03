@@ -1,0 +1,5 @@
+# BoT-SORT with re-ID fusion (needs a Stage A cache with embeddings; OSNet, not FastReID SBS-S50).
+inherit: botsort.yaml
+name: botsort
+appearance:
+  enabled: true

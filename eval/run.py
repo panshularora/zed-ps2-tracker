@@ -71,13 +71,15 @@ def run(
     names = prepare_gt(root, dataset, split, gt_dir)
     trk_dir = out / "trackers" / name
     (trk_dir / "data").mkdir(parents=True, exist_ok=True)
-    lat_all, per_seq, saw = [], {}, []
+    lat_all: list[Any] = []
+    per_seq: dict[str, dict[str, Any]] = {}
+    saw: list[bool] = []
     for seq_dir in find_sequences(root, dataset):
         cache = crop_cache(load_inputs(seq_dir, dataset, dets), split)
         saw.append(bool(cache.meta.detector_saw_eval_half))
         res = run_sequence(cache, cfg)
         write_mot_results(trk_dir / "data" / f"{seq_dir.name}.txt", res.results)
-        per_seq[seq_dir.name] = summarise_latency(res.latency_ms)
+        per_seq[seq_dir.name] = {**summarise_latency(res.latency_ms), "tracker_info": res.info}
         per_seq[seq_dir.name]["dets_per_frame"] = (
             float(np.mean(res.n_dets)) if res.n_dets.size else 0.0
         )

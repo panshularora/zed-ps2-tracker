@@ -14,6 +14,9 @@ Per frame (Zhang et al., 2021, Alg. 1, with BoT-SORT's ``xywh`` Kalman filter):
 8. Lost tracks older than the buffer are removed; near-duplicate confirmed/lost pairs are pruned.
 9. Report confirmed tracks updated this frame.
 
+With ``cmc`` set, every predicted track is warped by the frame's camera-motion affine (BoT-SORT).
+``name: botsort`` is this class with BoT-SORT's settings (``configs/baselines/botsort.yaml``).
+
 Known, intentional differences from the reference implementation (documented in
 ``docs/decisions.md``): ``xywh`` instead of ``xyah`` Kalman state, every track (including
 tentative ones) is Kalman-predicted each frame, and IDs are per-tracker-instance counters.
@@ -25,6 +28,7 @@ import numpy as np
 import numpy.typing as npt
 
 from tracker.assignment import Assigner, HungarianAssigner, Matching
+from tracker.cmc import CMC, NoCMC
 from tracker.config import TrackerConfig
 from tracker.cost import cosine_cost, fuse_iou_appearance, fuse_score, iou_cost
 from tracker.gallery import EmaAppearance
@@ -32,6 +36,24 @@ from tracker.kalman import KalmanFilterXYWH
 from tracker.lifecycle import LifecycleConfig, Track, TrackState
 from tracker.types import Detections, FloatArray, FrameResult, TrackOutput, tlwh_to_xywh
 from tracker.visibility import VisibilityEstimator, build_visibility
+
+
+def apply_gmc(
+    means: FloatArray, covs: FloatArray, warp: FloatArray
+) -> tuple[FloatArray, FloatArray]:
+    """BoT-SORT ``STrack.multi_gmc`` on ``(N, 8)`` xywh means and ``(N, 8, 8)`` covariances.
+
+    ``R8 = kron(I4, A[:, :2])`` rotates/scales every (x, y)-pair of the state, then the
+    translation is added to the position. Ported from BoT-SORT ``tracker/bot_sort.py``
+    (commit 2519854, MIT, Copyright (c) 2022 Nir Aharon).
+    """
+    R = warp[:2, :2]
+    R8 = np.kron(np.eye(4), R)
+    t = warp[:2, 2]
+    means = means @ R8.T
+    means[:, :2] += t
+    covs = R8 @ covs @ R8.T
+    return means, covs
 
 
 class ByteTrackLike:
@@ -44,6 +66,7 @@ class ByteTrackLike:
         *,
         assigner: Assigner | None = None,
         visibility: VisibilityEstimator | None = None,
+        cmc: CMC | None = None,
     ) -> None:
         self.cfg = config or TrackerConfig()
         if self.cfg.delayed.enabled:
@@ -62,6 +85,7 @@ class ByteTrackLike:
         self.visibility: VisibilityEstimator = visibility or build_visibility(
             self.cfg.visibility.estimator
         )
+        self.cmc: CMC = cmc or NoCMC()
         self.tracks: list[Track] = []
         self.frame_id = 0
         self._next_id = 1
@@ -81,7 +105,7 @@ class ByteTrackLike:
     def _cost(
         self, tracks: list[Track], dets: Detections, *, use_score: bool, use_appearance: bool
     ) -> FloatArray:
-        c = iou_cost(self._boxes(tracks), dets.xyxy)
+        c = iou_cost(self._boxes(tracks), dets.xyxy, self.cfg.association.iou_plus_one)
         iou_only = c
         if use_score and self.cfg.association.fuse_score:
             c = fuse_score(c, dets.scores)
@@ -140,7 +164,14 @@ class ByteTrackLike:
             for i, t in enumerate(live):
                 if t.state is not TrackState.CONFIRMED and t.state is not TrackState.TENTATIVE:
                     means[i, 6:8] = 0.0
-            means, covs = self.kf.multi_predict(means, covs)
+            pred = np.array([cfg.lifecycle.predict_tentative or t.state is not TrackState.TENTATIVE
+                             for t in live])  # fmt: skip
+            if pred.any():
+                pm, pc = self.kf.multi_predict(means[pred], covs[pred])
+                means[pred], covs[pred] = pm, pc
+            warp = self.cmc.affine(self.frame_id)
+            if warp is not None:
+                means, covs = apply_gmc(means, covs, warp)
             for i, t in enumerate(live):
                 t.mean, t.covariance = means[i], covs[i]
 
@@ -189,6 +220,13 @@ class ByteTrackLike:
 
         # 8. expiry + duplicate pruning
         for t in self.tracks:
+            if self.cfg.lifecycle.removal_lag and t.state is TrackState.LOST:
+                if t.removal_flagged:
+                    t.remove()  # upstream: its id is in removed_stracks -> dropped from lost
+                    continue
+                if self.frame_id - t.last_frame > self.lifecycle.max_time_lost:
+                    t.removal_flagged = True  # marked removed, but still in lost_stracks once more
+                    continue
             t.expire_if_stale(self.frame_id, self.lifecycle)
         self._remove_duplicates()
         self.tracks = [t for t in self.tracks if t.state is not TrackState.REMOVED]
@@ -216,24 +254,37 @@ class ByteTrackLike:
         self.tracks.append(t)
 
     def _remove_duplicates(self) -> None:
-        conf = [t for t in self.tracks if t.state is TrackState.CONFIRMED]
+        """ByteTrack/BoT-SORT ``remove_duplicate_stracks(tracked, lost)``.
+
+        ``tracked`` includes tentative tracks (they live in ``tracked_stracks`` upstream). For each
+        pair closer than ``duplicate_iou_dist`` the one with the shorter *tracked* history
+        (``last_frame − start_frame``, upstream's ``frame_id − start_frame``) is dropped; pairs are
+        judged independently and the drops applied together, as upstream.
+        """
+        conf = [t for t in self.tracks if t.state in (TrackState.CONFIRMED, TrackState.TENTATIVE)]
         lost = [t for t in self.tracks if t.state is TrackState.LOST]
         if not conf or not lost:
             return
-        d = iou_cost(self._boxes(conf), self._boxes(lost))
+        d = iou_cost(self._boxes(conf), self._boxes(lost), self.cfg.association.iou_plus_one)
+        drop: list[Track] = []
         for a, b in zip(*np.nonzero(d < self.cfg.association.duplicate_iou_dist), strict=True):
             ta, tb = conf[int(a)], lost[int(b)]
-            if ta.state is TrackState.REMOVED or tb.state is TrackState.REMOVED:
-                continue
-            age_a = self.frame_id - ta.start_frame
-            age_b = self.frame_id - tb.start_frame
-            (tb if age_a > age_b else ta).remove()
+            age_a = ta.last_frame - ta.start_frame
+            age_b = tb.last_frame - tb.start_frame
+            drop.append(tb if age_a > age_b else ta)
+        for t in drop:
+            if t.state is not TrackState.REMOVED:
+                t.remove()
 
     def _report(self) -> tuple[TrackOutput, ...]:
         out: list[TrackOutput] = []
         oc = self.cfg.output
         for t in self.tracks:
-            if t.state is not TrackState.CONFIRMED or t.last_frame != self.frame_id:
+            if t.last_frame != self.frame_id:
+                continue
+            if t.state is not TrackState.CONFIRMED and not (
+                oc.report_tentative and t.state is TrackState.TENTATIVE
+            ):
                 continue
             x, y, w, h = (float(v) for v in t.tlwh)
             if w * h <= oc.min_box_area:

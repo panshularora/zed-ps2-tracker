@@ -1,0 +1,42 @@
+{
+ "impl": "ocsort",
+ "sequences": {
+  "MOT17-02-FRCNN": {
+   "frames": 299,
+   "mismatched_frames": 0,
+   "first_mismatch": null
+  },
+  "MOT17-04-FRCNN": {
+   "frames": 524,
+   "mismatched_frames": 0,
+   "first_mismatch": null
+  },
+  "MOT17-05-FRCNN": {
+   "frames": 418,
+   "mismatched_frames": 0,
+   "first_mismatch": null
+  },
+  "MOT17-09-FRCNN": {
+   "frames": 262,
+   "mismatched_frames": 0,
+   "first_mismatch": null
+  },
+  "MOT17-10-FRCNN": {
+   "frames": 326,
+   "mismatched_frames": 0,
+   "first_mismatch": null
+  },
+  "MOT17-11-FRCNN": {
+   "frames": 449,
+   "mismatched_frames": 0,
+   "first_mismatch": null
+  },
+  "MOT17-13-FRCNN": {
+   "frames": 374,
+   "mismatched_frames": 0,
+   "first_mismatch": null
+  }
+ },
+ "frames": 2652,
+ "mismatched_frames": 0
+}

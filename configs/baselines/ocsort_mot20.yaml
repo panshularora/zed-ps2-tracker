@@ -1,0 +1,4 @@
+# OC-SORT MOT20: docs/GET_STARTED.md runs with --track_thresh 0.4.
+inherit: ocsort.yaml
+detection:
+  high_thresh: 0.4

@@ -1,0 +1,26 @@
+# OC-SORT (Cao et al., CVPR 2023): SORT Kalman + OCM (direction consistency), ORU (re-update
+# along a virtual trajectory after a gap) and OCR (second round on last observations).
+# Source: noahcao/OC_SORT @ 8462e7e. MIT, Copyright (c) 2021 Yifu Zhang.
+# Values: trackers/ocsort_tracker/ocsort.py `OCSort.__init__` defaults, utils/args.py
+# (make_parser) defaults, and yolox/evaluators/mot_evaluator.py (evaluate_ocsort, output filter).
+# The evaluator's per-sequence track_thresh overrides (ori_thresh) are NOT applied.
+name: ocsort
+detection:
+  high_thresh: 0.6        # utils/args.py --track_thresh 0.6 (OCSort det_thresh; dets with score > it)
+  low_thresh: 0.1         # ocsort.py: inds_low = scores > 0.1 (BYTE round only; use_byte off)
+lifecycle:
+  min_hits: 3             # OCSort(min_hits=3)
+  track_buffer: 30        # OCSort(max_age=30): removed when time_since_update > max_age
+ocsort:
+  iou_threshold: 0.3      # --iou_thresh 0.3
+  delta_t: 3              # --deltat 3
+  inertia: 0.2            # --inertia 0.2 (vdc_weight)
+  use_byte: false         # --use_byte off by default
+  oru: true               # KalmanFilterNew freeze/unfreeze (always on upstream)
+  ocr: true               # OCSort.update "Second round of association by OCR" (always on upstream)
+  asso: iou               # --asso iou
+cmc:
+  method: none            # OC-SORT has no camera-motion compensation
+output:
+  min_box_area: 100       # utils/args.py --min-box-area 100; mot_evaluator: area > min_box_area
+  max_aspect_ratio: 1.6   # mot_evaluator.py: vertical = w/h > 1.6

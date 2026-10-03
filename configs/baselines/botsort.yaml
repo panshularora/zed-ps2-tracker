@@ -1,0 +1,35 @@
+# BoT-SORT (Aharon et al., 2022), tracker part only: ByteTrack association + xywh Kalman +
+# camera-motion compensation (+ IoU/re-ID fusion when a cache has embeddings).
+# Source: NirAharon/BoT-SORT @ 2519854, tools/track.py (argparse defaults) and
+# tracker/bot_sort.py (BoTSORT.update). MIT, Copyright (c) 2022 Nir Aharon.
+# Detector is NOT included (BoT-SORT's yolov7/ is GPL; we replay cached boxes).
+inherit: bytetrack.yaml
+name: botsort
+detection:
+  high_thresh: 0.6        # tools/track.py --track_high_thresh 0.6
+  low_thresh: 0.1         # --track_low_thresh 0.1
+  new_track_thresh: 0.7   # --new_track_thresh 0.7
+association:
+  match_thresh: 0.8       # --match_thresh 0.8 (BoTSORT.update: linear_assignment(dists, thresh=match_thresh))
+  second_match_thresh: 0.5       # bot_sort.py: linear_assignment(dists, thresh=0.5)
+  unconfirmed_match_thresh: 0.7  # bot_sort.py: linear_assignment(dists, thresh=0.7)
+  fuse_score: true        # bot_sort.py: `if not self.args.mot20: ious_dists = fuse_score(...)`
+  duplicate_iou_dist: 0.15       # bot_sort.py remove_duplicate_stracks: pdist < 0.15
+  iou_plus_one: true      # matching.ious -> cython_bbox.bbox_overlaps (w = x2 - x1 + 1)
+lifecycle:
+  min_hits: 2             # STrack.activate: is_activated only on frame 1, else 2nd hit
+  track_buffer: 30        # --track_buffer 30; tools/track.py sets args.fps = 30 -> buffer 30
+  scale_buffer_by_fps: false
+  removal_lag: true        # BoTSORT.update "Merge": sub_stracks(lost, self.removed_stracks) runs before removed_stracks.extend(...)
+  predict_tentative: false  # BoTSORT.update: STrack.multi_predict(strack_pool) only (tracked + lost)
+appearance:
+  enabled: false          # --with-reid off by default; turn on for a Stage A cache (botsort_reid.yaml)
+  alpha: 0.9              # STrack.update_features: smooth_feat = alpha*smooth + (1-alpha)*feat, alpha=0.9
+  proximity_thresh: 0.5   # --proximity_thresh 0.5
+  appearance_thresh: 0.25 # --appearance_thresh 0.25 (emb_dists = cos/2; > thresh -> 1)
+cmc:
+  method: auto            # --cmc-method file (GMC_files); 'auto' = use the vendored file when it exists
+output:
+  min_box_area: 100       # upstream --min_box_area 10; the same filter (ByteTrack's 100) is used for every method (brief §6.7)
+  max_aspect_ratio: 1.6   # --aspect_ratio_thresh 1.6
+  report_tentative: true  # bot_sort.py: output_stracks = [track for track in self.tracked_stracks] (is_activated filter commented out)
