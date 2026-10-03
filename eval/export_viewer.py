@@ -141,7 +141,8 @@ def export(seq: str, trackers: dict[str, str], out: Path, gates_file: Path | Non
         write_gt_split(seq_dir, Path(tmp), split)
         gt = gt_pedestrians(np.loadtxt(Path(tmp) / seq / "gt" / "gt.txt", delimiter=",",
                                        ndmin=2), dataset)  # fmt: skip
-    gate, params = None, {}
+    gate: Any = None
+    params: dict[str, Any] = {}
     if gates_file is not None:
         gates, params = load_gates(gates_file)
         gate = gates[seq][0] if seq in gates else None
