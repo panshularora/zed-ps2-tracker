@@ -22,8 +22,11 @@ To commit frame ``f``:
    over frames ``f … f+K`` and over the cluster's tracks, of each track's association cost that
    frame, or ``miss_penalty`` when it is unmatched or gone. An alternative replaces the immediate
    choice only if its score is lower by more than ``min_gain``. Clusters are decided one at a
-   time, with the other clusters left to the solver. Options: ``confirmed_only`` keeps lost
-   tracks out of clusters; ``same_tracks`` only considers re-assignments (e.g. identity swaps).
+   time, with the other clusters left to the solver. ``score_scope = all`` sums over every
+   track of the first association instead of the cluster's tracks only, so a hypothesis that
+   steals a detection from a track outside the cluster pays for it. ``birth_penalty`` adds a
+   cost per frame for every track born during the look-ahead (a fragment). ``confirmed_only``
+   keeps lost tracks out of clusters; ``same_tracks`` only considers re-assignments (swaps).
 5. Commit frame ``f`` with the chosen hypotheses forced and emit its output.
 
 ``K = 0`` (or no ambiguity) reproduces the immediate tracker exactly. The algorithmic delay is
@@ -192,6 +195,8 @@ class DelayedTracker:
         min_gain: float = 0.0,
         confirmed_only: bool = False,
         same_tracks: bool = False,
+        score_scope: str = "cluster",
+        birth_penalty: float = 0.0,
     ) -> None:
         if max_delay_frames < 0:
             raise ValueError("max_delay_frames must be >= 0")
@@ -205,6 +210,10 @@ class DelayedTracker:
         self.min_gain = min_gain
         self.confirmed_only = confirmed_only
         self.same_tracks = same_tracks
+        if score_scope not in ("cluster", "all"):
+            raise ValueError(f"unknown score_scope {score_scope!r}")
+        self.score_scope = score_scope
+        self.birth_penalty = birth_penalty
         self.buffer: deque[Detections] = deque()
         self.stats = DelayedStats()
         self._received = 0
@@ -234,15 +243,22 @@ class DelayedTracker:
     def _score(self, forced: list[tuple[Cluster, Hypothesis]], d0: Detections,
                future: list[Detections], tids: tuple[int, ...]) -> float:  # fmt: skip
         sim = self.state.clone()
+        id0 = sim._next_id
         sim.stage1_hook = force_hook(forced)
         sim.update(d0)
         sim.stage1_hook = None
-        total = sum(sim.match_costs.get(t, self.miss_penalty) for t in tids)
+        total = self._frame_cost(sim, tids, id0)
         for d in future:
             sim.update(d)
-            total += sum(sim.match_costs.get(t, self.miss_penalty) for t in tids)
+            total += self._frame_cost(sim, tids, id0)
         self.stats.rollouts += 1
         return total
+
+    def _frame_cost(self, sim: ByteTrackLike, tids: tuple[int, ...], id0: int) -> float:
+        c = sum(sim.match_costs.get(t, self.miss_penalty) for t in tids)
+        if self.birth_penalty:
+            c += self.birth_penalty * sum(t.track_id >= id0 for t in sim.tracks)
+        return c
 
     def _commit(self) -> FrameResult:
         d0 = self.buffer.popleft()
@@ -273,7 +289,8 @@ class DelayedTracker:
             if len(hyps) == 1:
                 chosen.append((cl, hyps[0]))
                 continue
-            scores = [self._score([(cl, h)], d0, future, cl.track_ids) for h in hyps]
+            tids = cl.track_ids if self.score_scope == "cluster" else rec.track_ids
+            scores = [self._score([(cl, h)], d0, future, tids) for h in hyps]
             best = int(np.argmin(scores))  # first minimum: the immediate choice wins ties
             if scores[0] - scores[best] <= self.min_gain:
                 best = 0

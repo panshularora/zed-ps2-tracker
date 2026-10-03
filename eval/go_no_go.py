@@ -150,8 +150,10 @@ def analyse(c: Condition, out: Path) -> list[dict[str, Any]]:
 
 
 def markdown(rows: list[dict[str, Any]]) -> str:
-    head = ("| Condition | K (frames / ms) | HOTA | IDF1 | IDSW (TrackEval) | IDSW in K=0 windows | "
-            "IDSW in own windows | flagged frames | changed | p95 / max ms |")  # fmt: skip
+    head = (
+        "| Condition | K (frames / ms) | HOTA | IDF1 | IDSW (TrackEval) | IDSW in K=0 windows "
+        "| IDSW in own windows | flagged frames | changed | p95 / max ms |"
+    )
     lines = [head, "|---" * 10 + "|"]
     for r in rows:
         lines.append(
@@ -163,6 +165,33 @@ def markdown(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def plot(rows: list[dict[str, Any]], path: Path) -> None:
+    """IDSW (TrackEval, all frames) and HOTA against K, one line per condition."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(1, 2, figsize=(10, 4))
+    for cond in dict.fromkeys(r["condition"] for r in rows):
+        rr = [r for r in rows if r["condition"] == cond]
+        ks = [r["K"] for r in rr]
+        base = rr[0]["IDSW_trackeval"] or 1.0
+        ax[0].plot(ks, [r["IDSW_trackeval"] / base for r in rr], marker="o", label=cond)
+        ax[1].plot(ks, [r["HOTA"] - rr[0]["HOTA"] for r in rr], marker="o", label=cond)
+    ax[0].set(xlabel="K (frames of look-ahead)", ylabel="IDSW relative to K=0", xticks=KS)
+    ax[1].set(xlabel="K (frames of look-ahead)", ylabel="HOTA change vs K=0", xticks=KS)
+    for a in ax:
+        a.grid(alpha=0.3)
+        a.axhline(1.0 if a is ax[0] else 0.0, color="k", lw=0.8)
+    ax[0].legend(fontsize=7)
+    fig.suptitle("Delayed decision go/no-go (val_half, IoU/motion only)")
+    fig.tight_layout()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=120)
+    plt.close(fig)
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m eval.go_no_go", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)  # fmt: skip
@@ -172,6 +201,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-mot20", action="store_true")
     p.add_argument("--jobs", type=int, default=6)
     p.add_argument("--json", type=Path, default=None)
+    p.add_argument("--plot", type=Path, default=None)
     a = p.parse_args(argv)
     from eval.corrupt import write_corrupted
 
@@ -188,6 +218,8 @@ def main(argv: list[str] | None = None) -> int:
     if a.json:
         a.json.parent.mkdir(parents=True, exist_ok=True)
         a.json.write_text(json.dumps(rows, indent=1))
+    if a.plot:
+        plot(rows, a.plot)
     return 0
 
 

@@ -129,3 +129,16 @@ def test_runner_wraps_and_rejects_other_trackers() -> None:
     cfg = load_config(overrides=["delayed.enabled=true", "name=ocsort"])
     with pytest.raises(ValueError, match="ByteTrackLike only"):
         build_tracker(cfg, 30.0)
+
+
+def test_scoring_options() -> None:
+    frames = dense_scene()
+    base = ByteTrackLike()
+    ref = [base.update(f) for f in frames]
+    got, d = run_delayed(3, frames, min_gain=1e9, score_scope="all", birth_penalty=1.0)
+    assert d.stats.rollouts > 0
+    assert as_tuples(got) == as_tuples(ref)
+    cfg = load_config(overrides=["delayed.enabled=true"])
+    with pytest.raises(ValueError, match="score_scope"):
+        DelayedTracker(ByteTrackLike(cfg, allow_delayed=True), max_delay_frames=1, margin=0.05,
+                       score_scope="x")  # fmt: skip

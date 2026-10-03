@@ -75,7 +75,8 @@ def corrupt_sequence(gt: np.ndarray, info: object, dataset: str, rng: np.random.
 
 
 def write_corrupted(root: Path, dataset: str, seed: int, out: Path,
-                    c: Corruption = Corruption()) -> list[Path]:  # fmt: skip
+                    c: Corruption | None = None) -> list[Path]:  # fmt: skip
+    c = c or Corruption()
     paths = []
     for i, seq in enumerate(find_sequences(root, dataset)):
         info = read_seqinfo(seq)

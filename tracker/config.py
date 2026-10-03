@@ -119,6 +119,10 @@ class DelayedAssignmentConfig:
     """Only confirmed tracks take part in ambiguity clusters (lost tracks are left alone)."""
     same_tracks: bool = False
     """Only consider re-assignments among the tracks the immediate solver matched (swaps)."""
+    score_scope: Literal["cluster", "all"] = "cluster"
+    """Look-ahead score over the cluster's tracks only, or over all first-association tracks."""
+    birth_penalty: float = 0.0
+    """Look-ahead cost per frame for each track born during the look-ahead."""
 
 
 @dataclass(frozen=True)
