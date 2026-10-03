@@ -301,15 +301,16 @@ class ByteTrackLike:
 
         # 8. expiry + duplicate pruning
         for t in self.tracks:
+            occluded = t.visibility < self.cfg.visibility.occluded_thresh
+            lc_t = self._lc_occluded if occluded else self.lifecycle
             if self.cfg.lifecycle.removal_lag and t.state is TrackState.LOST:
                 if t.removal_flagged:
                     t.remove()  # upstream: its id is in removed_stracks -> dropped from lost
                     continue
-                if self.frame_id - t.last_frame > self.lifecycle.max_time_lost:
+                if self.frame_id - t.last_frame > lc_t.max_time_lost:
                     t.removal_flagged = True  # marked removed, but still in lost_stracks once more
                     continue
-            occluded = t.visibility < self.cfg.visibility.occluded_thresh
-            t.expire_if_stale(self.frame_id, self._lc_occluded if occluded else self.lifecycle)
+            t.expire_if_stale(self.frame_id, lc_t)
         self._remove_duplicates()
         self.tracks = [t for t in self.tracks if t.state is not TrackState.REMOVED]
 

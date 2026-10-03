@@ -1,0 +1,18 @@
+# Ablation manifest for `make ablate` (eval/ablate.py). One row per entry; every entry runs in its
+# own output folder. Public detections, no re-ID (re-ID embeddings need the GPU session).
+dataset: MOT17
+root: data/MOT17
+split: val_half
+dets: public
+entries:
+  - {name: bytetrack, label: ByteTrackLike, group: baseline, config: configs/baselines/bytetrack.yaml}
+  - {name: ocsort, label: OC-SORT, group: baseline, config: configs/baselines/ocsort.yaml}
+  - {name: deep_ocsort, label: "Deep OC-SORT (no emb, CMC)", group: baseline, config: configs/baselines/deep_ocsort.yaml}
+  - {name: hybrid_sort, label: Hybrid-SORT, group: baseline, config: configs/baselines/hybrid_sort.yaml}
+  - {name: botsort, label: "BoT-SORT (CMC)", group: baseline, config: configs/baselines/botsort.yaml}
+  - {name: buffer90, label: "ByteTrackLike, buffer 90 (control)", group: control, config: configs/ablations/bytetrack_buffer90.yaml}
+  - {name: ours_vis, label: "+ visibility", group: ours, config: configs/ours/visibility.yaml}
+  - {name: ours_delayed_k5, label: "+ delayed K=5 (near-online)", group: ours, config: configs/ours/delayed.yaml}
+  - {name: ours_vis_delayed_k5, label: "+ visibility + delayed K=5", group: ours, config: configs/ours/visibility.yaml, overrides: ["delayed.enabled=true", "delayed.max_delay_frames=5", "delayed.confirmed_only=true", "delayed.same_tracks=true", "delayed.score_scope=all", "delayed.birth_penalty=1.0"]}
+  - {name: ours_vis_botsort, label: "BoT-SORT (CMC) + visibility", group: ours, config: configs/baselines/botsort.yaml, overrides: ["visibility.estimator=depth_order", "visibility.score_fusion=product", "visibility.occluder_min_score=0.1", "visibility.occluded_buffer_scale=3.0", "visibility.occluded_thresh=0.7"]}
+  - {name: botsort_buffer90, label: "BoT-SORT (CMC), buffer 90 (control)", group: control, config: configs/baselines/botsort.yaml, overrides: ["lifecycle.track_buffer=90"]}
