@@ -121,8 +121,14 @@ its consequences. New decisions are appended; superseded ones stay, marked as su
 * **Caveat:** the checkpoints are trained on non-commercial data. They are for benchmarks only;
   see [licenses.md](licenses.md).
 
-## ADR-011: No project licence chosen yet
+## ADR-011: Project licence — Apache-2.0 (was: not chosen yet)
 
-* **Status:** open, and Panshul's decision
+* **Status:** decided (Apache-2.0), by Panshul
 * **Context:** the repo is private. The code has no copyleft dependencies (TrackEval is MIT and
   vendored with its licence).
+
+**Update (Oct 2026): decided.** Panshul chose **Apache-2.0**. The top-level `LICENSE` holds the
+standard Apache-2.0 text (Copyright 2026 Panshul Arora), and `pyproject.toml` and
+`viewer/package.json` declare it. `NOTICE` keeps the MIT notices for the ported trackers,
+TrackEval and the CMC files (Apache-2.0 §4(d)). Datasets and weights stay non-commercial
+research-only, and the code licence does not change that.

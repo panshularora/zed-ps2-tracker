@@ -191,7 +191,13 @@ Every benchmark dataset (MOT17, MOT20, DanceTrack videos, SOMPT22) is **non-comm
 so are the public detector/re-ID weights trained on them. This repo is a research benchmark. The
 tracker code depends only on NumPy, SciPy and PyYAML. TrackEval (MIT) is vendored with its
 licence, and AGPL code (boxmot, Ultralytics) is deliberately avoided. Full details are in
-[docs/licenses.md](docs/licenses.md). The project licence has not been chosen yet.
+[docs/licenses.md](docs/licenses.md).
+
+The project's own code is licensed under the **Apache License 2.0**: see [LICENSE](LICENSE),
+Copyright 2026 Panshul Arora. Ported code from ByteTrack, OC-SORT, BoT-SORT, Deep OC-SORT and
+Hybrid-SORT, the vendored TrackEval, and the CMC files are all MIT. Their notices are kept in
+[NOTICE](NOTICE). The Apache-2.0 licence does not cover the datasets or the detector/re-ID
+weights, which remain **non-commercial research use only**.
 
 ## CI
 

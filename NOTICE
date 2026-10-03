@@ -1,10 +1,9 @@
 zed-ps2-tracker
 Copyright (c) 2026 Panshul Arora
 
-The project's own licence has not been chosen yet (Apache-2.0 has been proposed), so there is
-no top-level LICENSE file at the moment. Until there is one, no licence is granted for the
-project's own code. This NOTICE lists the third-party work the repository contains or is
-derived from, and the terms that apply to it.
+The project's own code is licensed under the Apache License, Version 2.0 (see LICENSE).
+That licence covers only the project's own code. This NOTICE lists the third-party work the
+repository contains or is derived from, and the terms that apply to it.
 
 -------------------------------------------------------------------------------------------
 Ported tracker code (re-implemented in tracker/, following the reference implementations
@@ -52,13 +51,15 @@ Pre-computed camera-motion affines, third_party/cmc_files/
 The full MIT licence text for each project is in its LICENSE file (copied verbatim under
 third_party/ for vendored code). MIT requires that the copyright notice and permission notice
 be kept in all copies or substantial portions of the software. This NOTICE and those files do
-that.
+that. The MIT terms still apply to those portions, alongside Apache-2.0 for the rest of the
+project.
 
 -------------------------------------------------------------------------------------------
 Datasets and model weights: NON-COMMERCIAL RESEARCH USE ONLY
 -------------------------------------------------------------------------------------------
 
-The repository does not contain datasets or detector/re-ID weights. The ones the scripts
+The Apache-2.0 licence does NOT extend to datasets or model weights. The repository does not
+contain datasets or detector/re-ID weights. The ones the scripts
 download or expect (MOT17, MOT20, DanceTrack, CrowdHuman, MSMT17, and the YOLOX / ByteTrack / OSNet
 checkpoints trained on them) come with their own terms. Most of them allow non-commercial
 research use only. Anything produced with them, including detection caches, tracker outputs,

@@ -2,8 +2,9 @@
 
 **Bottom line.** Every dataset we evaluate on is **non-commercial**. Everything in this repo is a
 **research benchmark**: nothing trained on, or tuned against, these datasets should ship in a Zed
-product without a separate licensing review. The project itself has no LICENSE file yet; that is
-Panshul's decision.
+product without a separate licensing review. The project's own code is licensed
+under **Apache-2.0** (top-level `LICENSE`), and the ported and vendored MIT code keeps its notices
+(`NOTICE`). That licence does not cover the datasets or weights.
 
 Checked October 2026. "Unverified" means we could not find an authoritative current statement.
 
@@ -64,5 +65,5 @@ benchmarking only.
 The top-level `NOTICE` lists every ported and vendored third-party component (ByteTrack, OC-SORT,
 BoT-SORT, Deep OC-SORT, Hybrid-SORT, TrackEval, the pre-computed CMC affines) with its MIT
 copyright line, and repeats the non-commercial-research restriction on datasets and weights.
-The project's own licence is still to be chosen (Apache-2.0 proposed); until then there is no
-top-level `LICENSE` file.
+The project's own code is Apache-2.0 (top-level `LICENSE`, Copyright 2026 Panshul Arora). See
+ADR-011.
