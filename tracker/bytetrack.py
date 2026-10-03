@@ -52,7 +52,9 @@ class ByteTrackLike:
         self.lifecycle = LifecycleConfig(
             min_hits=lc.min_hits,
             tentative_max_misses=lc.tentative_max_misses,
-            max_time_lost=int(frame_rate / 30.0 * lc.track_buffer),
+            max_time_lost=int(
+                (frame_rate / 30.0 if lc.scale_buffer_by_fps else 1.0) * lc.track_buffer
+            ),
             confirm_on_first_frame=lc.confirm_on_first_frame,
         )
         self.kf = KalmanFilterXYWH(self.cfg.kalman)
@@ -126,7 +128,7 @@ class ByteTrackLike:
         vis_all = self.visibility(dets.xyxy)
         s = dets.scores
         hi_mask = s > cfg.detection.high_thresh
-        lo_mask = (s > cfg.detection.low_thresh) & ~hi_mask
+        lo_mask = (s > cfg.detection.low_thresh) & (s < cfg.detection.high_thresh)
         d_high, v_high = dets.subset(hi_mask), vis_all[hi_mask]
         d_low, v_low = dets.subset(lo_mask), vis_all[lo_mask]
 
