@@ -4,10 +4,12 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "embed": "node scripts/embed.mjs data",
+    "prebuild": "node scripts/embed.mjs data",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
-    "screenshots": "node scripts/screenshots.mjs"
+    "screenshots": "node scripts/screenshots.mjs ../docs/media"
   },
   "dependencies": {
     "react": "18.3.1",

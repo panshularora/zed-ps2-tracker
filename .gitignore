@@ -17,3 +17,4 @@ outputs/
 data
 viewer/node_modules/
 viewer/dist/
+viewer/src/generated/

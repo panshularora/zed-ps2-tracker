@@ -27,8 +27,13 @@ export function App() {
 
   // initial frame from the URL (#f=123) so screenshots and links can deep-link
   useEffect(() => {
-    const m = /f=(\d+)/.exec(window.location.hash);
-    if (m) setFrame(Number(m[1]));
+    const read = () => {
+      const m = /f=(\d+)/.exec(window.location.hash);
+      if (m) setFrame(Number(m[1]));
+    };
+    read();
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
   }, [clips.length]);
 
   useEffect(() => {
