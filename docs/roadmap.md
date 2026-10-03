@@ -4,9 +4,9 @@
 |---|---|---|
 | **1** | scaffold, tracker core, eval stack (TrackEval, stress, latency, oracle), Stage A + DGX runbook, docs | **done** (PRs #1–#5) |
 | **DGX** | Panshul runs `scripts/dgx/` (MOT17, MOT20 × 3 detectors, SOMPT22, DanceTrack, gate clip, Pexels) and brings back caches | waiting on the GPU session |
-| **2a** | ours: depth-order visibility estimate (+ scoring vs gt), visibility-gated appearance, ambiguity-aware delayed assignment (K ∈ {0, 2, 4, 8}); baselines on YOLOX caches (ByteTrack-like, + re-ID, OC-SORT-style); ablations | next |
-| **2b** | `eval/gate_events.py` (below) | next |
-| **3** | demo viewer (`demo/`), integration notes (`docs/integration/`), live `serve/` prototype | later |
+| **2a** | ours: depth-order visibility (+ scoring vs gt), delayed assignment + pre-registered go/no-go, ported baselines with upstream parity, `make ablate` | **done on CPU / public dets** (PRs #6–#10). Visibility = longer buffer; delayed = **no-go**. Real-detection + re-ID re-runs and visibility-gated appearance wait for the GPU session ([next_gpu_session.md](next_gpu_session.md)) |
+| **2b** | `eval/gate_events.py` (below), `make gates` | **done** (PR #11); MOT17 has too few crossings to rank trackers, needs the gate clip |
+| **3** | static viewer (`viewer/`, `make viewer`) | viewer **done** (PR #12, blank canvas, no video frames yet); integration notes and live `serve/` prototype later |
 | **4** | presentation deliverables (below) | later |
 
 ## Phase 2a: the method

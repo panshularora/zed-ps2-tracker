@@ -22,7 +22,8 @@ OC-SORT (https://github.com/noahcao/OC_SORT, commit 8462e7e)
 BoT-SORT (https://github.com/NirAharon/BoT-SORT, commit 2519854)
     MIT License. Copyright (c) 2022 Nir Aharon
     Used for: tracker/kalman.py (xywh Kalman filter noise model), tracker/cost.py (IoU/ReID
-    fusion), tracker/cmc.py and tracker/baselines/botsort.py (camera-motion compensation).
+    fusion), tracker/cmc.py (camera-motion compensation), and the BoT-SORT parity switches in
+    tracker/bytetrack.py (configs/baselines/botsort.yaml).
     Not used: BoT-SORT's yolov7/ directory (GPL-3.0), which is not part of this repository.
 
 Deep OC-SORT (https://github.com/GerardMaggiolino/Deep-OC-SORT, commit 6bb51d0)
