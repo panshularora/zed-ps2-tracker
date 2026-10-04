@@ -1,4 +1,5 @@
 // Clip format (Web Experience Analyst spec): one <clip>.<tracker>.json.gz per clip per tracker.
+import type { MediaSpec } from "./media";
 export type Box = [number, number, number, number, number, number]; // frame, x, y, w, h, conf
 
 export interface Pending {
@@ -24,6 +25,8 @@ export interface Clip {
   tracks: Record<string, Box[]>;
   pending: Pending[];
   events: ClipEvent[];
+  /** optional real frames (MP4 or JPEGs) to draw under the boxes; blank canvas without it */
+  media?: MediaSpec | null;
 }
 
 export interface FrameBox {
@@ -69,7 +72,14 @@ export function parseClip(raw: unknown): IndexedClip {
   for (const e of clip.events) {
     if (!["id_switch", "cross", "tailgate"].includes((e as ClipEvent).type)) fail("unknown event type");
   }
-  return { ...clip, gate: clip.gate ?? null, byFrame };
+  const m = clip.media;
+  if (m != null) {
+    if (typeof m !== "object" || !["video", "frames"].includes(m.type) || typeof m.src !== "string")
+      fail("media must be {type: video|frames, src, frame_offset?}");
+    if (m.frame_offset !== undefined && !Number.isInteger(m.frame_offset))
+      fail("media.frame_offset must be an integer");
+  }
+  return { ...clip, gate: clip.gate ?? null, media: m ?? null, byFrame };
 }
 
 /** gunzip with the browser's DecompressionStream (also in Node >= 18). */
@@ -110,6 +120,11 @@ export function gateCounts(events: ClipEvent[], f: number): { in: number; out: n
     }
   }
   return { in: i, out: o };
+}
+
+/** Pending decisions whose window closed less than `fadeFrames` frames ago (the 150 ms fade). */
+export function closingPending(p: Pending[], f: number, fadeFrames: number): Pending[] {
+  return p.filter((d) => d.f1 < f && f - d.f1 <= fadeFrames);
 }
 
 /** Pending decisions open at frame f (f0 <= f <= f1). */

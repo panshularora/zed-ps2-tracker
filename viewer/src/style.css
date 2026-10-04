@@ -19,3 +19,4 @@ body { margin: 0; background: #0E1013; color: #E6E8EB; font: 14px Inter, system-
 .cursor { position: absolute; top: 0; width: 1px; height: 18px; background: #E6E8EB; }
 .error { color: #E5484D; padding: 20px; }
 .empty { padding: 20px; color: #8A929C; }
+.note { color: #8A929C; font-size: 12px; }

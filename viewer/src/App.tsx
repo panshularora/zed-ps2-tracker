@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { base64ToBytes, clampFrame, loadClipGz, type IndexedClip } from "./data";
 import { Panel } from "./Panel";
 import { Timeline } from "./Timeline";
+import { pickMedia, useMedia, type PickedMedia } from "./useMedia";
 import { EMBEDDED } from "./generated/clips";
 
 export function App() {
@@ -12,6 +14,7 @@ export function App() {
   const [right, setRight] = useState<string>("");
   const [frame, setFrame] = useState(1);
   const [playing, setPlaying] = useState(false);
+  const [picked, setPicked] = useState<PickedMedia>({});
 
   useEffect(() => {
     Promise.all(EMBEDDED.map((c) => loadClipGz(base64ToBytes(c.b64))))
@@ -36,13 +39,34 @@ export function App() {
     return () => window.removeEventListener("hashchange", read);
   }, [clips.length]);
 
+  const lastClock = useRef<number | null>(null); // last frame reported by the video itself
+  const media = useMedia(L, clampFrame(frame, L?.frames ?? 1), picked, (f) => {
+    lastClock.current = f;
+    // commit synchronously so the panels draw inside the rVFC callback, i.e. with the frame
+    // that was just presented (a deferred render could draw the video one frame early or late)
+    flushSync(() => setFrame(f));
+  });
+  const videoDriven = playing && media.clock !== null && media.clock.hasRvfc;
+
+  // play / pause: the video drives frames through rVFC when it can; otherwise we step frames
   useEffect(() => {
-    if (!playing || !L) return;
+    const c = media.clock;
+    if (!c) return;
+    if (playing && c.play()) return () => c.pause();
+    c.pause();
+  }, [playing, media.clock]);
+  useEffect(() => {
+    if (!playing || !L || videoDriven) return;
     const id = window.setInterval(() => {
       setFrame((f) => (f >= L.frames ? (setPlaying(false), f) : f + 1));
     }, 1000 / L.fps);
     return () => window.clearInterval(id);
-  }, [playing, L]);
+  }, [playing, L, videoDriven]);
+  // user seeks (timeline, #f=, stepping without rVFC) move the video to the frame centre
+  useEffect(() => {
+    if (frame === lastClock.current) return; // the video is already showing it
+    if (media.clock && !videoDriven) media.clock.seek(frame);
+  }, [frame, media.clock, videoDriven]);
 
   async function onFiles(files: FileList | null) {
     if (!files) return;
@@ -93,13 +117,36 @@ export function App() {
           frame <b>{f}</b> / {L.frames} · {(f / L.fps).toFixed(1)} s
         </span>
         <label className="open">
+          open video / frames
+          <input
+            type="file"
+            multiple
+            accept="video/*,image/jpeg,image/png"
+            onChange={(e) => setPicked(pickMedia([...(e.target.files ?? [])]))}
+          />
+        </label>
+        <span className="frame">{media.kind === "blank" ? "blank canvas" : media.kind}</span>
+        <label className="open">
           open clips
           <input type="file" multiple accept=".gz" onChange={(e) => onFiles(e.target.files)} />
         </label>
       </div>
+      {media.error && <div className="note">{media.error}</div>}
+      {media.videoSrc && (
+        <video
+          ref={media.videoRef}
+          src={media.videoSrc}
+          muted
+          playsInline
+          preload="auto"
+          style={{ display: "none" }}
+          onError={media.onVideoError}
+          onLoadedData={() => media.clock?.seek(f)}
+        />
+      )}
       <div className="panels">
-        <Panel clip={L} frame={f} />
-        <Panel clip={R} frame={f} />
+        <Panel clip={L} frame={f} image={media.image} imageTick={media.tick} />
+        <Panel clip={R} frame={f} image={media.image} imageTick={media.tick} />
       </div>
       <Timeline frames={L.frames} fps={L.fps} frame={f} events={events} onSeek={setFrame} />
     </div>
