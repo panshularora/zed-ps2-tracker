@@ -28,7 +28,7 @@ NAME    ?= bytetrack_public
 OUT     ?= outputs/$(DATASET)_$(SPLIT)
 BENCH    = $(if $(filter MOT20,$(DATASET)),MOT20,MOT17)
 
-.PHONY: setup check lint format typecheck test data eval stress latency oracle smoke ablate gates viewer ingest phase3 phase3-selftest clean
+.PHONY: setup check lint format typecheck test data eval stress latency oracle smoke ablate gates viewer ingest phase3 phase3-selftest serve docker-build clean
 
 setup:
 	uv venv -p 3.11 .venv
@@ -44,7 +44,7 @@ format:
 
 typecheck:
 	$(PY) -m mypy --strict tracker
-	$(PY) -m mypy eval models
+	$(PY) -m mypy eval models serve
 
 test:
 	$(PY) -m pytest -q
@@ -102,6 +102,14 @@ gates:
 		--gt-dir outputs/ablate/bytetrack/gt --include-gt \
 		--runs $(foreach n,bytetrack ocsort deep_ocsort hybrid_sort botsort buffer90 ours_vis ours_delayed_k5 ours_vis_botsort botsort_buffer90,outputs/ablate/$(n)/trackers/$(n)) \
 		--out docs/results/gate_events
+
+# `make serve`: CPU demo API + viewer on http://127.0.0.1:8000 (needs `pip install -e .[serve]`
+# and `make viewer` for the UI). `make docker-build`: the same as an image (docker CLI).
+serve:
+	$(PY) -m uvicorn serve.app:app --host 127.0.0.1 --port 8000
+
+docker-build:
+	docker build -t zed-ps2-demo .
 
 # `make viewer`: export demo clips and build the static viewer (viewer/dist/index.html)
 viewer:

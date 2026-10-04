@@ -1,0 +1,14 @@
+# keep the build context small: code, configs and the viewer sources only
+**
+!Dockerfile
+!tracker/
+!eval/
+!models/
+!serve/
+!configs/
+!viewer/
+viewer/node_modules/
+viewer/dist/
+**/__pycache__/
+**/*.pyc
+models/exps/

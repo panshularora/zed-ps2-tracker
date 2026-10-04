@@ -21,8 +21,14 @@ dependencies = [
 lap = ["lap>=0.5.12"]
 # figures (go/no-go curve, stress plots of `make ablate`)
 plots = ["matplotlib>=3.8"]
+# CPU demo service (serve/; the Docker image pins these in serve/requirements.txt)
+serve = ["fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9"]
 dev = [
     "matplotlib>=3.8",
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "python-multipart>=0.0.9",
+    "httpx>=0.27",
     "pytest>=8.0",
     "ruff>=0.6",
     "mypy>=1.10",
@@ -32,7 +38,7 @@ dev = [
 
 [tool.setuptools]
 # `trackeval` is the official TrackEval code, vendored under third_party/ (MIT, see third_party/trackeval/LICENSE).
-packages = ["tracker", "tracker.baselines", "eval", "models"]
+packages = ["tracker", "tracker.baselines", "eval", "models", "serve"]
 
 [tool.setuptools.package-data]
 tracker = ["py.typed"]
@@ -50,7 +56,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["tracker", "eval", "models"]
+known-first-party = ["tracker", "eval", "models", "serve"]
 known-third-party = ["trackeval"]
 
 # ---------------------------------------------------------------- mypy

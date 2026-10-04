@@ -1,0 +1,9 @@
+# Pinned runtime deps for the Docker image (CPU only; same versions as the tested .venv).
+numpy==2.4.6
+scipy==1.17.1
+PyYAML==6.0.3
+fastapi==0.142.2
+starlette==1.7.0
+pydantic==2.13.5
+uvicorn==0.54.0
+python-multipart==0.0.32
