@@ -4,6 +4,8 @@ This is the copy-paste runbook for the one GPU session. Stage A runs the detecto
 model **once** over every sequence and writes a compact cache. Everything else (tracking,
 TrackEval, stress bins, ablations) runs later on CPU from that cache.
 
+> **Day-of runbook (Windows laptop, step by step): [dgx_runbook.md](dgx_runbook.md).**
+>
 > **Status.** The scripts were exercised end to end on the CPU box with `DEVICE=cpu
 > VARIANT=yolox_s` and ByteTrack's real `bytetrack_s_mot17` + OSNet-AIN MSMT17 weights: the
 > SOMPT22 path (with a synthetic archive), the custom-video path, resumability, the
@@ -126,8 +128,10 @@ verified`**, or a list of what is wrong.
 ## 4. What to bring back
 
 ```bash
-rsync -avhP --partial dgx:$ZED_ROOT/bring_back/ ./zed-stagea-bring-back/   # resumable
-cd zed-stagea-bring-back && sha256sum -c SHA256SUMS
+# from a Windows laptop: scp only (no rsync); see docs/dgx_runbook.md step 8
+scp -r USER@DGX:zed-panshul/bring_back .\zed-bring-back
+# then on the CPU box (verifies SHA256SUMS and places the caches):
+make ingest BRING_BACK=/workspace/uploads/zed-bring-back
 ```
 
 Checklist (sizes are **estimates**: about 770 bytes per detection, measured on the CPU smoke run,
@@ -176,6 +180,6 @@ reporting on the val half. To load one: `tracker.io.load_cache(path)`; `cache.fr
 | download stops | re-run the same command (`wget -c` resumes) |
 | `CUDA out of memory` | `BATCH=2 bash scripts/dgx/run.sh <target>` |
 | `selftest` fails on `sparsetrack_mot20_ablation` | that checkpoint is unverified; carry on with the other two MOT20 variants and note it |
-| `torch cannot see a GPU` | wrong CUDA wheel: `rm -rf $ZED_ROOT/env && TORCH_CUDA=cu121 bash scripts/dgx/setup.sh` |
+| `torch cannot see a GPU` | wrong CUDA wheel: `rm -rf $ZED_ROOT/env && TORCH_CUDA=cu118 bash scripts/dgx/setup.sh` |
 | gdown refuses SOMPT22 | manual download (section 2), then re-run |
 | `INTEGRITY ERRORS` | the message names the file; delete it and re-run its `run.sh` target |

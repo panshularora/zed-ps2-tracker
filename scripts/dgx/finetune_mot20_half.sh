@@ -17,7 +17,8 @@ if [[ ! -f "$SRC/ByteTrack/.built" ]]; then
 fi
 python -m models.mot_to_coco --root "$MOT20_ROOT" --split train_half
 python -m models.mot_to_coco --root "$MOT20_ROOT" --split val_half
-export CUDA_VISIBLE_DEVICES="$(seq -s, 0 $((NGPU - 1)))"
+# one GPU: the one you picked (GPU=<n>); several: set GPUS=2,3 explicitly (shared machine)
+if [[ "$NGPU" == 1 ]]; then export CUDA_VISIBLE_DEVICES="$GPU"; else export CUDA_VISIBLE_DEVICES="${GPUS:?set GPUS=a,b to the free GPU indices}"; fi
 ( cd "$SRC/ByteTrack" && python tools/train.py -f "$REPO/models/exps/yolox_x_mot20_half.py" \
     -d "$NGPU" -b "$TBATCH" --fp16 -o -c "$WEIGHTS/bytetrack_ablation.pth.tar" )
 ckpt="$SRC/ByteTrack/YOLOX_outputs/yolox_x_mot20_half/best_ckpt.pth.tar"

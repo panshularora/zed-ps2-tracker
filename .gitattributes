@@ -1,0 +1,6 @@
+# Shell scripts must keep LF endings even when cloned on Windows (Git's default autocrlf would
+# turn them into CRLF and bash on the DGX fails with "$'\r': command not found").
+*.sh text eol=lf
+*.env text eol=lf
+*.py text eol=lf
+Makefile text eol=lf
