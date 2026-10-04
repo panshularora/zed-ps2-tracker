@@ -47,7 +47,8 @@ def load_manifest(path: Path) -> dict[str, Any]:
     return m
 
 
-def run_entry(m: dict[str, Any], e: dict[str, Any], out: Path, force: bool) -> Path:
+def run_entry(m: dict[str, Any], e: dict[str, Any], out: Path, force: bool,
+              timeout_s: float | None = None) -> Path:  # fmt: skip
     name = str(e["name"])
     od = out / name
     if not force and (od / "stress" / name / "stress.json").exists():
@@ -57,7 +58,7 @@ def run_entry(m: dict[str, Any], e: dict[str, Any], out: Path, force: bool) -> P
            "--name", name, "--out", str(od)]  # fmt: skip
     for o in e.get("overrides", []):
         cmd += ["-o", o]
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_s)
     if r.returncode:
         raise RuntimeError(f"{name} failed:\n{r.stderr[-2000:]}")
     return od

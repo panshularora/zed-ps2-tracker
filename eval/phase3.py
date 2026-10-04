@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import fnmatch
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -116,6 +117,83 @@ def reproduction(plan: dict[str, Any], rows: list[dict[str, Any]], out_dir: Path
     return res
 
 
+def _flag_rate(run_dir: Path, name: str) -> float:
+    run = json.loads((run_dir / "trackers" / name / "run.json").read_text())
+    frames = flagged = 0
+    for seq in run["latency"]["per_sequence"].values():
+        d = seq["tracker_info"].get("delayed")
+        if d:
+            frames += d["frames"]
+            flagged += d["ambiguous_frames"]
+    return flagged / frames if frames else 0.0
+
+
+def go_no_go_v2(plan: dict[str, Any], index: dict[str, Any], out: Path, report: Path,
+                jobs: int, force: bool, latency: bool) -> dict[str, Any] | None:  # fmt: skip
+    """Run the pre-registered v2 check and apply its decision rule mechanically."""
+    g = plan.get("go_no_go_v2")
+    if not g or g["primary"]["cache"] not in index["caches"]:
+        return None
+    p = g["primary"]
+    entries = [{"name": f"v2_{arm}", "label": arm, "group": "sanity check", "config": g["config"],
+                "overrides": ov} for arm, ov in g["arms"].items()]  # fmt: skip
+    title = "go/no-go v2 (sanity check): delayed decision with re-ID, MOT17 val-half"
+    m = _manifest(index, p["cache"], p["dataset"], p["split"], entries, title)
+    od = out / "go_no_go_v2"
+    ablate.run_manifest(m, od, report / "go_no_go_v2", jobs, force, latency=latency)
+    rows = {r["name"].removeprefix("v2_"): r for r in ablate.collect(m, od)}
+    for arm in rows:
+        rows[arm]["flag_rate"] = _flag_rate(od / f"v2_{arm}", f"v2_{arm}")
+    rule, k0, k5 = g["rule"], rows["k0"], rows["k5"]
+    crit = {
+        "1_idsw": k5["IDSW"] <= rule["idsw_ratio"] * k0["IDSW"],
+        "2_identity": (k5["IDF1"] >= k0["IDF1"] + rule["idf1_gain"]
+                       and k5["HOTA"] >= k0["HOTA"] - rule["hota_drop"]),
+        "3_selectivity": k5["flag_rate"] <= rule["max_flag_rate"],
+        "4_compute": k5["p95_ms"] <= rule["max_p95_ms"],
+    }  # fmt: skip
+    rep: dict[str, Any] = {"status": "not evaluated (no clean MOT20 cache ingested)"}
+    r = g["replication"]
+    key = next((k for k in r["caches"] if k in index["caches"]), None)
+    if key is not None:
+        rm = _manifest(index, key, r["dataset"], r["split"],
+                       [e for e in entries if e["name"] in ("v2_k0", "v2_k5")],
+                       "go/no-go v2 replication")  # fmt: skip
+        rod = out / "go_no_go_v2_mot20"
+        try:
+            for e in rm["entries"]:
+                ablate.run_entry(rm, e, rod, force, timeout_s=60.0 * r["timeout_min"])
+            rr = {x["name"]: x for x in ablate.collect(rm, rod)}
+            ok = rr["v2_k5"]["IDSW"] <= rr["v2_k0"]["IDSW"]
+            rep = {"status": "pass" if ok else "fail", "cache": key,
+                   "idsw_k0": rr["v2_k0"]["IDSW"], "idsw_k5": rr["v2_k5"]["IDSW"]}  # fmt: skip
+        except subprocess.TimeoutExpired:
+            rep = {"status": "fail (timeout)", "cache": key}
+        crit["5_replication"] = rep["status"] == "pass"
+    passed = all(crit.values())
+    if passed and key is None:
+        verdict = "GO (MOT17 only; replication not evaluated)"
+    else:
+        verdict = "GO" if passed else "NO-GO"
+    slim = {a: {k: v for k, v in x.items() if k != "stress"} for a, x in rows.items()}
+    res = {"verdict": verdict, "criteria": crit, "replication": rep, "rows": slim}
+    lines = ["# Go/no-go v2 (sanity check, not a results table)", "",
+             "Pre-registered in `docs/preregistration/go_no_go_v2.md`; verdict computed by "
+             "`eval/phase3.py` from the frozen rule.", "",
+             "| Arm | HOTA | IDF1 | IDSW | flagged frames | p95 ms |",
+             "|---|---|---|---|---|---|"]  # fmt: skip
+    for a, x in rows.items():
+        lines.append(f"| {a} | {x['HOTA']:.1f} | {x['IDF1']:.1f} | {x['IDSW']:.0f} | "
+                     f"{100 * x['flag_rate']:.1f} % | {x['p95_ms']:.2f} |")  # fmt: skip
+    lines += ["", "| Criterion | pass |", "|---|---|"]
+    lines += [f"| {k} | {'yes' if v else 'no'} |" for k, v in crit.items()]
+    lines += ["", f"MOT20 replication: {rep}", "", f"**Verdict: {verdict}**"]
+    report.mkdir(parents=True, exist_ok=True)
+    (report / "go_no_go_v2.md").write_text("\n".join(lines) + "\n")
+    (report / "go_no_go_v2.json").write_text(json.dumps(res, indent=1))
+    return res
+
+
 def run(
     plan_path: Path, index_path: Path, out: Path, report: Path, jobs: int = 6,
     force: bool = False, latency_repeats: int = 1, latency: bool = True,
@@ -164,6 +242,11 @@ def run(
             if c["id"] == "mot17_val_half" and key == plan["reproduction"]["cache"]:
                 rows = ablate.collect(m, out / cid)
                 summary["reproduction"] = reproduction(plan, rows, report, out / cid)
+    gng = go_no_go_v2(plan, index, out, report, jobs, force, latency)
+    if gng is None:
+        summary["waiting"].append("go_no_go_v2: needs MOT17/ablation/train")
+    else:
+        summary["go_no_go_v2"] = gng["verdict"]
     (report / "summary.json").write_text(json.dumps(summary, indent=1))
     lines = ["# Phase 3 results index", "", f"Tuned on MOT17 train_half: `{params}`", ""]
     for r in summary["ran"]:
@@ -172,6 +255,8 @@ def run(
     if "reproduction" in summary:
         lines.append(f"* [ByteTrack reproduction](reproduction.md): "
                      f"{summary['reproduction']['verdict']}")  # fmt: skip
+    if "go_no_go_v2" in summary:
+        lines.append(f"* [go/no-go v2](go_no_go_v2.md) (sanity check): {summary['go_no_go_v2']}")
     for w in summary["waiting"]:
         lines.append(f"* waiting: {w}")
     (report / "README.md").write_text("\n".join(lines) + "\n")

@@ -100,3 +100,15 @@ conditions:
       - {name: reid_buffer90, label: "ByteTrackLike + re-ID, buffer 90 (control)", group: control, config: configs/baselines/bytetrack_reid.yaml, overrides: [lifecycle.track_buffer=90]}
       - {name: reid_vis_gated, label: "+ re-ID + visibility-gated appearance (full)", group: ours, config: configs/baselines/bytetrack_reid.yaml, overrides: [visibility.estimator=depth_order, visibility.score_fusion=product, visibility.occluder_min_score=0.1, visibility.occluded_buffer_scale=3.0, visibility.occluded_thresh=0.7, "appearance.min_visibility={tau_update}", "appearance.cost_min_visibility={tau_cost}"]}
       - {name: botsort_reid_vis_gated, label: "BoT-SORT + re-ID + visibility-gated appearance", group: ours, config: configs/baselines/botsort_reid.yaml, overrides: [visibility.estimator=depth_order, visibility.score_fusion=product, visibility.occluder_min_score=0.1, visibility.occluded_buffer_scale=3.0, visibility.occluded_thresh=0.7, "appearance.min_visibility={tau_update}", "appearance.cost_min_visibility={tau_cost}"]}
+
+# Pre-registered go/no-go v2 for the delayed decision (docs/preregistration/go_no_go_v2.md).
+# A sanity check: reported in go_no_go_v2.md, never in the results tables.
+go_no_go_v2:
+  config: configs/ours/delayed_v2_reid.yaml
+  primary: {cache: MOT17/ablation/train, dataset: MOT17, split: val_half}
+  replication: {caches: [MOT20/sparsetrack_ablation/train, MOT20/mot17full_xdomain/train], dataset: MOT20, split: val_half, timeout_min: 60}
+  arms:
+    k0: [delayed.enabled=false]
+    k3: [delayed.max_delay_frames=3]
+    k5: []
+  rule: {idsw_ratio: 0.90, idf1_gain: 0.5, hota_drop: 0.2, max_flag_rate: 0.10, max_p95_ms: 20.0}
