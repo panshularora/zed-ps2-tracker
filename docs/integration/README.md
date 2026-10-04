@@ -1,6 +1,6 @@
 # docs/integration (placeholder)
 
-Planned contents. Nothing here is built yet; see [../roadmap.md](../roadmap.md).
+The integration proposal is [../integration.md](../integration.md); the demo video script is [../demo_video_script.md](../demo_video_script.md); the deck outline is [../deck_outline.md](../deck_outline.md). The rest of this table is still planned; see [../roadmap.md](../roadmap.md).
 
 | Deliverable | What it will contain |
 |---|---|
