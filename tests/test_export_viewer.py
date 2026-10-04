@@ -44,3 +44,28 @@ def test_build_and_write_clip(tmp_path: Path) -> None:
     assert p.name == "MOT17-XX.t.json.gz"
     with gzip.open(p) as fh:
         assert json.loads(fh.read()) == clip
+
+
+def test_media_spec() -> None:
+    from eval.export_viewer import media_spec
+
+    assert media_spec("clips/MOT17-04.mp4", 526) == {
+        "type": "video", "src": "clips/MOT17-04.mp4", "frame_offset": 526,
+    }  # fmt: skip
+    assert media_spec("frames/MOT17-04/%06d.jpg", 0)["type"] == "frames"
+
+
+def test_export_writes_media_with_split_offset(tmp_path: Path) -> None:
+    from eval.export_viewer import export
+
+    root = Path("data/MOT17")
+    if not (root / "train" / "MOT17-09-FRCNN").exists():
+        import pytest
+
+        pytest.skip("needs `make data`")
+    paths = export("MOT17-09-FRCNN", {}, tmp_path, None, root=root, include_gt=True,
+                   media="clips/MOT17-09.mp4")  # fmt: skip
+    with gzip.open(paths[0]) as fh:
+        clip = json.loads(fh.read())
+    # MOT17-09 has 525 frames; val-half starts at frame 525 // 2 + 2 = 264 -> offset 263
+    assert clip["media"] == {"type": "video", "src": "clips/MOT17-09.mp4", "frame_offset": 263}

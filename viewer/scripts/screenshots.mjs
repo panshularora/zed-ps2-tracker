@@ -30,6 +30,7 @@ async function shot(name, { clip, left, right, frame }) {
 
 await shot("viewer_mot17-04_bytetrack_vs_botsort", { clip: "MOT17-04", left: "bytetrack", right: "botsort", frame: 386 });
 await shot("viewer_mot17-04_held_decisions", { clip: "MOT17-04", left: "bytetrack", right: "delayed_k5", frame: 3 });
+await shot("viewer_mot17-04_decision_fade", { clip: "MOT17-04", left: "bytetrack", right: "delayed_k5", frame: 10 });
 await shot("viewer_mot17-09_gt_vs_bytetrack", { clip: "MOT17-09", left: "gt", right: "bytetrack", frame: 150 });
 // timeline seek: clicking the first mark must jump 2 s before it
 await page.goto(`${url}#f=1`);

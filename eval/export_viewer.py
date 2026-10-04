@@ -7,10 +7,11 @@ Format (viewer spec in ``06_phase2_specs.md``; ``viewer/src/data.ts`` validates 
      "pending": [{"f0", "f1", "candidates": [ids], "chosen": id}],
      "events": [{"f", "type": "id_switch", "gt", "from", "to"},
                 {"f", "type": "cross", "id", "dir": "in"|"out", "correct": bool},
-                {"f", "type": "tailgate", "ids": [a, b]}]}
+                {"f", "type": "tailgate", "ids": [a, b]}],
+     "media": {"type": "video"|"frames", "src", "frame_offset"}}   # optional (--media)
 
-The tracker is re-run here on the split (public detections), so the delayed tracker's held
-decisions are available.
+The tracker is re-run here on the split (``--dets``: public detections or a Stage A cache), so
+the delayed tracker's held decisions are available.
 - **pending**: one entry per contested detection, i.e. a detection that is a candidate for two or
   more tracks in an ambiguity cluster. ``f0`` is the frame of the decision and ``f1 = f0 + K``. For
   ``candidates`` and ``chosen`` (the track that got the detection, -1 if none), see
@@ -132,11 +133,21 @@ def write_clip(data: dict[str, Any], out: Path) -> Path:
     return path
 
 
+def media_spec(src: str, frame_offset: int) -> dict[str, Any]:
+    """``clip.media`` for the viewer: an MP4 (``*.mp4``/``*.webm``) or a JPEG pattern (``%06d``).
+
+    ``frame_offset`` maps clip frames to video frames (val-half clips start mid-sequence; the DGX
+    demo MP4s and ``img1/`` JPEGs cover the full sequence)."""
+    kind = "frames" if "%" in src else "video"
+    return {"type": kind, "src": src, "frame_offset": int(frame_offset)}
+
+
 def export(seq: str, trackers: dict[str, str], out: Path, gates_file: Path | None,
            root: Path = Path("data/MOT17"), split: str = "val_half", dataset: str = "MOT17",
-           include_gt: bool = True) -> list[Path]:  # fmt: skip
-    seq_dir = root / "train" / seq
-    cache = crop_cache(load_inputs(seq_dir, dataset, "public"), split)
+           include_gt: bool = True, dets: str = "public",
+           media: str | None = None) -> list[Path]:  # fmt: skip
+    seq_dir = root / ("val" if dataset.lower() == "dancetrack" else "train") / seq
+    cache = crop_cache(load_inputs(seq_dir, dataset, dets), split)
     with tempfile.TemporaryDirectory() as tmp:
         write_gt_split(seq_dir, Path(tmp), split)
         gt = gt_pedestrians(np.loadtxt(Path(tmp) / seq / "gt" / "gt.txt", delimiter=",",
@@ -150,15 +161,17 @@ def export(seq: str, trackers: dict[str, str], out: Path, gates_file: Path | Non
     clip = seq.rsplit("-", 1)[0] if dataset == "MOT17" else seq
     common = (clip, m.frame_rate, m.seq_length, (m.im_width, m.im_height))
     paths = []
+    extra = {} if media is None else {"media": media_spec(media, m.extra.get("frame_offset", 0))}
     if include_gt:
         rows = np.c_[gt[:, :6], np.ones(len(gt))]
-        paths.append(write_clip(build_clip(common[0], "gt", *common[1:], rows, gt, gate, params,
-                                           [], True), out))  # fmt: skip
+        paths.append(write_clip({**build_clip(common[0], "gt", *common[1:], rows, gt, gate, params,
+                                              [], True), **extra}, out))  # fmt: skip
     for name, cfg_path in trackers.items():
         res = run_sequence(cache, load_config(Path(cfg_path)))
         rows = results_to_rows(res.results)
-        paths.append(write_clip(build_clip(common[0], name, *common[1:], rows, gt, gate, params,
-                                           pending_entries(res.results), False), out))  # fmt: skip
+        paths.append(write_clip({**build_clip(common[0], name, *common[1:], rows, gt, gate, params,
+                                              pending_entries(res.results), False), **extra},
+                                out))  # fmt: skip
     return paths
 
 
@@ -171,10 +184,22 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--split", default="val_half")
     p.add_argument("--include-gt", action="store_true")
     p.add_argument("--out", type=Path, default=Path("viewer/data"))
+    p.add_argument("--root", type=Path, default=Path("data/MOT17"))
+    p.add_argument("--dataset", default="MOT17")
+    p.add_argument("--dets", default="public", help="'public' or a Stage A cache folder")
+    p.add_argument(
+        "--media",
+        action="append",
+        default=[],
+        help="SEQ=SRC: MP4 path/URL relative to index.html, or a %%06d JPEG pattern",
+    )
     a = p.parse_args(argv)
     trackers = dict(t.split("=", 1) for t in a.tracker)
+    media = dict(m.split("=", 1) for m in a.media)
     for s in a.seq:
-        for path in export(s, trackers, a.out, a.gates, split=a.split, include_gt=a.include_gt):
+        for path in export(s, trackers, a.out, a.gates, root=a.root, split=a.split,
+                           dataset=a.dataset, include_gt=a.include_gt, dets=a.dets,
+                           media=media.get(s)):  # fmt: skip
             print(path, path.stat().st_size)
     return 0
 

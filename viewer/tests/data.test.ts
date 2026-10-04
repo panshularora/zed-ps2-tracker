@@ -77,3 +77,26 @@ describe("seeking and overlays", () => {
     expect(ID_COLORS).not.toContain("#E5484D");
   });
 });
+
+describe("media hints", () => {
+  it("accepts video / frames media and rejects malformed ones", () => {
+    const ok = parseClip({ ...clip, media: { type: "video", src: "MOT17-04.mp4", frame_offset: 526 } });
+    expect(ok.media?.frame_offset).toBe(526);
+    expect(parseClip(clip).media).toBeNull();
+    expect(() => parseClip({ ...clip, media: { type: "gif", src: "x" } })).toThrow(/media/);
+    expect(() => parseClip({ ...clip, media: { type: "frames", src: "f/%06d.jpg", frame_offset: 1.5 } })).toThrow(
+      /frame_offset/,
+    );
+  });
+});
+
+describe("decision fade window", () => {
+  it("lists windows closed within the fade", async () => {
+    const { closingPending } = await import("../src/data");
+    const p = [{ f0: 10, f1: 15, candidates: [1, 7], chosen: 7 }];
+    expect(closingPending(p, 15, 4)).toEqual([]);
+    expect(closingPending(p, 16, 4)).toHaveLength(1);
+    expect(closingPending(p, 19, 4)).toHaveLength(1);
+    expect(closingPending(p, 20, 4)).toEqual([]);
+  });
+});

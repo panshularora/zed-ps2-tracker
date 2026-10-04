@@ -10,7 +10,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
-    "screenshots": "node scripts/screenshots.mjs ../docs/media"
+    "screenshots": "node scripts/screenshots.mjs ../docs/media",
+    "e2e:media": "node scripts/media_e2e.mjs"
   },
   "dependencies": {
     "react": "18.3.1",
