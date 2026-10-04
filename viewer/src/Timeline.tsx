@@ -11,7 +11,7 @@ interface Props {
 
 function markColor(e: ClipEvent): string {
   if (e.type === "id_switch") return theme.error;
-  if (e.type === "cross") return e.correct ? theme.gate : theme.error;
+  if (e.type === "cross") return e.correct === false ? theme.error : theme.gate; // null = no gt (serve app)
   return theme.text;
 }
 

@@ -11,7 +11,7 @@ export interface Pending {
 
 export type ClipEvent =
   | { f: number; type: "id_switch"; gt: number; from: number; to: number }
-  | { f: number; type: "cross"; id: number; dir: "in" | "out"; correct: boolean }
+  | { f: number; type: "cross"; id: number; dir: "in" | "out"; correct?: boolean | null }
   | { f: number; type: "tailgate"; ids: [number, number] };
 
 export interface Clip {
