@@ -97,4 +97,5 @@ marks, dashed held decisions and gate counters. See [../viewer/README.md](../vie
 | `third_party/trackeval/` | TrackEval `12c8791`, unmodified, MIT |
 | `ci/github-actions.yml` | CI (`check` + `regression`); must be added as `.github/workflows/ci.yml` through the GitHub UI |
 | `docs/` | this documentation; `docs/research/` holds the Research Lab briefs |
-| `demo/`, `docs/integration/`, `serve/`, `dashboard/`, `deploy/` | placeholders with READMEs describing planned contents |
+| `serve/` | `app.py` FastAPI CPU replay service (`/api/health`, `/api/configs`, `POST /api/track`, viewer at `/`); `events.py` gate-event contract (crossing / tailgate / ambiguous_hold); `requirements.txt` pins for the `Dockerfile` |
+| `demo/`, `docs/integration/`, `dashboard/`, `deploy/` | placeholders with READMEs describing planned contents |

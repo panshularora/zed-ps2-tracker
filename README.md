@@ -69,7 +69,7 @@ Modules (file-by-file map in [docs/modules.md](docs/modules.md)):
 ```bash
 git clone https://github.com/panshularora/zed-ps2-tracker && cd zed-ps2-tracker
 make setup        # .venv with Python 3.11 (uv) + package + dev tools
-make check        # ruff + mypy (strict on tracker/) + 167 tests
+make check        # ruff + mypy (strict on tracker/) + 185 tests
 make data         # MOT17 + MOT20 labels and public detections only (no images, ~30 MB)
 make smoke        # MOT17 train (full) + val-half with public dets: TrackEval + stress + latency
 ```
@@ -84,12 +84,17 @@ make oracle  DATASET=MOT17          # visibility-0 ceiling
 make ablate                         # ablation table + stress plots -> docs/results/ablation/
 make gates                          # after make ablate: gate events on the frozen MOT17 lines
 make viewer                         # export clips + build viewer/dist/index.html (needs Node 20)
+make serve                          # CPU demo API + viewer (FastAPI, `pip install -e .[serve]`)
+make ingest BRING_BACK=<tar> DELETE=1   # DGX bundle -> data/stagea (sha256-checked), one tar at a time
+make phase3                         # frozen phase-3 plan on the ingested caches -> docs/results/phase3/
+make phase3-selftest                # the same chain on a synthetic bundle (~25 s)
 python -m tracker.cli --caches <cache dir> --config configs/baselines/bytetrack.yaml \
     --out results/x --jsonl          # MOT txt + per-frame JSON (tracks + pending)
 ```
 
-The GPU side is in [docs/dgx_guide.md](docs/dgx_guide.md): `bash scripts/dgx/setup.sh`, one
-`run.sh` per dataset, then `finalize.sh`.
+The GPU side is in [docs/dgx_runbook.md](docs/dgx_runbook.md) (checked, step by step) and
+[docs/dgx_guide.md](docs/dgx_guide.md): `bash scripts/dgx/setup.sh`, one `run.sh` per dataset,
+`finalize.sh`, then `pack.sh` → `scp` → `make ingest` → `make phase3`.
 
 ## Results (phase 2): MOT17 val-half, public FRCNN detections, no re-ID
 
@@ -133,7 +138,10 @@ error. Baselines reach crossing recall 56–60 %, attribution error 14–33 %, c
 and tailgate P/R 80 / 44 %. MOT17-02/04/09 contain only **25 crossings and 9 tailgates**, too few
 to rank trackers, so the gate clip from the GPU session is needed.
 
-**Viewer** (`make viewer` → single-file `viewer/dist/index.html`, opens offline):
+**Viewer** (`make viewer` → single-file `viewer/dist/index.html`, opens offline). It draws real
+frames under the boxes when given an MP4 or JPEGs, synced with `requestVideoFrameCallback`
+(tested in headless Chrome, `npm run e2e:media`); the screenshots below are still on a blank
+canvas until the DGX clips come back:
 
 | ByteTrack vs BoT-SORT, MOT17-04 | held decisions (delayed K=5) | gt vs ByteTrack, MOT17-09 |
 |---|---|---|
@@ -228,8 +236,9 @@ detector and perfect identities that never coast) gives:
 
 1. `make setup && make data && make smoke` reproduces every number above (≈ 1 min on 8 CPUs).
    CI pins MOT17-09 val-half (HOTA 52.7 / IDF1 59.5 / MOTA 51.6 / 5 IDs) as a regression test.
-2. Stage A on a GPU: see [docs/dgx_guide.md](docs/dgx_guide.md). Bring back
-   `bring_back/` and check `sha256sum -c SHA256SUMS`.
+2. Stage A on a GPU: see [docs/dgx_runbook.md](docs/dgx_runbook.md). Pack with
+   `scripts/dgx/pack.sh`, copy the tars back, and `make ingest BRING_BACK=<tar>` each one
+   (sha256-checked against SHA256SUMS); then `make phase3`.
 3. Stage B from caches: `make eval DETS=<bring_back>/cache/MOT17/ablation/train NAME=...`.
    `run.json` next to each result records the config, git commit, inputs and whether the
    detector saw the eval half.
@@ -239,8 +248,10 @@ detector and perfect identities that never coast) gives:
 1. **GPU session** ([docs/next_gpu_session.md](docs/next_gpu_session.md)): YOLOX detections and
    re-ID caches; re-run `make ablate` and the go/no-go on them; visibility-gated appearance;
    delayed look-ahead with re-ID; MOT20 / DanceTrack; the gate clip.
-2. **Integration notes and a live `serve/` prototype** (phase 3), then the presentation
-   deliverables (phase 4). Full table in [docs/roadmap.md](docs/roadmap.md).
+2. **Integration:** proposal [docs/integration.md](docs/integration.md) (edge box, gate-event
+   contract, pilot), CPU demo service `serve/` (FastAPI + Dockerfile), video script
+   [docs/demo_video_script.md](docs/demo_video_script.md) and deck outline
+   [docs/deck_outline.md](docs/deck_outline.md); GPU numbers are placeholders until phase 3. Full table in [docs/roadmap.md](docs/roadmap.md).
 
 ## Documentation
 
@@ -250,7 +261,12 @@ detector and perfect identities that never coast) gives:
 | [docs/algorithm.md](docs/algorithm.md) | Kalman, costs, association, lifecycle FSM; planned visibility + delayed assignment (pseudocode) |
 | [docs/modules.md](docs/modules.md) | every file |
 | [docs/evaluation.md](docs/evaluation.md) | metrics, splits, no-test-server policy, stress and latency methods, online-only rule, leakage, vis-0 cap |
-| [docs/dgx_guide.md](docs/dgx_guide.md) | GPU runbook and bring-back checklist |
+| [docs/dgx_runbook.md](docs/dgx_runbook.md) | checked step-by-step DGX runbook (setup → pack → scp → ingest) |
+| [docs/dgx_guide.md](docs/dgx_guide.md) | GPU background and bring-back checklist |
+| [docs/preregistration/](docs/preregistration/) | go/no-go v2 rule, frozen before the GPU data |
+| [docs/integration.md](docs/integration.md) | product proposal for ZIG: placement, event contract, gains, limits, pilot |
+| [docs/demo_video_script.md](docs/demo_video_script.md), [docs/deck_outline.md](docs/deck_outline.md) | video shot list, deck outline |
+| [serve/README.md](serve/README.md) | CPU demo service (FastAPI, Docker) |
 | [docs/implementation_notes.md](docs/implementation_notes.md) | deviations from upstream, pitfalls, negative results |
 | [docs/next_gpu_session.md](docs/next_gpu_session.md) | what to run on the GPU next, and why |
 | [docs/results/](docs/results/) | parity, visibility, go/no-go, ablation, gate events |
@@ -260,7 +276,7 @@ detector and perfect identities that never coast) gives:
 | [docs/glossary.md](docs/glossary.md) | terms |
 | [docs/roadmap.md](docs/roadmap.md) | roadmap and status by phase |
 | [docs/research/](docs/research/) | Research Lab briefs |
-| [docs/integration/](docs/integration/), [demo/](demo/) | placeholders for the integration write-up, videos and deck |
+| [docs/integration/](docs/integration/), [demo/](demo/) | remaining planned deliverables (privacy note, walkthrough video) |
 
 ## Licensing
 
