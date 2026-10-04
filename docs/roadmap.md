@@ -6,7 +6,7 @@
 | **DGX** | Panshul runs `scripts/dgx/` (MOT17, MOT20 × 3 detectors, SOMPT22, DanceTrack, gate clip, Pexels) and brings back caches | waiting on the GPU session |
 | **2a** | ours: depth-order visibility (+ scoring vs gt), delayed assignment + pre-registered go/no-go, ported baselines with upstream parity, `make ablate` | **done on CPU / public dets** (PRs #6–#10). Visibility = longer buffer; delayed = **no-go**. Real-detection + re-ID re-runs and visibility-gated appearance wait for the GPU session ([next_gpu_session.md](next_gpu_session.md)) |
 | **2b** | `eval/gate_events.py` (below), `make gates` | **done** (PR #11); MOT17 has too few crossings to rank trackers, needs the gate clip |
-| **3** | static viewer (`viewer/`, `make viewer`) | viewer **done** (PR #12, blank canvas, no video frames yet); integration notes and live `serve/` prototype later |
+| **3** | static viewer (`viewer/`, `make viewer`) | viewer **done** (PR #12; real frames + 150 ms fade PR #18); CPU replay service `serve/` + Dockerfile (PR #19); integration proposal, video script, deck outline (PR #20); a live stream prototype later |
 | **4** | presentation deliverables (below) | later |
 
 ## Phase 2a: the method
@@ -58,7 +58,7 @@ including the baselines, without re-running anything. Definitions follow
   [../demo/README.md](../demo/README.md).
 * **`docs/integration/`**: how the tracker would sit under ZIG (inputs, outputs, latency budget,
   privacy: short-lived in-memory embeddings, no face recognition, no stored identities).
-* `serve/`: a live pipeline prototype (detector + tracker on a stream).
+* `serve/`: a live pipeline prototype (detector + tracker on a stream). The CPU replay service (`/api/track`, gate-event contract) exists.
 
 ## Phase 4: deliverables
 
