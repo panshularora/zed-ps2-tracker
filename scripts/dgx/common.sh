@@ -27,6 +27,7 @@ activate() {
     die "environment not found at $ENV_DIR, run: bash scripts/dgx/setup.sh"
   fi
   export PYTHONPATH="$REPO:$SRC/ByteTrack:$SRC/deep-person-reid${PYTHONPATH:+:$PYTHONPATH}"
+  export CUDA_DEVICE_ORDER=PCI_BUS_ID   # so GPU=<n> is the same index nvidia-smi shows
   export CUDA_VISIBLE_DEVICES="$GPU"
   export PYTHONWARNINGS="ignore"
 }

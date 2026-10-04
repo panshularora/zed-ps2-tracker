@@ -8,8 +8,6 @@ activate
 python -m models.bringback --root "$ZED_ROOT"
 cat <<MSG
 
-Copy home (resumable; re-run if the connection drops):
-  rsync -avhP --partial $(hostname):$BRING/ ./zed-stagea-bring-back/
-then on the CPU box:
-  cd zed-stagea-bring-back && sha256sum -c SHA256SUMS
+Next, still on the DGX:  bash scripts/dgx/pack.sh   (a few tars to scp; docs/dgx_runbook.md step 7-8)
+On the CPU box, each tar is checked against SHA256SUMS by:  make ingest BRING_BACK=<tar>
 MSG

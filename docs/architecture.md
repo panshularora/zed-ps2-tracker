@@ -26,7 +26,7 @@ flowchart LR
     end
     W --> NPZ[(cache/&lt;DATASET&gt;/&lt;variant&gt;/&lt;split&gt;/&lt;seq&gt;.npz<br/>frame, tlwh, score, emb, meta)]
     NPZ --> B[finalize.sh<br/>integrity check + bring_back/ bundle]
-    B -->|rsync| BOX[(CPU box)]
+    B -->|scp| BOX[(CPU box)]
 ```
 
 The cache schema (v1) is defined once in `tracker/io.py` and validated on write and on load.
