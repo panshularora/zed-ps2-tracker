@@ -123,6 +123,9 @@ class DelayedAssignmentConfig:
     """Look-ahead score over the cluster's tracks only, or over all first-association tracks."""
     birth_penalty: float = 0.0
     """Look-ahead cost per frame for each track born during the look-ahead."""
+    trigger_max_visibility: float = 1.0
+    """Only look ahead on clusters where some detection has estimated visibility below this
+    (needs ``visibility.estimator: depth_order``). 1 = no visibility condition."""
 
 
 @dataclass(frozen=True)

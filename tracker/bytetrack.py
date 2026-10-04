@@ -83,6 +83,8 @@ class Stage1Record:
     dets_tlwh: FloatArray
     matches: npt.NDArray[np.int64]
     thresh: float
+    dets_vis: FloatArray | None = None
+    """Estimated visibility of each high-score detection (column), from the estimator."""
 
 
 class ByteTrackLike:
@@ -264,7 +266,7 @@ class ByteTrackLike:
             self.last_stage1 = Stage1Record(
                 tuple(t.track_id for t in pool),
                 tuple(t.state is TrackState.LOST for t in pool), c1, d_high.tlwh, m1.matches,
-                cfg.association.match_thresh,
+                cfg.association.match_thresh, v_high,
             )  # fmt: skip
         self._apply_matches(pool, d_high, v_high, m1, c1)
 

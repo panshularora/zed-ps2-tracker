@@ -51,6 +51,11 @@ def test_partial_then_rest_ingest_and_phase3(bundle: Path, tmp_path: Path) -> No
     lat = json.loads((out / "mot17_val_half" / "bytetrack" / "latency.json").read_text())
     assert lat["combined"]["p95_ms"] > 0
     tuned = json.loads((rep / "tune.json").read_text())
+    gng = json.loads((rep / "go_no_go_v2.json").read_text())
+    assert gng["replication"]["status"].startswith(("pass", "fail"))  # MOT20 clean was ingested
+    assert set(gng["rows"]) == {"k0", "k3", "k5"}
+    assert 0.0 <= gng["rows"]["k5"]["flag_rate"] <= 1.0
+    assert gng["rows"]["k0"]["flag_rate"] >= 0.0
     assert set(tuned["chosen"]) == {"tau_update", "tau_cost"}
 
     ing.ingest(bundle, dest, nodata)  # the rest (folder of tars; re-ingesting is idempotent)

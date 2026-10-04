@@ -72,12 +72,14 @@ class DelayedStats:
 
 
 def find_clusters(
-    rec: Stage1Record, margin: float, max_cluster: int, confirmed_only: bool = False
-) -> tuple[list[Cluster], int]:
+    rec: Stage1Record, margin: float, max_cluster: int, confirmed_only: bool = False,
+    max_visibility: float = 1.0,
+) -> tuple[list[Cluster], int]:  # fmt: skip
     """Ambiguity clusters of one first-association cost matrix. Returns ``(clusters, skipped)``.
 
     ``confirmed_only`` drops lost tracks from the ambiguity graph (they keep their normal
-    association)."""
+    association). ``max_visibility < 1`` keeps only clusters in which at least one detection has
+    estimated visibility below it (occlusion-triggered look-ahead; needs ``rec.dets_vis``)."""
     c = rec.cost
     n, m = c.shape
     if n == 0 or m == 0:
@@ -114,6 +116,9 @@ def find_clusters(
             continue
         if len(rows) > max_cluster or len(cols) > max_cluster:
             skipped += 1
+            continue
+        vis = rec.dets_vis
+        if max_visibility < 1.0 and vis is not None and float(np.min(vis[cols])) >= max_visibility:
             continue
         edges = {
             (rec.track_ids[r], col): float(c[r, col]) for r in rows for col in cols if ok[r, col]
@@ -197,6 +202,7 @@ class DelayedTracker:
         same_tracks: bool = False,
         score_scope: str = "cluster",
         birth_penalty: float = 0.0,
+        trigger_max_visibility: float = 1.0,
     ) -> None:
         if max_delay_frames < 0:
             raise ValueError("max_delay_frames must be >= 0")
@@ -214,6 +220,7 @@ class DelayedTracker:
             raise ValueError(f"unknown score_scope {score_scope!r}")
         self.score_scope = score_scope
         self.birth_penalty = birth_penalty
+        self.trigger_max_visibility = trigger_max_visibility
         self.buffer: deque[Detections] = deque()
         self.stats = DelayedStats()
         self._received = 0
@@ -270,8 +277,9 @@ class DelayedTracker:
         clusters: list[Cluster] = []
         if rec is not None:
             clusters, skipped = find_clusters(
-                rec, self.margin, self.max_cluster, self.confirmed_only
-            )
+                rec, self.margin, self.max_cluster, self.confirmed_only,
+                self.trigger_max_visibility,
+            )  # fmt: skip
             self.stats.skipped_large += skipped
         f = trial.frame_id
         if clusters:  # recorded with K = 0 too: the "flagged windows" of the go/no-go

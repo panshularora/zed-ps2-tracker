@@ -1,0 +1,25 @@
+# Delayed decision v2 (pre-registered, docs/preregistration/go_no_go_v2.md, frozen 4 Oct 2026
+# before any YOLOX / re-ID data existed). ByteTrackLike + OSNet re-ID (BoT-SORT-style fused
+# IoU/appearance cost, so both the trigger margin and the look-ahead score see appearance) +
+# depth-order visibility estimate used ONLY to gate the trigger (no buffer change).
+# Changes vs v1/v2-IoU (configs/ours/delayed.yaml): re-ID in the cost; tighter margin 0.03;
+# clusters of at most 3; a look-ahead only when a cluster detection has v̂ < 0.5; an alternative
+# must win by > 0.05 per cluster (min_gain). K = 5 is the primary arm, K = 3 secondary.
+inherit: ../baselines/bytetrack_reid.yaml
+visibility:
+  estimator: depth_order
+  score_fusion: product
+  occluder_min_score: 0.1
+delayed:
+  enabled: true
+  max_delay_frames: 5
+  margin: 0.03
+  max_cluster: 3
+  max_hypotheses: 6
+  miss_penalty: 1.0
+  min_gain: 0.05
+  confirmed_only: true
+  same_tracks: true
+  score_scope: all
+  birth_penalty: 1.0
+  trigger_max_visibility: 0.5
