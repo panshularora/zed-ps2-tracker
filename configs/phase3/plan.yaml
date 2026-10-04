@@ -1,0 +1,102 @@
+# Phase-3 plan for `make phase3` (eval/phase3.py), frozen BEFORE any YOLOX / re-ID data exists
+# (4 Oct 2026). Do not edit after the caches arrive; changes go in a new, dated plan file.
+#
+# Every condition runs only if its cache folder has been ingested (`make ingest`); the others
+# are listed as "waiting". `{tau_update}` / `{tau_cost}` are chosen on MOT17 *train_half* by the
+# `tune` block and then frozen for every val-half / MOT20 / DanceTrack row (no val tuning).
+
+aliases:
+  vis_est: &vis_est   # depth-order estimate only (no buffer change), for the appearance gates
+    - visibility.estimator=depth_order
+    - visibility.score_fusion=product
+    - visibility.occluder_min_score=0.1
+  vis_full: &vis_full  # = configs/ours/visibility.yaml (estimate + longer buffer when occluded)
+    - visibility.estimator=depth_order
+    - visibility.score_fusion=product
+    - visibility.occluder_min_score=0.1
+    - visibility.occluded_buffer_scale=3.0
+    - visibility.occluded_thresh=0.7
+
+tune:
+  cache: MOT17/ablation/train
+  dataset: MOT17
+  split: train_half
+  config: configs/baselines/bytetrack_reid.yaml
+  base_overrides: *vis_est
+  criterion: [IDF1, HOTA]          # higher IDF1 wins; HOTA breaks ties; 0.0 (= off) can win
+  params:
+    tau_update: {key: appearance.min_visibility, values: [0.0, 0.3, 0.5, 0.7]}
+    tau_cost: {key: appearance.cost_min_visibility, values: [0.0, 0.3, 0.5, 0.7]}
+
+reproduction:
+  cache: MOT17/ablation/train
+  entry: bytetrack
+  # ByteTrack (Zhang et al., ECCV 2022; arXiv 2110.06864v3), MOT17 half-val, YOLOX-X
+  # bytetrack_ablation weights, BYTE with IoU in both associations, no interpolation:
+  # Table 1 row "IoU | IoU" (MOTA 76.6, IDF1 79.3, IDs 159) = Table 2 row "BYTE (ours)" without
+  # re-ID = Table 11 row "Interval: No" (also FP 3358, FN 9081). Also the README "Ablation model".
+  reference: {MOTA: 76.6, IDF1: 79.3, IDSW: 159, FP: 3358, FN: 9081}
+  source: "ByteTrack arXiv 2110.06864v3, Table 1 (IoU|IoU) / Table 11 (Interval: No)"
+  tolerance: {MOTA: 1.0, IDF1: 1.5}  # |ours - paper| within these = reproduced
+
+conditions:
+  - id: mot17_val_half
+    title: "MOT17 val-half, YOLOX-X bytetrack_ablation + OSNet-AIN re-ID"
+    cache: MOT17/ablation/train
+    dataset: MOT17
+    split: val_half
+    latency: true
+    entries:
+      - {name: bytetrack, label: "ByteTrackLike (IoU)", group: baseline, config: configs/baselines/bytetrack.yaml}
+      - {name: ocsort, label: OC-SORT, group: baseline, config: configs/baselines/ocsort.yaml}
+      - {name: deep_ocsort, label: "Deep OC-SORT (emb + CMC)", group: baseline, config: configs/baselines/deep_ocsort.yaml}
+      - {name: hybrid_sort, label: Hybrid-SORT, group: baseline, config: configs/baselines/hybrid_sort.yaml}
+      - {name: botsort, label: "BoT-SORT (CMC, IoU)", group: baseline, config: configs/baselines/botsort.yaml}
+      - {name: bytetrack_reid, label: "ByteTrackLike + re-ID", group: baseline, config: configs/baselines/bytetrack_reid.yaml}
+      - {name: botsort_reid, label: "BoT-SORT (CMC) + re-ID", group: baseline, config: configs/baselines/botsort_reid.yaml}
+      - {name: reid_buffer90, label: "ByteTrackLike + re-ID, buffer 90 (control)", group: control, config: configs/baselines/bytetrack_reid.yaml, overrides: [lifecycle.track_buffer=90]}
+      - {name: reid_vis, label: "+ re-ID + visibility (buffer)", group: ours, config: configs/baselines/bytetrack_reid.yaml, overrides: *vis_full}
+      - {name: reid_minvis, label: "+ re-ID + appearance update gate (min_visibility)", group: ours, config: configs/baselines/bytetrack_reid.yaml, overrides: [visibility.estimator=depth_order, visibility.score_fusion=product, visibility.occluder_min_score=0.1, "appearance.min_visibility={tau_update}"]}
+      - {name: reid_costgate, label: "+ re-ID + appearance cost gate (cost_min_visibility)", group: ours, config: configs/baselines/bytetrack_reid.yaml, overrides: [visibility.estimator=depth_order, visibility.score_fusion=product, visibility.occluder_min_score=0.1, "appearance.cost_min_visibility={tau_cost}"]}
+      - {name: reid_vis_gated, label: "+ re-ID + visibility-gated appearance (full)", group: ours, config: configs/baselines/bytetrack_reid.yaml, overrides: [visibility.estimator=depth_order, visibility.score_fusion=product, visibility.occluder_min_score=0.1, visibility.occluded_buffer_scale=3.0, visibility.occluded_thresh=0.7, "appearance.min_visibility={tau_update}", "appearance.cost_min_visibility={tau_cost}"]}
+      - {name: botsort_reid_buffer90, label: "BoT-SORT + re-ID, buffer 90 (control)", group: control, config: configs/baselines/botsort_reid.yaml, overrides: [lifecycle.track_buffer=90]}
+      - {name: botsort_reid_vis_gated, label: "BoT-SORT + re-ID + visibility-gated appearance", group: ours, config: configs/baselines/botsort_reid.yaml, overrides: [visibility.estimator=depth_order, visibility.score_fusion=product, visibility.occluder_min_score=0.1, visibility.occluded_buffer_scale=3.0, visibility.occluded_thresh=0.7, "appearance.min_visibility={tau_update}", "appearance.cost_min_visibility={tau_cost}"]}
+
+  # MOT20: one table per ingested detector variant. SAW_EVAL_HALF variants are reported, but in a
+  # separately labelled table (that detector was trained on the frames it is scored on).
+  - id: mot20_val_half
+    title: "MOT20 val-half, {variant} + OSNet-AIN re-ID"
+    cache: MOT20/*/train
+    dataset: MOT20
+    split: val_half
+    latency: false
+    entries:
+      - {name: bytetrack, label: "ByteTrackLike (IoU)", group: baseline, config: configs/baselines/bytetrack_mot20.yaml}
+      - {name: ocsort, label: OC-SORT, group: baseline, config: configs/baselines/ocsort_mot20.yaml}
+      - {name: deep_ocsort, label: "Deep OC-SORT (emb + CMC)", group: baseline, config: configs/baselines/deep_ocsort_mot20.yaml}
+      - {name: hybrid_sort, label: Hybrid-SORT, group: baseline, config: configs/baselines/hybrid_sort_mot20.yaml}
+      - {name: botsort, label: "BoT-SORT (CMC, IoU)", group: baseline, config: configs/baselines/botsort_mot20.yaml}
+      - {name: bytetrack_reid, label: "ByteTrackLike + re-ID", group: baseline, config: configs/baselines/bytetrack_mot20.yaml, overrides: [appearance.enabled=true]}
+      - {name: botsort_reid, label: "BoT-SORT (CMC) + re-ID", group: baseline, config: configs/baselines/botsort_mot20.yaml, overrides: [appearance.enabled=true]}
+      - {name: reid_buffer90, label: "ByteTrackLike + re-ID, buffer 90 (control)", group: control, config: configs/baselines/bytetrack_mot20.yaml, overrides: [appearance.enabled=true, lifecycle.track_buffer=90]}
+      - {name: reid_vis_gated, label: "+ re-ID + visibility-gated appearance (full)", group: ours, config: configs/baselines/bytetrack_mot20.yaml, overrides: [appearance.enabled=true, visibility.estimator=depth_order, visibility.score_fusion=product, visibility.occluder_min_score=0.1, visibility.occluded_buffer_scale=3.0, visibility.occluded_thresh=0.7, "appearance.min_visibility={tau_update}", "appearance.cost_min_visibility={tau_cost}"]}
+      - {name: botsort_reid_vis_gated, label: "BoT-SORT + re-ID + visibility-gated appearance", group: ours, config: configs/baselines/botsort_mot20.yaml, overrides: [appearance.enabled=true, visibility.estimator=depth_order, visibility.score_fusion=product, visibility.occluder_min_score=0.1, visibility.occluded_buffer_scale=3.0, visibility.occluded_thresh=0.7, "appearance.min_visibility={tau_update}", "appearance.cost_min_visibility={tau_cost}"]}
+
+  # DanceTrack val (full sequences). No DanceTrack-specific tuning: MOT17 configs as they are.
+  - id: dancetrack_val
+    title: "DanceTrack val, DanceTrack YOLOX-X + OSNet-AIN re-ID (MOT17 tracker settings)"
+    cache: DanceTrack/dancetrack/val
+    dataset: DanceTrack
+    split: full
+    latency: false
+    entries:
+      - {name: bytetrack, label: "ByteTrackLike (IoU)", group: baseline, config: configs/baselines/bytetrack.yaml}
+      - {name: ocsort, label: OC-SORT, group: baseline, config: configs/baselines/ocsort.yaml}
+      - {name: deep_ocsort, label: "Deep OC-SORT (emb)", group: baseline, config: configs/baselines/deep_ocsort.yaml}
+      - {name: hybrid_sort, label: Hybrid-SORT, group: baseline, config: configs/baselines/hybrid_sort.yaml}
+      - {name: botsort, label: "BoT-SORT (IoU)", group: baseline, config: configs/baselines/botsort.yaml}
+      - {name: bytetrack_reid, label: "ByteTrackLike + re-ID", group: baseline, config: configs/baselines/bytetrack_reid.yaml}
+      - {name: botsort_reid, label: "BoT-SORT + re-ID", group: baseline, config: configs/baselines/botsort_reid.yaml}
+      - {name: reid_buffer90, label: "ByteTrackLike + re-ID, buffer 90 (control)", group: control, config: configs/baselines/bytetrack_reid.yaml, overrides: [lifecycle.track_buffer=90]}
+      - {name: reid_vis_gated, label: "+ re-ID + visibility-gated appearance (full)", group: ours, config: configs/baselines/bytetrack_reid.yaml, overrides: [visibility.estimator=depth_order, visibility.score_fusion=product, visibility.occluder_min_score=0.1, visibility.occluded_buffer_scale=3.0, visibility.occluded_thresh=0.7, "appearance.min_visibility={tau_update}", "appearance.cost_min_visibility={tau_cost}"]}
+      - {name: botsort_reid_vis_gated, label: "BoT-SORT + re-ID + visibility-gated appearance", group: ours, config: configs/baselines/botsort_reid.yaml, overrides: [visibility.estimator=depth_order, visibility.score_fusion=product, visibility.occluder_min_score=0.1, visibility.occluded_buffer_scale=3.0, visibility.occluded_thresh=0.7, "appearance.min_visibility={tau_update}", "appearance.cost_min_visibility={tau_cost}"]}
