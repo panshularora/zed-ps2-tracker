@@ -9,6 +9,9 @@
 #   make ablate   ablation table + stress plots + latency for configs/ablations/manifest.yaml
 #   make gates    gate-event metrics (crossings, attribution, tailgating) on the ablate outputs
 #   make viewer   export demo clips + build the static viewer (viewer/dist/index.html)
+#   make ingest   BRING_BACK=<tar|dir>: verify a Stage A bring-back (sha256) into data/stagea
+#   make phase3   every post-GPU experiment from the ingested caches -> docs/results/phase3/
+#   make phase3-selftest  ingest + phase3 on a synthetic Stage A bundle (no GPU data needed)
 #   make smoke    the phase-1 pipeline check: MOT17 train (full) and val-half, public FRCNN dets
 #
 # Defaults reproduce the README smoke numbers; override e.g.
@@ -25,7 +28,7 @@ NAME    ?= bytetrack_public
 OUT     ?= outputs/$(DATASET)_$(SPLIT)
 BENCH    = $(if $(filter MOT20,$(DATASET)),MOT20,MOT17)
 
-.PHONY: setup check lint format typecheck test data eval stress latency oracle smoke ablate gates viewer clean
+.PHONY: setup check lint format typecheck test data eval stress latency oracle smoke ablate gates viewer ingest phase3 phase3-selftest clean
 
 setup:
 	uv venv -p 3.11 .venv
@@ -108,3 +111,26 @@ viewer:
 		--tracker botsort=configs/baselines/botsort.yaml \
 		--tracker delayed_k5=configs/ours/delayed.yaml
 	cd viewer && npm ci && npm run build
+
+# `make ingest BRING_BACK=<tar | folder of tars | bring_back dir>`: sha256-verify against the DGX
+# SHA256SUMS, validate caches, place them under data/stagea/ and update data/stagea/index.json.
+# Re-run per tar (MOT17 + MOT20 first). DELETE=1 removes each tar after it is verified.
+STAGEA ?= data/stagea
+ingest:
+	@test -n "$(BRING_BACK)" || { echo "usage: make ingest BRING_BACK=<path> [DELETE=1]"; exit 2; }
+	$(PY) -m eval.ingest --bring-back "$(BRING_BACK)" --dest $(STAGEA) --data $(DATA) \
+		$(if $(filter 1,$(DELETE)),--delete-source,)
+
+# `make phase3`: configs/phase3/plan.yaml on everything ingested so far (re-run after each ingest)
+phase3:
+	$(PY) -m eval.phase3 --plan configs/phase3/plan.yaml --index $(STAGEA)/index.json \
+		--out outputs/phase3 --report docs/results/phase3 --jobs $(JOBS)
+
+# `make phase3-selftest`: synthetic bundle (real Stage A writer, bringback, pack) -> ingest ->
+# phase3, all in a temp dir that is deleted afterwards
+phase3-selftest:
+	@t=$$(mktemp -d) && trap 'rm -rf "$$t"' EXIT && \
+	$(PY) -m eval.synth_stagea --root $$t/zed && \
+	$(PY) -m eval.ingest --bring-back $$t/zed/bring_back_tars --dest $$t/stagea --data $$t/none && \
+	$(PY) -m eval.phase3 --index $$t/stagea/index.json --out $$t/out --report $$t/report --jobs $(JOBS) && \
+	cat $$t/report/README.md && echo "PHASE3 SELFTEST OK"

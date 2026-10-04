@@ -32,6 +32,7 @@ reads ``index.json``.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import shutil
@@ -120,8 +121,8 @@ def check_cache(path: Path, rel: str) -> dict[str, Any]:
 
 def ingest_one(src: Path, dest: Path) -> dict[str, Any]:
     """Verify and place one source (tar or folder). Returns a summary."""
-    tf = tarfile.open(src, "r:") if src.is_file() else None
-    try:
+    with contextlib.ExitStack() as stack:
+        tf = stack.enter_context(tarfile.open(src, "r:")) if src.is_file() else None
         members = list(_tar_members(tf) if tf else _dir_members(src))
         by_rel = {m.rel: m for m in members}
         if "SHA256SUMS" not in by_rel:
@@ -165,9 +166,6 @@ def ingest_one(src: Path, dest: Path) -> dict[str, Any]:
             missing = []
         return {"source": str(src), "placed": len(placed), "bytes": need, "caches": caches,
                 "still_missing": missing}  # fmt: skip
-    finally:
-        if tf:
-            tf.close()
 
 
 def _gt_root(dest: Path, dataset: str, seqs: list[str], data_dir: Path) -> str | None:
@@ -223,8 +221,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--bring-back", type=Path, required=True)
     p.add_argument("--dest", type=Path, default=Path("data/stagea"))
     p.add_argument("--data", type=Path, default=Path("data"), help="public MOT labels")
-    p.add_argument("--delete-source", action="store_true",
-                   help="delete each tar after it is verified and placed (saves disk)")
+    p.add_argument(
+        "--delete-source",
+        action="store_true",
+        help="delete each tar after it is verified and placed (saves disk)",
+    )
     a = p.parse_args(argv)
     try:
         res = ingest(a.bring_back, a.dest, a.data, a.delete_source)
@@ -238,8 +239,10 @@ def main(argv: list[str] | None = None) -> int:
               f"{g['gt_root'] or 'MISSING (ingest core.tar)'}{flag}")  # fmt: skip
     missing = res["sources"][-1]["still_missing"] if res["sources"] else []
     if missing:
-        print(f"\n{len(missing)} files of the DGX bundle are not here yet (e.g. {missing[0]}); "
-              "ingest the remaining tars later.")
+        print(
+            f"\n{len(missing)} files of the DGX bundle are not here yet (e.g. {missing[0]}); "
+            "ingest the remaining tars later."
+        )
     print("\nINGEST OK")
     return 0
 

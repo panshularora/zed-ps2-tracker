@@ -103,7 +103,7 @@ def collect(m: dict[str, Any], out: Path) -> list[dict[str, Any]]:
 
 
 def markdown(m: dict[str, Any], rows: list[dict[str, Any]]) -> str:
-    title = f"{m['dataset']} {m['split']}, {m.get('dets', 'public')} detections"
+    title = m.get("title") or f"{m['dataset']} {m['split']}, {m.get('dets', 'public')} detections"
     lines = [f"### Ablation: {title}", "",
              "| Group | Tracker | HOTA | IDF1 | MOTA | IDSW | AssA | DetA | p50 / p95 / max ms |",
              "|---|---|---|---|---|---|---|---|---|"]  # fmt: skip
@@ -154,6 +154,24 @@ def plot_stress(rows: list[dict[str, Any]], out: Path) -> list[Path]:
     return paths
 
 
+def run_manifest(m: dict[str, Any], out: Path, report: Path, jobs: int = 6, force: bool = False,
+                 latency: bool = True, latency_repeats: int = 1) -> str:  # fmt: skip
+    """Run every entry, measure latency, write the report folder; return the markdown table."""
+    with ThreadPoolExecutor(jobs) as ex:
+        list(ex.map(lambda e: run_entry(m, e, out, force), m["entries"]))
+    if latency:
+        for e in m["entries"]:  # sequential: nothing else competes for the CPU
+            latency_entry(m, e, out, latency_repeats, force)
+    rows = collect(m, out)
+    report.mkdir(parents=True, exist_ok=True)
+    md = markdown(m, rows)
+    (report / "ablation.md").write_text(md + "\n")
+    write_csv(rows, report / "ablation.csv")
+    (report / "ablation.json").write_text(json.dumps(rows, indent=1))
+    plot_stress(rows, report)
+    return md
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m eval.ablate", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)  # fmt: skip
@@ -166,18 +184,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--latency-repeats", type=int, default=1)
     a = p.parse_args(argv)
     m = load_manifest(a.manifest)
-    with ThreadPoolExecutor(a.jobs) as ex:
-        list(ex.map(lambda e: run_entry(m, e, a.out, a.force), m["entries"]))
-    if not a.no_latency:
-        for e in m["entries"]:  # sequential: nothing else competes for the CPU
-            latency_entry(m, e, a.out, a.latency_repeats, a.force)
-    rows = collect(m, a.out)
-    a.report.mkdir(parents=True, exist_ok=True)
-    md = markdown(m, rows)
-    (a.report / "ablation.md").write_text(md + "\n")
-    write_csv(rows, a.report / "ablation.csv")
-    (a.report / "ablation.json").write_text(json.dumps(rows, indent=1))
-    plot_stress(rows, a.report)
+    md = run_manifest(m, a.out, a.report, a.jobs, a.force, not a.no_latency, a.latency_repeats)
     print(md)
     return 0
 
