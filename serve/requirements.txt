@@ -2,8 +2,11 @@
 numpy==2.4.6
 scipy==1.17.1
 PyYAML==6.0.3
-fastapi==0.142.2
+fastapi==0.143.0
 starlette==1.7.0
-pydantic==2.13.5
+pydantic==2.14.0
 uvicorn==0.54.0
 python-multipart==0.0.32
+# CPU video jobs: YOLOX ONNX person detector + OpenCV decoding / YuNet face blurring
+onnxruntime==1.31.0
+opencv-python-headless==5.0.0.93
