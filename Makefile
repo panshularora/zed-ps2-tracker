@@ -14,7 +14,8 @@
 #   make ablate   ablation table + stress plots + latency for configs/ablations/manifest.yaml
 #   make gates    gate-event metrics (crossings, attribution, tailgating) on the ablate outputs
 #   make viewer   export demo clips + build the static viewer (viewer/dist/index.html)
-#   make ingest   BRING_BACK=<tar|dir>: verify a Stage A bring-back (sha256) into data/stagea
+#   make ingest   BRING_BACK=<tar|dir>: verify a Stage A bring-back (sha256) into data/stagea,
+#                 or the final results tar of `run.sh all` into docs/results/phase3
 #   make phase3   every post-GPU experiment from the ingested caches -> docs/results/phase3/
 #   make phase3-selftest  ingest + phase3 on a synthetic Stage A bundle (no GPU data needed)
 #   make models   demo detector + face-blur ONNX models -> data/models (sha256-checked)
@@ -136,16 +137,25 @@ viewer:
 # `make ingest BRING_BACK=<tar | folder of tars | bring_back dir>`: sha256-verify against the DGX
 # SHA256SUMS, validate caches, place them under data/stagea/ and update data/stagea/index.json.
 # Re-run per tar (MOT17 + MOT20 first). DELETE=1 removes each tar after it is verified.
+# It also takes the ONE final results tar of `run.sh all` (zed_results_*.tar.gz): verified file by
+# file, installed as docs/results/phase3/ (+ everything under data/dgx_results/); no phase3 needed.
 STAGEA ?= data/stagea
+PHASE3_OUT ?= outputs/phase3
+PHASE3_REPORT ?= docs/results/phase3
+PHASE3_ARGS ?=
+DGX_RESULTS ?= data/dgx_results
 ingest:
 	@test -n "$(BRING_BACK)" || { echo "usage: make ingest BRING_BACK=<path> [DELETE=1]"; exit 2; }
 	$(PY) -m eval.ingest --bring-back "$(BRING_BACK)" --dest $(STAGEA) --data $(DATA) \
+		--report $(PHASE3_REPORT) --results-dest $(DGX_RESULTS) \
 		$(if $(filter 1,$(DELETE)),--delete-source,)
 
-# `make phase3`: configs/phase3/plan.yaml on everything ingested so far (re-run after each ingest)
+# `make phase3`: configs/phase3/plan.yaml on everything ingested so far (re-run after each ingest).
+# run.sh all calls it with STAGEA/PHASE3_OUT/PHASE3_REPORT on the GPU host and, for the laptop
+# detector fallback, PHASE3_ARGS="--remap-cache ... --tag-cache ...".
 phase3:
 	$(PY) -m eval.phase3 --plan configs/phase3/plan.yaml --index $(STAGEA)/index.json \
-		--out outputs/phase3 --report docs/results/phase3 --jobs $(JOBS)
+		--out $(PHASE3_OUT) --report $(PHASE3_REPORT) --jobs $(JOBS) $(PHASE3_ARGS)
 
 # `make phase3-selftest`: synthetic bundle (real Stage A writer, bringback, pack) -> ingest ->
 # phase3, all in a temp dir that is deleted afterwards
