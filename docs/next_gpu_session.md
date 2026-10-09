@@ -54,7 +54,7 @@ is the real Stage A output.
 
 ## Blocked on Panshul (not on the GPU)
 
-- **CI workflow:** the token has no `workflow` scope, so add `ci/github-actions.yml` as
+- **CI workflow:** the token has no `workflow` scope, so add `docs/ci/github-actions.yml` as
   `.github/workflows/ci.yml` through the GitHub website.
 - **Gate clip:** it needs recording, plus consent.
 - **SOMPT22:** a manual download (Drive), extracted before `scp` (see runbook).

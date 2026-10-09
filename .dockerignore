@@ -1,4 +1,4 @@
-# keep the build context small: code, configs and the viewer sources only
+# keep the build context small: code, configs, results and the two frontends' sources only
 **
 !Dockerfile
 !tracker/
@@ -6,9 +6,13 @@
 !models/
 !serve/
 !configs/
+!docs/results/
 !viewer/
+!web/
 viewer/node_modules/
 viewer/dist/
+web/node_modules/
+web/dist/
 **/__pycache__/
 **/*.pyc
 models/exps/

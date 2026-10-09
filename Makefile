@@ -1,6 +1,11 @@
 # zed-ps2-tracker: developer entry points.
 #   make setup    create .venv (Python 3.11) and install the package + dev tools
-#   make check    lint + format check + mypy (strict on tracker/) + tests   (what CI runs)
+#   make check    lint + format check + mypy (strict on tracker/) + pytest  (what CI runs)
+#   make test     pytest + the web app's vitest          (make test-py / make test-web for one)
+#   make web      build the web app (web/dist; `make serve` then serves it at /)
+#   make demo     backend on :8000 + web dev server on :5173 (Ctrl-C stops both)
+#   make web-check  eslint + tsc + vitest for web/
+#   make compose  docker compose up --build (backend :8000, frontend :8080)
 #   make data     download MOT17 + MOT20 labels and public detections only (no images, ~30 MB)
 #   make eval     track DATASET/SPLIT with CONFIG on DETS, score with TrackEval, stress bins
 #   make stress   re-run the stress bins on existing outputs of `make eval`
@@ -31,7 +36,7 @@ NAME    ?= bytetrack_public
 OUT     ?= outputs/$(DATASET)_$(SPLIT)
 BENCH    = $(if $(filter MOT20,$(DATASET)),MOT20,MOT17)
 
-.PHONY: models clips blur setup check lint format typecheck test data eval stress latency oracle smoke ablate gates viewer ingest phase3 phase3-selftest serve docker-build clean
+.PHONY: models clips blur web web-check demo compose test-py test-web setup check lint format typecheck test data eval stress latency oracle smoke ablate gates viewer ingest phase3 phase3-selftest serve docker-build clean
 
 setup:
 	uv venv -p 3.11 .venv
@@ -49,10 +54,15 @@ typecheck:
 	$(PY) -m mypy --strict tracker
 	$(PY) -m mypy eval models serve
 
-test:
+test: test-py test-web
+
+test-py:
 	$(PY) -m pytest -q
 
-check: lint typecheck test
+test-web: web/node_modules
+	cd web && npm test
+
+check: lint typecheck test-py
 
 data: $(DATA)/MOT17/train $(DATA)/MOT20/train
 
@@ -156,3 +166,25 @@ clips:
 
 blur: models
 	$(PY) -m serve.blur --src $(DATA)/demo/raw --out $(DATA)/demo/blurred --models $(DATA)/models
+
+# Product frontend (web/) and the local demo stack. `make demo` needs `make models clips blur` once
+# and `make setup`; it serves only the face-blurred clips. Ports: API_PORT, WEB_PORT.
+API_PORT ?= 8000
+WEB_PORT ?= 5173
+web/node_modules: web/package-lock.json
+	cd web && npm ci --no-audit --no-fund
+	@touch web/node_modules
+
+web: web/node_modules
+	cd web && npm run build
+
+web-check: web/node_modules
+	cd web && npm run lint && npm run typecheck && npm test
+
+demo: web/node_modules
+	@trap 'kill 0' EXIT INT TERM; \
+	$(PY) -m uvicorn serve.app:app --host 127.0.0.1 --port $(API_PORT) & \
+	cd web && VITE_API_TARGET=http://127.0.0.1:$(API_PORT) npx vite --port $(WEB_PORT) --strictPort
+
+compose:
+	docker compose up --build

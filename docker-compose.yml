@@ -1,0 +1,37 @@
+# Backend (FastAPI + CPU detector) and frontend (nginx + web app). No GPU needed.
+#   make models clips blur      # once: ONNX models + face-blurred Pexels clips under data/
+#   docker compose up --build   # web app on http://localhost:8080, API on http://localhost:8000
+services:
+  backend:
+    build: .
+    image: zed-ps2-demo
+    ports:
+      - "8000:8000"
+    environment:
+      ZED_DETECTOR: ${ZED_DETECTOR:-yolox_s}
+      ZED_DETECTOR_THREADS: ${ZED_DETECTOR_THREADS:-4}
+      ZED_JOB_WORKERS: ${ZED_JOB_WORKERS:-1}
+      ZED_MAX_VIDEO_MB: ${ZED_MAX_VIDEO_MB:-200}
+    volumes:
+      # only the face-blurred copies are mounted; raw downloads never reach the service
+      - ./data/demo/blurred:/data/demo/blurred:ro
+      - ./data/models:/data/models:ro
+      - jobs:/data/serve
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    image: zed-ps2-web
+    ports:
+      - "8080:80"
+    environment:
+      API_UPSTREAM: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  jobs:

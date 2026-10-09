@@ -90,12 +90,38 @@ A static Vite + React + TypeScript viewer, built into one `dist/index.html` (`ma
 opens over `file://`. It shows two trackers side by side with a timeline of ID-switch and crossing
 marks, dashed held decisions and gate counters. See [../viewer/README.md](../viewer/README.md).
 
+## `serve/`
+
+CPU job service (FastAPI). See [../serve/README.md](../serve/README.md).
+
+| File | Purpose |
+|---|---|
+| `app.py` | `create_app(settings)`: routes, error handlers, CORS, web app at `/` (viewer at `/viewer`), the original `/api/track` replay contract |
+| `api.py` | `Service`: clips (blurred copies only), uploads with type/size/duration checks, jobs, results, benchmarks routes |
+| `jobs.py` | filesystem job store (atomic JSON) and worker pool: progress, cancel, recovery of interrupted jobs |
+| `pipeline.py` | decode → YOLOX → tracker → analysis for one video; timing (detector / tracker p50 / p95, wall) |
+| `analysis.py` | without ground truth: ID-preserving recoveries, heuristic suspected switches, neutral crossings, per-job metrics |
+| `detector.py` | YOLOX ONNX person detector on onnxruntime CPU; sha256-checked model fetch |
+| `clips.py`, `blur.py` | Pexels clip manifest + fetch; face blurring (YuNet + head regions) re-encoded with a keyframe every 10 frames |
+| `benchmarks.py` | `/api/benchmarks` from `docs/results/` (headline, ablation, gate events, go/no-go sanity check, pending-GPU list) |
+| `settings.py`, `errors.py` | `ZED_*` environment settings; structured `{"error": {code, message}}` responses |
+| `events.py` | gate-event contract (crossing / tailgate / ambiguous_hold) |
+
+## `web/`
+
+React 18 + Vite + TypeScript product frontend: Overview, Demo, Results, Architecture. `src/lib/playback.ts`
+holds the pure frame/time maths (shared `viewer/src/media.ts`), `src/lib/draw.ts` the canvas
+overlay. Vitest in `web/tests/`. See [../web/README.md](../web/README.md).
+
 ## Other
 
 | Path | Purpose |
 |---|---|
 | `third_party/trackeval/` | TrackEval `12c8791`, unmodified, MIT |
-| `ci/github-actions.yml` | CI (`check` + `regression`); must be added as `.github/workflows/ci.yml` through the GitHub UI |
+| `docs/ci/github-actions.yml` | CI (`check`, `web`, `docker`, `regression`); must be added as `.github/workflows/ci.yml` through the GitHub UI |
+| `docker-compose.yml`, `Dockerfile`, `web/Dockerfile`, `web/nginx.conf.template` | backend image (API + built web app + viewer, ffmpeg) and nginx frontend proxying `/api`; models and blurred clips are mounted, never baked in |
+| `scripts/demo/fetch_clips.sh` | models + Pexels clips + face blurring in one go (`make models clips blur`) |
+| `configs/demo/clips.yaml` | demo clip manifest: Pexels id, consent (false), event styling (neutral), gate line |
 | `docs/` | this documentation; `docs/research/` holds the Research Lab briefs |
-| `serve/` | `app.py` FastAPI CPU replay service (`/api/health`, `/api/configs`, `POST /api/track`, viewer at `/`); `events.py` gate-event contract (crossing / tailgate / ambiguous_hold); `requirements.txt` pins for the `Dockerfile` |
-| `demo/`, `docs/integration/`, `dashboard/`, `deploy/` | placeholders with READMEs describing planned contents |
+| `demo/`, `dashboard/`, `deploy/` | superseded placeholders; their READMEs point to `viewer/`, `web/` and `docker-compose.yml` |
+| `docs/integration/` | index of the remaining presentation deliverables |

@@ -1,2 +1,4 @@
-# dashboard/ — not started (later phase)
-React + Vite + TypeScript live overlay. Intentionally empty in phase 1.
+# dashboard/ (superseded)
+
+The live overlay planned here was built as the product web app in [../web/](../web/README.md)
+(React + Vite + TypeScript, served by `serve/`).
