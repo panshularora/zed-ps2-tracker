@@ -1,18 +1,18 @@
 """FastAPI demo service (CPU). Run: ``uvicorn serve.app:app --port 8000`` or the Dockerfile.
 
-Endpoints
-* ``GET  /api/health``   status, version, configs found.
+Endpoints (the product API: clips, uploads, tracking jobs, benchmarks, is in ``serve/api.py``)
+* ``GET  /api/health``   status, version, configs found, detector models, clips, job counts.
 * ``GET  /api/configs``  tracker configs that may be named in ``/api/track``.
 * ``POST /api/track``    multipart: ``cache`` (a Stage A ``.npz`` detection cache, see
   ``tracker/io.py``), ``config`` (name from ``/api/configs``), optional ``gate`` (``x1,y1,x2,y2``
   in pixels; default: horizontal line at 60 % of the frame height, the ``h60`` rule),
   optional ``start_time`` (ISO 8601 wall time of frame 1; default ``1970-01-01T00:00:00+00:00``
   = replay time). Returns gate events (``serve/events.py``), a viewer clip and latency.
-* ``GET  /``             the built viewer (``viewer/dist``) when present.
+* ``GET  /``             the web app (``web/dist``) when built, else the static viewer
+  (``viewer/dist``); the viewer is also at ``/viewer/`` when both exist.
 
-This is an offline replay demo: frames are not decoded here (no detector on CPU); the input is
-the detector output the edge box would produce. Nothing is stored; the upload is deleted after
-the request.
+``/api/track`` is an offline replay: it takes the detector output an edge box would produce (a
+Stage A cache) and stores nothing. The video jobs of ``serve/api.py`` run a CPU detector.
 """
 
 from __future__ import annotations
@@ -20,18 +20,26 @@ from __future__ import annotations
 import os
 import platform
 import tempfile
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Any
 
 import numpy as np
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from eval.export_viewer import build_clip, pending_entries, results_to_rows
 from eval.gate_events import Gate
+from serve import errors
+from serve.api import Service, router
+from serve.detector import MODELS
 from serve.events import EventParams, gate_events
+from serve.settings import Settings
 from tracker.config import load_config
 from tracker.io import CacheFormatError, load_cache
 from tracker.runner import run_sequence
@@ -41,7 +49,7 @@ CONFIG_ROOT = Path(os.environ.get("ZED_CONFIG_ROOT", ROOT / "configs"))
 VIEWER_DIST = Path(os.environ.get("ZED_VIEWER_DIST", ROOT / "viewer" / "dist"))
 MAX_UPLOAD_MB = float(os.environ.get("ZED_MAX_UPLOAD_MB", "200"))
 CONFIG_DIRS = ("baselines", "ours")
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 
 def available_configs(root: Path = CONFIG_ROOT) -> dict[str, Path]:
@@ -86,21 +94,76 @@ def _save_upload(upload: UploadFile, dst: Path) -> None:
             fh.write(chunk)
 
 
-app = FastAPI(title="zed-ps2-tracker demo", version=VERSION)
+class SPAStaticFiles(StaticFiles):
+    """Static files with a single-page-app fallback: unknown paths serve ``index.html``."""
+
+    async def get_response(self, path: str, scope: Any) -> Any:
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as err:
+            if err.status_code != 404 or path.startswith("api"):
+                raise
+            return FileResponse(Path(str(self.directory)) / "index.html")
 
 
-@app.get("/api/health")
-def health() -> dict[str, Any]:
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or Settings.from_env()
+
+    @asynccontextmanager
+    async def lifespan(a: FastAPI) -> AsyncIterator[None]:
+        yield
+        a.state.service.manager.shutdown()
+
+    desc = (
+        "Identity-preserving gate tracking (Zed PS-2): CPU demo service. "
+        "Benchmark numbers come from docs/results."
+    )
+    application = FastAPI(title="zed-ps2-tracker demo", version=VERSION, lifespan=lifespan,
+                          description=desc)  # fmt: skip
+    errors.install(application)
+    if settings.cors_origins:
+        application.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins),
+                                   allow_methods=["*"], allow_headers=["*"])  # fmt: skip
+    application.state.service = Service(settings)
+    application.state.settings = settings
+    application.add_api_route("/api/health", health, methods=["GET"])
+    application.add_api_route("/api/configs", configs, methods=["GET"])
+    application.add_api_route("/api/track", track, methods=["POST"])
+    application.include_router(router)
+
+    web = settings.web_dist
+    viewer = (VIEWER_DIST / "index.html").exists()
+    if (web / "index.html").exists():
+        if viewer:
+            application.mount("/viewer", StaticFiles(directory=VIEWER_DIST, html=True), "viewer")
+        application.mount("/", SPAStaticFiles(directory=web, html=True), name="web")
+    elif viewer:
+        application.mount("/", StaticFiles(directory=VIEWER_DIST, html=True), name="viewer")
+    return application
+
+
+def health(request: Request) -> dict[str, Any]:
+    service: Service = request.app.state.service
+    s = service.settings
+    jobs = service.store.list()
     return {"status": "ok", "version": VERSION, "configs": len(available_configs()),
-            "viewer": (VIEWER_DIST / "index.html").exists()}  # fmt: skip
+            "viewer": (VIEWER_DIST / "index.html").exists(),
+            "web": (s.web_dist / "index.html").exists(),
+            "detectors": {n: (s.model_dir / f"{n}.onnx").exists() for n in MODELS},
+            "default_detector": s.detector,
+            "clips": len(service.clips()),
+            "jobs": {st: sum(j["status"] == st for j in jobs)
+                     for st in ("queued", "running", "succeeded", "failed", "cancelled")},
+            "limits": {"max_video_mb": s.max_video_mb,
+                       "max_video_seconds": s.max_video_seconds,
+                       "max_job_frames": s.max_job_frames,
+                       "max_cache_mb": MAX_UPLOAD_MB}}  # fmt: skip
 
 
-@app.get("/api/configs")
 def configs() -> list[str]:
     return list(available_configs())
 
 
-@app.post("/api/track")
 def track(
     cache: Annotated[UploadFile, File(description="Stage A .npz detection cache")],
     config: Annotated[str, Form()] = "baselines/bytetrack",
@@ -146,5 +209,4 @@ def track(
                          "latency": timing, "clip": clip})  # fmt: skip
 
 
-if (VIEWER_DIST / "index.html").exists():
-    app.mount("/", StaticFiles(directory=VIEWER_DIST, html=True), name="viewer")
+app = create_app()

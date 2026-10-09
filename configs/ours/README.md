@@ -10,3 +10,5 @@ Configs for our method. Each novel component is a flag on top of a baseline conf
 
 `delayed.enabled: true` on any tracker other than ByteTrackLike raises, so a config can never
 silently fall back to the baseline.
+
+| `visibility_botsort.yaml` | BoT-SORT + the visibility estimate (the `ours_vis_botsort` ablation row written out as a file; default of the demo service) | measured: `docs/results/ablation/ablation.md` (HOTA 52.5 / IDF1 59.8 / IDSW 180) |
