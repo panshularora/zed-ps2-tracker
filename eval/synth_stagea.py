@@ -209,13 +209,39 @@ def build(root: Path, n_frames: int = 80, n_people: int = 10) -> Path:
     return root / "bring_back_tars"
 
 
+def stage_a_one(root: Path, dataset: str, label: str, saw_eval_half: bool = False,
+                n_frames: int = 80, n_people: int = 10) -> Path:  # fmt: skip
+    """One dataset of LAYOUT under any detector label, as one ``run.sh <dataset>`` would leave
+    it (``data/`` with gt + caches + ``stage_a_log.jsonl``). The stand-in for Stage A in the
+    CPU tests of ``run.sh all`` (tests/test_run_all.py)."""
+    from models.stage_a import run_many
+
+    k, (ds, _, split, names, _) = next((k, x) for k, x in enumerate(LAYOUT) if x[0] == dataset)
+    out = root / "cache" / ds / label / split
+    for i, name in enumerate(names):
+        gt = make_gt(seed=17 * k + i, n_frames=n_frames, n_people=n_people)
+        write_sequence(root / "data" / ds / split / name, gt, n_frames)
+        det = GtDetector(gt, seed=k)
+        run_many([GtSource(name, n_frames)], det, GtEmbedder(det, seed=k), out, dataset=ds,
+                 split=split, detector_saw_eval_half=saw_eval_half, batch_size=8)  # fmt: skip
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m eval.synth_stagea", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)  # fmt: skip
     p.add_argument("--root", type=Path, required=True, help="fake ZED_ROOT to create")
     p.add_argument("--frames", type=int, default=80)
     p.add_argument("--people", type=int, default=10)
+    p.add_argument("--only", default=None, help="one dataset (MOT17, MOT20, DanceTrack) only")
+    p.add_argument("--label", default=None, help="with --only: the detector label folder")
+    p.add_argument("--saw-eval-half", action="store_true")
     a = p.parse_args(argv)
+    if a.only:
+        out = stage_a_one(a.root, a.only, a.label or "synthetic", a.saw_eval_half, a.frames,
+                          a.people)  # fmt: skip
+        print(out)
+        return 0
     tars = build(a.root, a.frames, a.people)
     print(json.dumps(sorted(p.name for p in tars.glob("*.tar"))))
     return 0

@@ -1,30 +1,80 @@
 #!/usr/bin/env bash
 # Stage A run, one command per dataset. Resumable: re-run the same command after any failure.
 #
+#   bash scripts/dgx/run.sh all [--profile dgx|laptop] [--dry-run] [--force[=STAGES]] ...
+#                                                # THE WHOLE PIPELINE (scripts/dgx/run_all.sh)
 #   bash scripts/dgx/run.sh mot17                # MOT17 train (half-split eval), ablation weights
 #   bash scripts/dgx/run.sh mot20                # MOT20 train: ablation (clean) + mot20 full (SAW EVAL HALF)
 #   bash scripts/dgx/run.sh dancetrack           # DanceTrack val
 #   bash scripts/dgx/run.sh sompt22              # SOMPT22 train + test (+ baseline test-format results)
 #   bash scripts/dgx/run.sh video /path/gate.mp4 [name]   # your own gate clip
 #   bash scripts/dgx/run.sh pexels               # optional Pexels demo clips
-#   bash scripts/dgx/run.sh all [/path/gate.mp4] # everything above, in priority order
+#   bash scripts/dgx/run.sh download [mot17 mot20 dancetrack]   # only download + extract
+#   bash scripts/dgx/run.sh stagea-all [/path/gate.mp4]  # every Stage A target (the old `all`)
 #
+# DETECTOR=s uses YOLOX-S bytetrack_s_mot17 for every dataset (laptop fallback, see config.env).
 # Then: bash scripts/dgx/finalize.sh
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
-target="${1:-}"; [[ -n "$target" ]] || { sed -n 2,13p "$0"; exit 1; }
-start_log "run_${target}"
-activate
+target="${1:-}"; [[ -n "$target" ]] || { sed -n 2,17p "$0"; exit 1; }
+if [[ "$target" == all ]]; then shift; exec bash "$HERE/run_all.sh" "$@"; fi
+[[ "$DETECTOR" == x || "$DETECTOR" == s ]] || die "DETECTOR must be x or s, got '$DETECTOR'"
 W="$WEIGHTS"
+begin() { start_log "run_${target}"; activate; log "detector: $DETECTOR, batch $BATCH, GPU $GPU"; }
 
 # seq_root DIR : the directory whose children are sequence folders (with seqinfo.ini)
-seq_root() { dirname "$(find "$1" -mindepth 2 -maxdepth 4 -name seqinfo.ini -print -quit | xargs dirname)"; }
+seq_root() {
+  local f; f="$(find "$1" -mindepth 2 -maxdepth 4 -name seqinfo.ini -print -quit)"
+  [[ -n "$f" ]] || die "no sequence (seqinfo.ini) under $1"
+  dirname "$(dirname "$f")"
+}
 
-run_mot17() {
+# small_weights : download + sha256-check bytetrack_s_mot17 (only for DETECTOR=s); sets SMALL_PATH
+small_weights() {
+  local name url bytes got
+  IFS='|' read -r name url bytes <<<"$SMALL_WEIGHT"
+  SMALL_PATH="$W/$name"
+  fetch "$url" "$SMALL_PATH" "$bytes"
+  got=$(sha256sum "$SMALL_PATH" | cut -d' ' -f1)
+  [[ "$got" == "$SMALL_SHA256" ]] || die "$name: sha256 $got != $SMALL_SHA256 (delete it and re-run)"
+}
+
+# stage_a_small LABEL ARGS... : YOLOX-S on one dataset (same input sizes as YOLOX-X)
+stage_a_small() {
+  small_weights
+  VARIANT=yolox_s stage_a "$@" --det-weights "$SMALL_PATH" --trained-on "$SMALL_TRAINED_ON"
+}
+
+download_mot17() {
   fetch "$MOT17_URL" "$DL/MOT17.zip" 5860214001
   # only the FRCNN copy of each train sequence: the DPM/SDP folders hold identical images
   if [[ ! -f "$DATA/.extracted_MOT17_train" ]]; then
     log "extracting MOT17 train (FRCNN copies only)"
     unzip -q -o "$DL/MOT17.zip" 'MOT17/train/*-FRCNN/*' -d "$DATA" && touch "$DATA/.extracted_MOT17_train"
+  fi
+}
+
+download_mot20() {
+  fetch "$MOT20_URL" "$DL/MOT20.zip" 5028926248
+  if [[ ! -f "$DATA/.extracted_MOT20_train" ]]; then
+    log "extracting MOT20 train"
+    unzip -q -o "$DL/MOT20.zip" 'MOT20/train/*' -d "$DATA" && touch "$DATA/.extracted_MOT20_train"
+  fi
+}
+
+download_dancetrack() {
+  fetch "$DANCETRACK_VAL_URL" "$DL/dancetrack_val.zip" 4209785614
+  unzip_once "$DL/dancetrack_val.zip" "$DATA/DanceTrack"
+}
+
+want_mot20() { [[ " $MOT20_VARIANTS " == *" $1 "* ]]; }
+
+run_mot17() {
+  download_mot17
+  if [[ "$DETECTOR" == s ]]; then
+    stage_a_small dataset --root "$DATA/MOT17/train" --glob '*-FRCNN' --dataset MOT17 --split train \
+      --out "$CACHE/MOT17/$SMALL_LABEL_MOT17/train" --test-size 800 1440 --saw-eval-half
+    make_clip "$DATA/MOT17/train/MOT17-04-FRCNN" "$CLIPS/MOT17-04.mp4"
+    return 0
   fi
   stage_a dataset --root "$DATA/MOT17/train" --glob '*-FRCNN' --dataset MOT17 --split train \
     --out "$CACHE/MOT17/ablation/train" --det-weights "$W/bytetrack_ablation.pth.tar" \
@@ -39,22 +89,28 @@ run_mot17() {
 }
 
 run_mot20() {
-  fetch "$MOT20_URL" "$DL/MOT20.zip" 5028926248
-  if [[ ! -f "$DATA/.extracted_MOT20_train" ]]; then
-    log "extracting MOT20 train"
-    unzip -q -o "$DL/MOT20.zip" 'MOT20/train/*' -d "$DATA" && touch "$DATA/.extracted_MOT20_train"
+  download_mot20
+  if [[ "$DETECTOR" == s ]]; then   # bytetrack_s_mot17 has no MOT20 data: cross-domain, clean
+    stage_a_small dataset --root "$DATA/MOT20/train" --dataset MOT20 --split train \
+      --out "$CACHE/MOT20/$SMALL_LABEL_XDOMAIN/train" --test-size 896 1600
+    make_clip "$DATA/MOT20/train/MOT20-02" "$CLIPS/MOT20-02.mp4"
+    return 0
   fi
+  log "MOT20 variants: $MOT20_VARIANTS"
   # (a) clean, in-domain: SparseTrack's yolox_x_mot20_ablation (Drive file name
   #     bytetrack_20_ablation.pth.tar), trained on MOT20 train FIRST half + CrowdHuman (per the
   #     SparseTrack README; the weights themselves are unverified, selftest checks they load)
+  want_mot20 sparsetrack_ablation && \
   stage_a dataset --root "$DATA/MOT20/train" --dataset MOT20 --split train \
     --out "$CACHE/MOT20/sparsetrack_ablation/train" --det-weights "$W/sparsetrack_mot20_ablation.pth.tar" \
     --test-size 896 1600 --trained-on "CrowdHuman + MOT20 train first half (SparseTrack ablation)"
   # (b) clean, cross-domain: ByteTrack MOT17 full model has no MOT20 data (Deep OC-SORT's choice)
+  want_mot20 mot17full_xdomain && \
   stage_a dataset --root "$DATA/MOT20/train" --dataset MOT20 --split train \
     --out "$CACHE/MOT20/mot17full_xdomain/train" --det-weights "$W/bytetrack_x_mot17.pth.tar" \
     --test-size 896 1600 --trained-on "CrowdHuman + MOT17 + CityPersons + ETHZ (no MOT20)"
   # (d) strongest detector, but trained on ALL of MOT20 train: never for val-half headline numbers
+  want_mot20 mot20full_SAW_EVAL_HALF && \
   stage_a dataset --root "$DATA/MOT20/train" --dataset MOT20 --split train \
     --out "$CACHE/MOT20/mot20full_SAW_EVAL_HALF/train" --det-weights "$W/bytetrack_x_mot20.pth.tar" \
     --test-size 896 1600 --saw-eval-half --trained-on "CrowdHuman + MOT20 train (full)"
@@ -68,9 +124,13 @@ run_mot20() {
 }
 
 run_dancetrack() {
-  fetch "$DANCETRACK_VAL_URL" "$DL/dancetrack_val.zip" 4209785614
-  unzip_once "$DL/dancetrack_val.zip" "$DATA/DanceTrack"
+  download_dancetrack
   local root; root="$(seq_root "$DATA/DanceTrack")"
+  if [[ "$DETECTOR" == s ]]; then   # no small DanceTrack checkpoint: the MOT17 one, cross-domain
+    stage_a_small dataset --root "$root" --dataset DanceTrack --split val \
+      --out "$CACHE/DanceTrack/$SMALL_LABEL_XDOMAIN/val" --test-size 800 1440
+    return 0
+  fi
   stage_a dataset --root "$root" --dataset DanceTrack --split val \
     --out "$CACHE/DanceTrack/dancetrack/val" --det-weights "$W/dancetrack_bytetrack_x.pth.tar" \
     --test-size 800 1440 --trained-on "DanceTrack train (DanceTrack authors' ByteTrack YOLOX-X)"
@@ -149,19 +209,25 @@ run_pexels() {
 }
 
 case "$target" in
-  mot17)      run_mot17 ;;
-  mot20)      run_mot20 ;;
-  dancetrack) run_dancetrack ;;
-  sompt22)    run_sompt22 ;;
-  video)      [[ $# -ge 2 ]] || die "usage: run.sh video /path/clip.mp4 [name]"; run_video "$2" "${3:-}" ;;
-  pexels)     run_pexels ;;
-  all)        # each target in its own process: own log, own `set -e`, and one failure
+  mot17)      begin; run_mot17 ;;
+  mot20)      begin; run_mot20 ;;
+  dancetrack) begin; run_dancetrack ;;
+  sompt22)    begin; run_sompt22 ;;
+  video)      [[ $# -ge 2 ]] || die "usage: run.sh video /path/clip.mp4 [name]"; begin; run_video "$2" "${3:-}" ;;
+  pexels)     begin; run_pexels ;;
+  download)   start_log download
+              sets=("${@:2}"); [[ ${#sets[@]} -gt 0 ]] || sets=(mot17 mot20 dancetrack)
+              for d in "${sets[@]}"; do
+                case "$d" in mot17|mot20|dancetrack) "download_$d" ;; *) die "download: unknown dataset '$d'" ;; esac
+              done ;;
+  stagea-all) # each target in its own process: own log, own `set -e`, and one failure
               # (e.g. SOMPT22's manual download step) does not stop the others
+              start_log run_stagea-all
               failed=()
               for t in mot17 mot20 sompt22 dancetrack; do bash "$0" "$t" || failed+=("$t"); done
               if [[ -n "${2:-}" ]]; then bash "$0" video "$2" gate || failed+=(video); fi
               bash "$0" pexels || failed+=(pexels)
               [[ ${#failed[@]} -eq 0 ]] || die "targets that need attention: ${failed[*]} (re-run each)" ;;
-  *)          die "unknown target '$target' (mot17 | mot20 | dancetrack | sompt22 | video | pexels | all)" ;;
+  *)          die "unknown target '$target' (all | mot17 | mot20 | dancetrack | sompt22 | video | pexels | download | stagea-all)" ;;
 esac
 log "run.sh $target finished. When all targets are done: bash scripts/dgx/finalize.sh"

@@ -13,7 +13,7 @@ nvidia-smi --query-gpu=index,name,memory.total,driver_version,compute_cap --form
 for t in wget unzip git awk sha256sum; do command -v "$t" >/dev/null || die "missing tool: $t"; done
 free_gb=$(df -BG --output=avail "$ZED_ROOT" | tail -1 | tr -dc 0-9)
 log "free disk under $ZED_ROOT: ${free_gb} GB (need ~60 GB for everything, ~25 GB for MOT17+MOT20)"
-(( free_gb >= 25 )) || die "not enough disk under ZED_ROOT=$ZED_ROOT"
+(( free_gb >= ${MIN_FREE_GB:-25} )) || die "not enough disk under ZED_ROOT=$ZED_ROOT (${free_gb} GB < ${MIN_FREE_GB:-25} GB)"
 
 # ---------------------------------------------------------------- 2. environment
 cap=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader -i "$GPU" | head -1 | cut -d. -f1)
@@ -68,5 +68,8 @@ b=$(grep dancetrack_bytetrack_x "$WEIGHTS/SHA256SUMS" | cut -d' ' -f1)
 [[ "$a" != "$b" ]] || warn "DanceTrack checkpoint is byte-identical to bytetrack_x_mot17: tell the CPU side"
 
 # ---------------------------------------------------------------- 5. self-test
-python "$HERE/selftest.py" --weights "$WEIGHTS"
+# SELFTEST_ARGS=--allow-oom (set by `run.sh all --profile laptop`): an out-of-memory on one
+# checkpoint is reported but does not fail setup; Stage A then falls back to YOLOX-S if needed
+# shellcheck disable=SC2086
+python "$HERE/selftest.py" --weights "$WEIGHTS" ${SELFTEST_ARGS:-}
 log "SETUP OK. Next: bash scripts/dgx/run.sh mot17"

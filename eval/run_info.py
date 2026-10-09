@@ -25,8 +25,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from tracker.io import load_cache
-
 MARK_BEGIN = "<!-- run-info -->"
 MARK_END = "<!-- /run-info -->"
 CSV_COLS = ("run_profile", "run_gpu", "run_gpu_mem_mib", "run_detector", "run_precision",
@@ -65,6 +63,8 @@ def parse_nvidia_smi(text: str) -> list[dict[str, Any]]:
 
 def detector_of(cache_dir: Path) -> dict[str, Any]:
     """Detector record of one cache folder, read from the first cache's own metadata."""
+    from tracker.io import load_cache  # lazy: `gpu` works with a bare python3 (no numpy)
+
     first = next(iter(sorted(Path(cache_dir).glob("*.npz"))), None)
     if first is None:
         return {}
