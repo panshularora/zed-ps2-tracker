@@ -56,6 +56,22 @@ that. The MIT terms still apply to those portions, alongside Apache-2.0 for the 
 project.
 
 -------------------------------------------------------------------------------------------
+Demo assets (downloaded at setup time, not contained in this repository)
+-------------------------------------------------------------------------------------------
+
+Demo videos from Pexels (https://www.pexels.com), used under the Pexels License
+(https://www.pexels.com/license/). Pages are listed in configs/demo/clips.yaml and
+docs/licenses.md. The service shows only face-blurred copies made by serve/blur.py.
+
+YOLOX ONNX models (https://github.com/Megvii-BaseDetection/YOLOX, release 0.1.1rc0)
+    Apache License 2.0. Copyright (c) 2021-2022 Megvii Inc. COCO-trained weights.
+    Used for: the CPU demo detector (serve/detector.py).
+
+YuNet face detector (https://github.com/opencv/opencv_zoo, face_detection_yunet_2023mar)
+    MIT License. Copyright (c) 2020 Shiqi Yu.
+    Used for: blurring faces in the demo clips (serve/blur.py).
+
+-------------------------------------------------------------------------------------------
 Datasets and model weights: NON-COMMERCIAL RESEARCH USE ONLY
 -------------------------------------------------------------------------------------------
 
