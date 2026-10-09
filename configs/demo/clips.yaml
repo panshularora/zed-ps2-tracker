@@ -1,0 +1,68 @@
+# Demo clips for the web app and the demo video (Pexels licence; see docs/licenses.md).
+#
+# There is NO ground truth for these clips: they are for qualitative demos only and never appear
+# in a results table. `make clips` downloads them from Pexels into data/demo/raw (gitignored),
+# normalises them to 1080p H.264 (no audio), and `make blur` writes face-blurred copies with a
+# keyframe every 10 frames to data/demo/blurred. The service lists and serves ONLY the blurred
+# copies.
+#
+# consent / event_styling: Pexels clips show strangers who did not agree to be shown as
+# tailgaters or fare evaders. They are `consent: false`, `event_styling: neutral`: the UI shows
+# track IDs, crossings and in/out counts only (no tailgate / ambiguous_hold alerts, no error
+# colour). `alert` styling is reserved for consented footage (Panshul's own gate recording).
+#
+# hysteresis_px: how far (px) the box's bottom-centre must move past the line before a side
+# change counts (eval/gate_events.py; MOT17 frozen value 10 px). On the turnstile clip the feet
+# are hidden by the barriers, so the bottom edge jitters on the barrier top; 50 px there was set
+# by looking at this clip's own trajectories (demo only: there is no ground truth to tune on).
+#
+# gate: the virtual line in normalised image coordinates [x1, y1, x2, y2] (0..1), chosen by eye
+# on the first frame for the demo. direction "in" = crossing in the line's left-hand normal
+# direction (eval/gate_events.py convention).
+clips:
+  - id: subway_turnstile
+    title: Subway turnstiles
+    pexels_id: 32511497
+    page: https://www.pexels.com/video/busy-subway-turnstile-in-urban-station-32511497/
+    file: subway_turnstile_32511497.mp4
+    note: Closest to a Zed gate; the main demo clip.
+    consent: false
+    event_styling: neutral
+    gate: [0.0, 0.5, 1.0, 0.5]
+    hysteresis_px: 50
+  - id: mexico_city_entrance
+    title: Mexico City metro entrance
+    pexels_id: 30138564
+    page: https://www.pexels.com/video/bustling-mexico-city-metro-entrance-30138564/
+    file: mexico_city_entrance_30138564.mp4
+    note: Longest and densest crowd; the occlusion stress clip (111 s; run with a frame limit on CPU).
+    consent: false
+    event_styling: neutral
+    gate: [0.0, 0.6, 1.0, 0.6]
+  - id: milan_turnstiles
+    title: Milan metro turnstiles
+    pexels_id: 31540854
+    page: https://www.pexels.com/video/modern-milan-metro-station-turnstiles-31540854/
+    file: milan_turnstiles_31540854.mp4
+    note: Turnstile close-up (59.94 fps source).
+    consent: false
+    event_styling: neutral
+    gate: [0.0, 0.6, 1.0, 0.6]
+  - id: rabat_stadium
+    title: Stadium entrance, Rabat
+    pexels_id: 34452568
+    page: https://www.pexels.com/video/fans-arriving-at-stadium-in-rabat-34452568/
+    file: rabat_stadium_34452568.mp4
+    note: Portrait stadium entrance (Fast Lane angle).
+    consent: false
+    event_styling: neutral
+    gate: [0.0, 0.6, 1.0, 0.6]
+  - id: man_entering_metro
+    title: Single passenger, metro
+    pexels_id: 7251031
+    page: https://www.pexels.com/video/man-entering-a-metro-station-7251031/
+    file: man_entering_metro_7251031.mp4
+    note: One person; intro shot.
+    consent: false
+    event_styling: neutral
+    gate: [0.0, 0.6, 1.0, 0.6]

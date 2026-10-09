@@ -65,7 +65,9 @@ def test_prepare_splits_by_gt_and_writes_seqinfo(
     def fake_image_info(img_dir: Path) -> tuple[int, str, int, int]:
         try:
             return real(img_dir)
-        except ModuleNotFoundError:  # cv2 lives in the Stage A env, not the dev env
+        # cv2 lives in the Stage A env; where it is installed (the serve extra) it cannot read
+        # the empty placeholder frames written by _seq, so fall back the same way
+        except (ModuleNotFoundError, ValueError):
             return len(list(img_dir.iterdir())), ".jpg", 64, 48
 
     monkeypatch.setattr(prep, "_image_info", fake_image_info)

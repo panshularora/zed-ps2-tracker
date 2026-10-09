@@ -21,13 +21,17 @@ dependencies = [
 lap = ["lap>=0.5.12"]
 # figures (go/no-go curve, stress plots of `make ablate`)
 plots = ["matplotlib>=3.8"]
-# CPU demo service (serve/; the Docker image pins these in serve/requirements.txt)
-serve = ["fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9"]
+# CPU demo service (serve/; the Docker image pins these in serve/requirements.txt).
+# OpenCV >= 4.8 for cv2.FaceDetectorYN (face blurring) and video decoding.
+serve = ["fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9",
+         "onnxruntime>=1.17", "opencv-python-headless>=4.8"]
 dev = [
     "matplotlib>=3.8",
     "fastapi>=0.110",
     "uvicorn>=0.29",
     "python-multipart>=0.0.9",
+    "onnxruntime>=1.17",
+    "opencv-python-headless>=4.8",
     "httpx>=0.27",
     "pytest>=8.0",
     "ruff>=0.6",
@@ -70,7 +74,7 @@ module = ["tracker.*"]
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["trackeval", "trackeval.*", "lap", "scipy.*", "torch", "torch.*", "torchreid", "torchreid.*", "yolox", "yolox.*", "cv2"]
+module = ["trackeval", "trackeval.*", "lap", "scipy.*", "torch", "torch.*", "torchreid", "torchreid.*", "yolox", "yolox.*", "cv2", "onnxruntime", "onnxruntime.*"]
 ignore_missing_imports = true
 follow_imports = "skip"
 

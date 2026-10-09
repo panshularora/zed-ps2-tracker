@@ -19,7 +19,7 @@ Checked October 2026. "Unverified" means we could not find an authoritative curr
 | CrowdHuman (inside every YOLOX weight we use) | **unverified** | treat as ❌ | Its terms are commonly described as non-commercial research use; we did not find the text. |
 | MSMT17 (inside the OSNet weights) | research-only (dataset agreement) | ❌ | |
 | CityPersons, ETHZ (inside `bytetrack_x_mot17`) | research / non-commercial terms | ❌ | |
-| Pexels demo clips | Pexels licence (free use, including commercial; no resale of unmodified clips) | ✅ for demos | Only used for demos, never for metrics. |
+| Pexels demo clips | Pexels licence (free use, including commercial; no resale of unmodified clips) | ✅ for demos, with the limits below | Only used for demos, never for metrics. See "Demo clips" below. |
 | Our own gate clip | owned by us; consent of people filmed is our responsibility | – | |
 
 ## Model weights
@@ -34,6 +34,8 @@ benchmarking only.
 | DanceTrack YOLOX-X | MIT (DanceTrack repo) | DanceTrack train | benchmark only |
 | OSNet-AIN x1.0 (torchreid) | MIT (torchreid) | MSMT17 | benchmark only |
 | BoT-SORT FastReID SBS-S50 | – | MOT17/MOT20 patches (may include val halves, unverified) | **not used** |
+| YOLOX-Nano/Tiny/S ONNX (Megvii release `0.1.1rc0`) | Apache-2.0 (YOLOX) | COCO 2017 (annotations CC BY 4.0; images under their Flickr terms) | CPU demo detector of `serve/` only (demo clips, uploads); never in a results table |
+| YuNet `face_detection_yunet_2023mar` (OpenCV Zoo) | MIT | WIDER FACE (research-use terms) | only to **blur** faces in demo clips (`serve/blur.py`) |
 
 ## Code
 
@@ -49,6 +51,37 @@ benchmarking only.
 | lap, scipy, numpy, PyYAML | BSD/MIT | runtime deps |
 | **boxmot** | **AGPL-3.0** | **deliberately avoided**: using it would force the whole service open |
 | **Ultralytics (YOLOv8/11)** | **AGPL-3.0** | **deliberately avoided** for the same reason; YOLOX (Apache-2.0) is the default |
+
+## Demo clips (Pexels)
+
+Five short clips from [Pexels](https://www.pexels.com) are used for the web demo and the demo
+video. Videos from Pexels, used under the [Pexels License](https://www.pexels.com/license/):
+free to use, including commercially, attribution not required (we credit Pexels anyway). The
+licence does **not** allow showing identifiable people in a bad light or in an offensive way,
+implying that they endorse a product, or selling or redistributing unmodified copies.
+
+| Clip | Pexels page |
+|---|---|
+| Busy subway turnstile in urban station | https://www.pexels.com/video/busy-subway-turnstile-in-urban-station-32511497/ |
+| Bustling Mexico City metro entrance | https://www.pexels.com/video/bustling-mexico-city-metro-entrance-30138564/ |
+| Modern Milan metro station turnstiles | https://www.pexels.com/video/modern-milan-metro-station-turnstiles-31540854/ |
+| Fans arriving at stadium in Rabat | https://www.pexels.com/video/fans-arriving-at-stadium-in-rabat-34452568/ |
+| Man entering a metro station | https://www.pexels.com/video/man-entering-a-metro-station-7251031/ |
+
+How the repo complies:
+* **Not redistributed.** The clips are not in git. `make clips` downloads them from Pexels into
+  `data/demo/raw/` (gitignored); the manifest is `configs/demo/clips.yaml`.
+* **Faces blurred.** `make blur` (`serve/blur.py`) writes face- and head-blurred copies to
+  `data/demo/blurred/` (YuNet faces + the head region of every detected person, held ±2 frames,
+  keyframe every 10 frames). The service lists and serves **only** these copies. Blurring is best
+  effort: check a recording frame by frame before publishing it.
+* **No accusations.** The people in these clips did not agree to be shown as tailgaters or fare
+  evaders. Every Pexels clip is `consent: false`, `event_styling: neutral`: the UI shows track
+  IDs, crossings and in/out counts only. Tailgate and `ambiguous_hold` alerts and the error colour
+  are shown only for clips marked `consent: true` (our own gate recording; none yet).
+  `serve/clips.py` refuses `event_styling: alert` without consent.
+* **No endorsement.** Zed branding is kept outside the video frame (page chrome only), never
+  composited onto the footage.
 
 ## Implications for a Zed product
 
