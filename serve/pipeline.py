@@ -145,12 +145,16 @@ def detect_video(
         np.concatenate(tl) if tl else np.zeros((0, 4), np.float32),
         np.concatenate(sc) if sc else np.zeros(0, np.float32),
     )
+    # the raw detector output of the first frames, for the architecture page's example payload
+    samples = [{"frame": i + 1, "tlwh": np.round(t, 1).tolist(), "score": np.round(c, 3).tolist()}
+               for i, (t, c) in enumerate(zip(tl[:3], sc[:3], strict=True))]  # fmt: skip
     d = np.asarray(det_ms, float)
-    timing = {
+    timing: dict[str, Any] = {
         "decode_s": round(t_dec, 2),
         "detect_s": round(float(d.sum()) / 1e3, 2),
         "detector_p50_ms": round(float(np.percentile(d, 50)), 1),
         "detector_p95_ms": round(float(np.percentile(d, 95)), 1),
+        "sample_detections": samples,
     }
     return cache, timing
 
@@ -246,6 +250,7 @@ def run_video(
         "duration_s": round(info.duration_s, 3),
         "stride": opts.stride,
     }
+    out["sample_detections"] = det_timing.pop("sample_detections")
     out["timing"] = {
         **det_timing,
         **out.pop("tracker_timing"),

@@ -185,6 +185,8 @@ def test_job_lifecycle_and_outputs(env: dict[str, Any]) -> None:
     assert done["timing"]["detector_p50_ms"] >= 0
     res = c.get(f"/api/jobs/{job['id']}/result").json()
     assert res["schema"] == "zed-ps2-job-result/v1"
+    assert [d["frame"] for d in res["sample_detections"]] == [1, 2, 3]
+    assert "sample_detections" not in res["timing"]
     assert res["video"]["fps"] == FPS
     assert res["clip"]["event_styling"] == "neutral"
     assert set(res["tracks"])
