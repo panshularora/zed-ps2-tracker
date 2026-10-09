@@ -12,6 +12,9 @@
 #   make ingest   BRING_BACK=<tar|dir>: verify a Stage A bring-back (sha256) into data/stagea
 #   make phase3   every post-GPU experiment from the ingested caches -> docs/results/phase3/
 #   make phase3-selftest  ingest + phase3 on a synthetic Stage A bundle (no GPU data needed)
+#   make models   demo detector + face-blur ONNX models -> data/models (sha256-checked)
+#   make clips    download the Pexels demo clips (configs/demo/clips.yaml) -> data/demo/raw
+#   make blur     face-blurred copies (keyframe every 10 frames) -> data/demo/blurred
 #   make smoke    the phase-1 pipeline check: MOT17 train (full) and val-half, public FRCNN dets
 #
 # Defaults reproduce the README smoke numbers; override e.g.
@@ -28,7 +31,7 @@ NAME    ?= bytetrack_public
 OUT     ?= outputs/$(DATASET)_$(SPLIT)
 BENCH    = $(if $(filter MOT20,$(DATASET)),MOT20,MOT17)
 
-.PHONY: setup check lint format typecheck test data eval stress latency oracle smoke ablate gates viewer ingest phase3 phase3-selftest serve docker-build clean
+.PHONY: models clips blur setup check lint format typecheck test data eval stress latency oracle smoke ablate gates viewer ingest phase3 phase3-selftest serve docker-build clean
 
 setup:
 	uv venv -p 3.11 .venv
@@ -142,3 +145,14 @@ phase3-selftest:
 	$(PY) -m eval.ingest --bring-back $$t/zed/bring_back_tars --dest $$t/stagea --data $$t/none && \
 	$(PY) -m eval.phase3 --index $$t/stagea/index.json --out $$t/out --report $$t/report --jobs $(JOBS) && \
 	cat $$t/report/README.md && echo "PHASE3 SELFTEST OK"
+
+# Demo assets (CPU). `make models clips blur`: ONNX models, the Pexels clips, then the face-blurred
+# copies that the service is allowed to show (docs/licenses.md, "Demo clips").
+models:
+	$(PY) -m serve.detector fetch --out $(DATA)/models
+
+clips:
+	$(PY) -m serve.clips fetch --out $(DATA)/demo/raw
+
+blur: models
+	$(PY) -m serve.blur --src $(DATA)/demo/raw --out $(DATA)/demo/blurred --models $(DATA)/models
