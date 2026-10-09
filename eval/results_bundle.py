@@ -236,6 +236,7 @@ def _safe(name: str) -> str:
 def ingest(path: Path, results_dest: Path, report_dest: Path,
            delete_source: bool = False) -> dict[str, Any]:  # fmt: skip
     """Verify every file of a results bundle, extract it, install its phase-3 report."""
+    path = path.resolve()  # zed_results_latest.tar.gz is a symlink to the real tar
     sidecar = path.with_name(path.name + ".sha256")
     if sidecar.exists():
         want = sidecar.read_text().split()[0]

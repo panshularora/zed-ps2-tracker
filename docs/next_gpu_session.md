@@ -4,7 +4,14 @@ Phase 2 ran on CPU only, with public detections and no embeddings. The CPU-side 
 phase 3 is ready and tested on synthetic bundles (`make phase3-selftest`). What is still missing
 is the real Stage A output.
 
-**Runbook (step by step, checked): [dgx_runbook.md](dgx_runbook.md).** Background:
+**One command now runs the whole GPU side, phase 3 and the go/no-go verdict included:**
+`bash run.sh all --profile laptop` on Panshul's Windows laptop (WSL2, RTX 3050 6 GB):
+[laptop_runbook.md](laptop_runbook.md). Or `bash run.sh all --profile dgx` on the DGX:
+[dgx_runbook.md](dgx_runbook.md), "One command". Each run writes `zed_results_*.tar.gz`, and
+`make ingest BRING_BACK=<that tar>` installs `docs/results/phase3/`, so steps 3–4 below are
+already done by it. Only `--dry-run` and a stubbed-GPU run have been tested.
+
+**Per-dataset runbook (step by step, checked): [dgx_runbook.md](dgx_runbook.md).** Background:
 [dgx_guide.md](dgx_guide.md).
 
 ## On the DGX
@@ -39,7 +46,7 @@ is the real Stage A output.
      possible verdict is "GO (MOT17 only)")
 
    Conditions without data are listed as "waiting". Re-run after each ingest.
-5. **Gate events on the GPU runs (manual, not in `make phase3` yet).** Run `python -m
+5. **Gate events on the GPU runs** (`run.sh all` now does this into `phase3/report/gate_events/`; by hand otherwise). Run `python -m
    eval.gate_events --gates configs/gates/mot17_val_half.yaml` on the MOT17 val_half tracker
    outputs under `outputs/phase3/`. These fill the ⟨GPU⟩ cells in
    [integration.md](integration.md) §3 and slides 5–7 of [deck_outline.md](deck_outline.md).

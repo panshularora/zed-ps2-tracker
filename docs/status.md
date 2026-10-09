@@ -16,6 +16,16 @@ deliberately not attempted on CPU; the web app labels them "pending DGX run".
 | CI for the new code | `ci/github-actions.yml` | moved to `docs/ci/github-actions.yml` with `web` and `docker` jobs; still needs adding as `.github/workflows/ci.yml` by hand (token lacks `workflow` scope) |
 | `make demo`, `make web`, `make test`, README quickstart with screenshots | task brief | done; screenshots in `docs/media/web_*.jpg` from a real turnstile run |
 
+## GPU pipeline in one command (10 Oct 2026, branch `feat/dgx-run-all`)
+
+`bash run.sh all --profile laptop|dgx` ([`scripts/dgx/run_all.sh`](../scripts/dgx/run_all.sh)) runs
+preflight, setup, the torch/CUDA check, Stage A per dataset, ingest, `make phase3` (with the
+frozen go/no-go v2), gate events and a results tar. It is resumable, fail-fast, keeps a STATUS
+file, and has `--dry-run`. `make ingest` accepts the results tar. Runbooks:
+[laptop_runbook.md](laptop_runbook.md) and [dgx_runbook.md](dgx_runbook.md). **Tested on CPU only:
+dry-run, the stage engine, and a stubbed-GPU laptop run including the out-of-memory fallback. No
+GPU stage has run yet**, so everything in the next table is still open.
+
 ## GPU-only (skipped: needs the DGX run)
 
 | Item | Source |
