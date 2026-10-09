@@ -14,9 +14,24 @@ from pathlib import Path
 import numpy as np
 
 
+def _free_cuda() -> None:
+    try:
+        import gc
+
+        import torch
+
+        gc.collect()
+        torch.cuda.empty_cache()
+    except Exception:  # best effort only
+        pass
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--weights", type=Path, required=True)
+    p.add_argument("--allow-oom", action="store_true",
+                   help="a CUDA out-of-memory on one checkpoint is a warning, not a failure "
+                   "(laptop profile: run.sh all falls back to YOLOX-S on a real OOM)")  # fmt: skip
     a = p.parse_args()
     from models.osnet_embedder import OsnetConfig, OsnetEmbedder
     from models.yolox_detector import YoloxConfig, YoloxDetector
@@ -40,6 +55,10 @@ def main() -> int:
             print(f"[ok] {name}: {len(score)} dets on noise, {ms:.1f} ms")
             del det
         except Exception as e:  # report all failures, then exit non-zero
+            if a.allow_oom and "out of memory" in repr(e).lower():
+                print(f"[OOM ] {name}: {e!r} (allowed: --allow-oom)")
+                _free_cuda()
+                continue
             ok = False
             print(f"[FAIL] {name}: {e!r}")
     try:

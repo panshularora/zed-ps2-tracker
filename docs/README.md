@@ -6,6 +6,8 @@
 | [algorithm.md](algorithm.md) | Kalman equations, costs, two-stage association, lifecycle FSM, planned visibility estimate and delayed assignment (pseudocode) |
 | [modules.md](modules.md) | every file and what it does |
 | [evaluation.md](evaluation.md) | metrics, splits, why there are no test-set numbers, stress and latency methods, online-only rule, leakage policy, vis-0 cap |
+| [laptop_runbook.md](laptop_runbook.md) | **the whole GPU pipeline on the Windows laptop (WSL2)**: `bash run.sh all --profile laptop` |
+| [dgx_runbook.md](dgx_runbook.md) | the DGX session from a Windows laptop (one command, or per dataset) |
 | [dgx_guide.md](dgx_guide.md) | **copy-paste runbook for the GPU session** and the bring-back checklist |
 | [licenses.md](licenses.md) | data, weights and code licences; what that means for a product |
 | [decisions.md](decisions.md) | architecture decision records |

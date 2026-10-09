@@ -2,6 +2,10 @@
 
 Day-of runbook (Windows laptop): [`docs/dgx_runbook.md`](../../docs/dgx_runbook.md). Reference: [`docs/dgx_guide.md`](../../docs/dgx_guide.md).
 
+Everything in one resumable command (setup, Stage A, ingest, phase 3, go/no-go v2, results tar):
+`bash run.sh all --profile laptop|dgx [--dry-run]`. See [`docs/laptop_runbook.md`](../../docs/laptop_runbook.md).
+Per dataset:
+
 ```bash
 bash scripts/dgx/setup.sh                 # once: env, pinned sources, weights, GPU self-test
 bash scripts/dgx/run.sh mot17             # then one per dataset (resumable):
@@ -22,3 +26,5 @@ bash scripts/dgx/pack.sh                  # a few tars to scp home (see docs/dgx
 | `pack.sh` | `bring_back/` → per-dataset uncompressed tars for `scp` from Windows (`models/pack.py`) | unit test + CPU end-to-end (`tests/test_ingest.py`) |
 | `finetune_mot20_half.sh` | optional MOT20 first-half fine-tune | **not run** |
 | `requirements-stage-a.txt` | Stage A pip deps | CPU venv |
+| `run_all.sh` + `pipeline_lib.sh` | `run.sh all`: profiles, stages, done-markers, STATUS, OOM fallback | `--dry-run`, engine tests, stubbed-GPU laptop run (`tests/test_run_all.py`); **no GPU** |
+| `finalize.sh --results` | the one results tar (`eval/results_bundle.py`) | unit tests + stubbed run |

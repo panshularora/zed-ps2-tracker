@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Shared helpers for scripts/dgx/*.sh. Source it; don't run it.
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,7 +13,7 @@ die()  { printf '\033[1;31m[%s] ERROR:\033[0m %s\n' "$(date +%H:%M:%S)" "$*" >&2
 
 # Tee everything from here on into logs/<name>_<timestamp>.log
 start_log() {
-  local f="$LOGS/$1_$(date +%Y%m%d_%H%M%S).log"
+  local f; f="$LOGS/$1_$(date +%Y%m%d_%H%M%S).log"
   exec > >(tee -a "$f") 2>&1
   log "logging to $f"
 }
@@ -48,7 +49,7 @@ fetch() {
 
 # unzip_once ZIP DESTDIR : extract once; a marker file makes re-runs instant
 unzip_once() {
-  local zip="$1" dest="$2" marker="$2/.extracted_$(basename "$1")"
+  local zip="$1" dest="$2" marker; marker="$2/.extracted_$(basename "$1")"
   [[ -f "$marker" ]] && { log "already extracted $(basename "$zip")"; return 0; }
   mkdir -p "$dest"; log "extracting $(basename "$zip") -> $dest"
   unzip -q -o "$zip" -d "$dest" && touch "$marker"

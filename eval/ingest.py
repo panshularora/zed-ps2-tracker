@@ -24,6 +24,12 @@ Layout under ``--dest`` (default ``data/stagea``)::
     clips/, logs/, results/, weights_SHA256SUMS
     index.json   one entry per cache folder: dataset, split, sequences, saw_eval_half, gt_root
 
+**Final results bundle.** ``<path>`` may also be the one ``zed_results_*.tar.gz`` written by
+``run.sh all`` (``eval/results_bundle.py``; it holds ``RESULTS_MANIFEST.json``). That is
+verified file by file and installed as ``docs/results/phase3/`` (``--report``) plus
+``data/dgx_results/<bundle>/`` (``--results-dest``); no caches are involved, so ``make phase3``
+is not needed afterwards.
+
 ``gt_root`` is what ``eval.run --root`` needs. It is the bundle's own labels when present,
 else ``data/<dataset>`` (the MOT17/MOT20 public labels from ``make data``). ``eval.phase3``
 reads ``index.json``.
@@ -42,6 +48,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import IO, Any
 
+from eval import results_bundle
 from tracker.io import load_cache
 
 INDEX_FILES = ("MANIFEST.json", "SHA256SUMS")
@@ -226,7 +233,25 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="delete each tar after it is verified and placed (saves disk)",
     )
+    p.add_argument("--report", type=Path, default=Path("docs/results/phase3"),
+                   help="where a final results bundle's phase-3 report is installed")  # fmt: skip
+    p.add_argument("--results-dest", type=Path, default=Path("data/dgx_results"))
     a = p.parse_args(argv)
+    if results_bundle.is_results_bundle(a.bring_back):
+        try:
+            r = results_bundle.ingest(a.bring_back, a.results_dest, a.report, a.delete_source)
+        except results_bundle.BundleError as e:
+            print(f"INGEST FAILED: {e}")
+            return 1
+        ri = r["run_info"]
+        print(f"[ok] {a.bring_back.name}: final results bundle, {r['files']} files verified")
+        print(f"     profile {r['profile']}, GPU {(ri.get('gpu') or {}).get('name')}")
+        print(f"     verdicts: {r['verdicts']}")
+        print(f"     report -> {r['report']}   everything -> {r['dest']}")
+        if a.delete_source:
+            print(f"     deleted {a.bring_back}")
+        print("\nINGEST OK (results bundle: no `make phase3` needed; caches stay on the GPU host)")
+        return 0
     try:
         res = ingest(a.bring_back, a.dest, a.data, a.delete_source)
     except IngestError as e:

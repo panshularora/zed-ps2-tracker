@@ -18,6 +18,50 @@ yet.
 > `~/zed-panshul` (code, env, data, caches), and the tmux session is called `zed-panshul` so it
 > can't clash with anyone else's.
 
+## One command (new): everything on the DGX, ONE small tar home
+
+`bash run.sh all --profile dgx` does steps 4–7 **and** phase 3 on the DGX. That covers setup,
+Stage A for MOT17 → MOT20 → DanceTrack (+ SOMPT22 if its archives are there), ingest,
+`make phase3` (every tracker + TrackEval, the reproduction check, the frozen go/no-go v2 verdict),
+gate events, and one `zed_results_*.tar.gz` (tables, plots, verdict, configs, logs, manifest +
+sha256). Caches stay on the DGX. It is resumable and fail-fast, and keeps a STATUS file.
+**Tested only with `--dry-run` and a stubbed GPU on the CPU box; never run on a GPU yet. GPU run
+times have not been measured.**
+
+💻 **LAPTOP** (PowerShell): step 1 as below (clone or `git pull`, then `scp` the repo), then:
+```powershell
+ssh srmist1@172.16.0.32
+```
+🖥️ **DGX:**
+```bash
+tmux new -s zed                       # if the shared account already has one: tmux new -s zed-panshul
+export GPU=3 ZED_ROOT=~/zed-panshul   # pick the free GPU as in step 3
+cd ~/zed-panshul/zed-ps2-tracker
+bash run.sh all --profile dgx --dry-run
+bash run.sh all --profile dgx         # Ctrl+b then d to detach; it keeps running
+```
+Check it any time (new SSH session, no attach needed):
+```bash
+cat ~/zed-panshul/STATUS              # stages, notes (fps + ETA, verdicts), state
+tail -f ~/zed-panshul/run_all.log
+```
+After a failure, fix the cause and re-run the same `bash run.sh all --profile dgx`; finished stages
+are skipped (`--force=STAGE` redoes one). When STATUS says `state: DONE`:
+
+💻 **LAPTOP** (PowerShell): the small `final` folder (the tar, its `.sha256`, `LATEST`)
+```powershell
+cd C:\Users\Panshul
+scp -r srmist1@172.16.0.32:zed-panshul/final .\zed-final
+```
+Then on the CPU box or in WSL, with that folder copied over (the name is in `LATEST`):
+```bash
+make ingest BRING_BACK=/path/to/zed-final/zed_results_<time>_dgx_all.tar.gz DELETE=1
+```
+That verifies every file against the tar's SHA256SUMS and installs `docs/results/phase3/`. You
+don't need `make phase3` (it already ran on the DGX).
+
+The per-dataset flow below still works unchanged.
+
 ---
 
 ## Step 0 · Before you leave (optional)
