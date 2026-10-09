@@ -6,8 +6,8 @@
 | **DGX** | Panshul runs `scripts/dgx/` (MOT17, MOT20 × 3 detectors, SOMPT22, DanceTrack, gate clip, Pexels) and brings back caches | waiting on the GPU session |
 | **2a** | ours: depth-order visibility (+ scoring vs gt), delayed assignment + pre-registered go/no-go, ported baselines with upstream parity, `make ablate` | **done on CPU / public dets** (PRs #6–#10). Visibility = longer buffer; delayed = **no-go**. Real-detection + re-ID re-runs and visibility-gated appearance wait for the GPU session ([next_gpu_session.md](next_gpu_session.md)) |
 | **2b** | `eval/gate_events.py` (below), `make gates` | **done** (PR #11); MOT17 has too few crossings to rank trackers, needs the gate clip |
-| **3** | static viewer (`viewer/`, `make viewer`) | viewer **done** (PR #12; real frames + 150 ms fade PR #18); CPU replay service `serve/` + Dockerfile (PR #19); integration proposal, video script, deck outline (PR #20); a live stream prototype later |
-| **4** | presentation deliverables (below) | later |
+| **3** | static viewer (`viewer/`, `make viewer`) | viewer **done** (PR #12; real frames + 150 ms fade PR #18); CPU replay service `serve/` + Dockerfile (PR #19); integration proposal, video script, deck outline (PR #20); **product web app `web/` + CPU video-job service + face-blurred Pexels demo clips + docker-compose done**; live stream prototype **cut** for now ([status.md](status.md)) |
+| **4** | presentation deliverables (below) | scripts and outline exist; recording waits for the GPU numbers |
 
 ## Phase 2a: the method
 
@@ -52,17 +52,21 @@ including the baselines, without re-running anything. Definitions follow
 
 ## Phase 3: show it
 
-* **`demo/`**, a static offline viewer: Vite/React, opens from `index.html` with no server. It
-  shows ours and ByteTrack side by side on a timeline with ID-switch and crossing markers, dashed
-  pending decisions and gate counters. It reads the per-frame JSONL and the clips. See
-  [../demo/README.md](../demo/README.md).
+* **`viewer/`** (built), the static offline viewer: Vite/React, opens from `index.html` with no
+  server. Ours and ByteTrack side by side on a timeline with ID-switch and crossing markers,
+  dashed pending decisions and gate counters. See [../viewer/README.md](../viewer/README.md).
+* **`web/` + `serve/`** (built), the product demo: pick a face-blurred clip or upload one, run
+  detector + tracker on CPU as a background job, play back with IDs, trails, gate counters and
+  recoveries; Results and Architecture pages read `docs/results/`. `make demo` or
+  `docker compose up`. See [../web/README.md](../web/README.md).
 * **`docs/integration/`**: how the tracker would sit under ZIG (inputs, outputs, latency budget,
   privacy: short-lived in-memory embeddings, no face recognition, no stored identities).
-* `serve/`: a live pipeline prototype (detector + tracker on a stream). The CPU replay service (`/api/track`, gate-event contract) exists.
+* `serve/`: the CPU job service exists (clips, uploads, jobs, events, metrics, benchmarks). A live
+  stream prototype is cut until a GPU or edge box is available ([status.md](status.md)).
 
 ## Phase 4: deliverables
 
-These slot into `docs/integration/` and `demo/`:
+These slot into `docs/integration/` (the AI demo is the `web/` Demo page):
 
 * explainer video
 * AI demo

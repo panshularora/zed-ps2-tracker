@@ -38,11 +38,14 @@ the swap. Phase-2 v1 was a no-go (`docs/results/go_no_go.md`).
 The `ambiguous_hold` card in shot 6 does **not** depend on the delayed decision (it comes from
 visibility/score state, `docs/integration.md` §2). It can always be shown.
 
-**Not built yet.** The viewer does not yet have the gate-line pulse (shot 2), the swap flash
-(shot 3), live ID-switch counters (shot 5) or the sliding JSON cards (shot 6). Either add them to
-the viewer as an opt-in "presentation" mode, or composite them in editing over the real viewer
-recording, using event frames from the clip JSON and `/api/track`. What exists now: real frames,
-synced panels, the frame counter, event markers on the timeline, and the 150 ms decision fade.
+**Partly built.** The web app's Demo page (`make demo`, `web/`) now has the gate-line pulse
+(shot 2), live in/out counters, a 300 ms ring when a track comes back with its ID, an event log
+and a scrubber with event ticks, on real (face-blurred) footage. Still missing: the swap flash
+(shot 3), per-tracker live ID-switch counters (shot 5) and the sliding JSON cards (shot 6).
+Composite those in editing over the real recording, using event frames from the clip JSON,
+`/api/track` or a job's `events.json`. Pexels footage must stay neutral (no swap / tailgate /
+fare-evasion labels, no red): use it only for shots 1–2 and the counters; alert shots need the
+consented gate clip.
 
 **Before recording, check:**
 - [ ] clips.tar ingested; the MP4s play in the viewer and the frame counter matches the clip

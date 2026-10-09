@@ -16,6 +16,35 @@ This is Zed Digital problem statement 2 (PS-2): every person crossing a crowded 
 > is the GPU session, which brings YOLOX detections and re-ID: see
 > [docs/next_gpu_session.md](docs/next_gpu_session.md). No number in this README uses YOLOX.
 
+## Product demo (CPU): web app + job API
+
+A React frontend over the `serve/` job API. Pick a face-blurred clip (or upload one), run the
+tracker on CPU with a small YOLOX detector, and play it back with persistent IDs, trails, the
+gate line and live in/out counters. Results and architecture pages read the same repo outputs as
+this README. The **demo clips are not benchmarks**: no number from them appears in any results
+table.
+
+```bash
+make setup                 # .venv (Python 3.11) with the package + dev tools
+make models clips blur     # ONNX models (sha256-checked), 5 Pexels clips, face-blurred copies under data/demo/
+make demo                  # API on :8000 + web app on http://localhost:5173 (Ctrl-C stops both)
+# or, with Docker:
+docker compose up --build  # web app on http://localhost:8080, API on :8000 (mounts data/models + data/demo/blurred)
+```
+
+| Overview | Demo (subway turnstile, after a CPU run) |
+|---|---|
+| ![](docs/media/web_overview.jpg) | ![](docs/media/web_demo.jpg) |
+| **Results** | **Architecture** |
+| ![](docs/media/web_results.jpg) | ![](docs/media/web_architecture.jpg) |
+
+Measured on this repo's CPU box (x86_64 VM, 4 onnxruntime threads): the full 11.7 s turnstile
+clip (351 frames at 1080p) with YOLOX-S took **24.2 s** end to end (detector p50 62.8 ms/frame,
+tracker p95 2.0 ms/frame), started from the web UI. The Pexels clips have no consent from the people in them, so they are shown with
+neutral styling only: IDs, crossings, counts and kept-ID recoveries, with no tailgating or
+fare-evasion alerts ([docs/licenses.md](docs/licenses.md#demo-clips-pexels)). Details:
+[web/README.md](web/README.md), [serve/README.md](serve/README.md).
+
 ## Why this matters for Zed's gate products
 
 The crowded gate is the scene of Zed's **ZIG** hands-free ticketing and validation platform:
@@ -63,13 +92,16 @@ Modules (file-by-file map in [docs/modules.md](docs/modules.md)):
 * `eval/`: splits, TrackEval, stress, latency, oracle, `ablate.py`, `go_no_go.py`, `corrupt.py`,
   `visibility_eval.py`, `gate_events.py`, `export_viewer.py`.
 * `models/`, `scripts/dgx/`: Stage A on GPU. `viewer/`: static Vite/React viewer.
+* `serve/`: FastAPI job service (clips, uploads, CPU detector, tracking jobs, benchmarks API,
+  face blurring). `web/`: the React product frontend.
 
 ## Quickstart
 
 ```bash
 git clone https://github.com/panshularora/zed-ps2-tracker && cd zed-ps2-tracker
 make setup        # .venv with Python 3.11 (uv) + package + dev tools
-make check        # ruff + mypy (strict on tracker/) + 185 tests
+make check        # ruff + mypy (strict on tracker/) + pytest (207 tests)
+make test         # pytest + the web app's vitest
 make data         # MOT17 + MOT20 labels and public detections only (no images, ~30 MB)
 make smoke        # MOT17 train (full) + val-half with public dets: TrackEval + stress + latency
 ```
@@ -84,7 +116,8 @@ make oracle  DATASET=MOT17          # visibility-0 ceiling
 make ablate                         # ablation table + stress plots -> docs/results/ablation/
 make gates                          # after make ablate: gate events on the frozen MOT17 lines
 make viewer                         # export clips + build viewer/dist/index.html (needs Node 20)
-make serve                          # CPU demo API + viewer (FastAPI, `pip install -e .[serve]`)
+make serve                          # CPU job API + built web app / viewer (FastAPI, `pip install -e .[serve]`)
+make web                            # build the web app (web/dist); make demo runs API + dev server
 make ingest BRING_BACK=<tar> DELETE=1   # DGX bundle -> data/stagea (sha256-checked), one tar at a time
 make phase3                         # frozen phase-3 plan on the ingested caches -> docs/results/phase3/
 make phase3-selftest                # the same chain on a synthetic bundle (~25 s)
@@ -249,7 +282,7 @@ detector and perfect identities that never coast) gives:
    re-ID caches; re-run `make ablate` and the go/no-go on them; visibility-gated appearance;
    delayed look-ahead with re-ID; MOT20 / DanceTrack; the gate clip.
 2. **Integration:** proposal [docs/integration.md](docs/integration.md) (edge box, gate-event
-   contract, pilot), CPU demo service `serve/` (FastAPI + Dockerfile), video script
+   contract, pilot), CPU job service `serve/` + web app `web/` (docker-compose), video script
    [docs/demo_video_script.md](docs/demo_video_script.md) and deck outline
    [docs/deck_outline.md](docs/deck_outline.md); GPU numbers are placeholders until phase 3. Full table in [docs/roadmap.md](docs/roadmap.md).
 
@@ -266,7 +299,8 @@ detector and perfect identities that never coast) gives:
 | [docs/preregistration/](docs/preregistration/) | go/no-go v2 rule, frozen before the GPU data |
 | [docs/integration.md](docs/integration.md) | product proposal for ZIG: placement, event contract, gains, limits, pilot |
 | [docs/demo_video_script.md](docs/demo_video_script.md), [docs/deck_outline.md](docs/deck_outline.md) | video shot list, deck outline |
-| [serve/README.md](serve/README.md) | CPU demo service (FastAPI, Docker) |
+| [serve/README.md](serve/README.md) | CPU job service: clips, uploads, jobs, events, metrics, errors, env vars |
+| [web/README.md](web/README.md) | the product frontend (overview, demo, results, architecture) |
 | [docs/implementation_notes.md](docs/implementation_notes.md) | deviations from upstream, pitfalls, negative results |
 | [docs/next_gpu_session.md](docs/next_gpu_session.md) | what to run on the GPU next, and why |
 | [docs/results/](docs/results/) | parity, visibility, go/no-go, ablation, gate events |
@@ -276,7 +310,8 @@ detector and perfect identities that never coast) gives:
 | [docs/glossary.md](docs/glossary.md) | terms |
 | [docs/roadmap.md](docs/roadmap.md) | roadmap and status by phase |
 | [docs/research/](docs/research/) | Research Lab briefs |
-| [docs/integration/](docs/integration/), [demo/](demo/) | remaining planned deliverables (privacy note, walkthrough video) |
+| [docs/integration/](docs/integration/) | remaining planned deliverables (walkthrough videos, deck) |
+| [docs/status.md](docs/status.md) | what is done, what waits for the GPU, what was cut |
 
 ## Licensing
 
@@ -294,5 +329,6 @@ weights, which remain **non-commercial research use only**.
 
 ## CI
 
-The workflow lives in `ci/github-actions.yml`, because the token that created the repo lacks the
+The workflow lives in `docs/ci/github-actions.yml` (jobs: Python checks, web lint/typecheck/tests/
+build, both Docker images, MOT17 regression), because the token that created the repo lacks the
 `workflow` scope. To enable it, add it through the GitHub UI as `.github/workflows/ci.yml`.
