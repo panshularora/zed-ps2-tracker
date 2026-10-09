@@ -18,6 +18,15 @@ The plan (``configs/phase3/plan.yaml``) was frozen before any GPU data existed. 
 
 Conditions whose caches are not ingested yet are listed as waiting, so the command can be re-run
 after each ``make ingest``; finished entries are skipped (``--force`` re-runs them).
+
+**Laptop detector** (``run.sh all --profile laptop`` after a CUDA out-of-memory fallback, or an
+explicit ``--detector s``): ``--remap-cache MOT17/ablation/train=MOT17/laptop_.../train`` points
+the plan's fixed cache keys at the laptop detector's caches, and ``--tag-cache PATTERN`` marks
+caches as laptop-detector output. Every row (baselines included) and title of such a condition
+gets ``--tag`` appended, the reproduction check is written as PENDING (the paper numbers belong
+to YOLOX-X ``bytetrack_ablation``), and the pre-registered go/no-go v2 is PENDING when its
+primary cache is a laptop-detector one (the rule names the leak-free YOLOX-X cache). The plan
+file itself is never edited; the remap and tag are recorded in ``summary.json``.
 """
 
 from __future__ import annotations
@@ -32,6 +41,60 @@ from typing import Any
 import yaml
 
 from eval import ablate
+
+LAPTOP_TAG = "laptop detector, not comparable to published numbers"
+
+
+def apply_remap(plan: dict[str, Any], remap: dict[str, str]) -> dict[str, Any]:
+    """Copy of ``plan`` with fixed cache keys replaced (``tune``, ``reproduction``,
+    ``conditions[].cache``, ``go_no_go_v2.primary``). Wildcard keys and the go/no-go
+    replication caches are left alone: the pre-registration names those exactly."""
+    if not remap:
+        return plan
+    p: dict[str, Any] = yaml.safe_load(yaml.safe_dump(plan))
+    p["tune"]["cache"] = remap.get(p["tune"]["cache"], p["tune"]["cache"])
+    p["reproduction"]["cache"] = remap.get(p["reproduction"]["cache"], p["reproduction"]["cache"])
+    for c in p["conditions"]:
+        c["cache"] = remap.get(c["cache"], c["cache"])
+    g = p.get("go_no_go_v2")
+    if g:
+        g["primary"]["cache"] = remap.get(g["primary"]["cache"], g["primary"]["cache"])
+    return p
+
+
+def is_tagged(key: str, patterns: list[str]) -> bool:
+    return any(fnmatch.fnmatch(key, pat) for pat in patterns)
+
+
+def tag_entries(entries: list[dict[str, Any]], tag: str) -> list[dict[str, Any]]:
+    return [{**e, "label": f"{e['label']} [{tag}]"} for e in entries]
+
+
+def pending_reproduction(plan: dict[str, Any], key: str, tag: str, out_dir: Path) -> dict[str, Any]:
+    r = plan["reproduction"]
+    lines = ["# ByteTrack reproduction check: PENDING", "",
+             f"This run's MOT17 cache `{key}` comes from the {tag}. The reference numbers "
+             f"({r['source']}) belong to YOLOX-X `bytetrack_ablation`, so comparing them would "
+             "be meaningless. The check runs when the YOLOX-X `MOT17/ablation/train` cache "
+             "exists (the DGX run, or the laptop without the out-of-memory fallback)."]  # fmt: skip
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "reproduction.md").write_text("\n".join(lines) + "\n")
+    res = {"verdict": "PENDING", "reason": f"{key}: {tag}", "reference": r["reference"]}
+    (out_dir / "reproduction.json").write_text(json.dumps(res, indent=1))
+    return res
+
+
+def pending_go_no_go(key: str, tag: str, report: Path) -> dict[str, Any]:
+    lines = ["# Go/no-go v2: PENDING", "",
+             f"The pre-registered rule (`docs/preregistration/go_no_go_v2.md`) is defined on the "
+             f"leak-free YOLOX-X `MOT17/ablation/train` cache. This run's MOT17 cache `{key}` "
+             f"comes from the {tag}, so no verdict is computed. Run on a GPU that fits YOLOX-X "
+             "(fp16, batch 1 fits most 6 GB cards) to get it."]  # fmt: skip
+    report.mkdir(parents=True, exist_ok=True)
+    (report / "go_no_go_v2.md").write_text("\n".join(lines) + "\n")
+    res = {"verdict": "PENDING", "reason": f"{key}: {tag}"}
+    (report / "go_no_go_v2.json").write_text(json.dumps(res, indent=1))
+    return res
 
 
 def load_plan(path: Path) -> dict[str, Any]:
@@ -197,11 +260,18 @@ def go_no_go_v2(plan: dict[str, Any], index: dict[str, Any], out: Path, report: 
 def run(
     plan_path: Path, index_path: Path, out: Path, report: Path, jobs: int = 6,
     force: bool = False, latency_repeats: int = 1, latency: bool = True,
+    remap: dict[str, str] | None = None, tag_caches: list[str] | None = None,
+    tag: str = LAPTOP_TAG,
 ) -> dict[str, Any]:  # fmt: skip
-    plan = load_plan(plan_path)
+    remap = dict(remap or {})
+    tag_patterns = [*(tag_caches or []), *remap.values()]
+    plan = apply_remap(load_plan(plan_path), remap)
     index = json.loads(index_path.read_text())
     keys = sorted(index["caches"])
-    summary: dict[str, Any] = {"plan": str(plan_path), "ran": [], "waiting": []}
+    summary: dict[str, Any] = {"plan": str(plan_path), "ran": [], "waiting": [],
+                               "tune_cache": plan["tune"]["cache"]}  # fmt: skip
+    if remap or tag_caches:
+        summary["deviation"] = {"remap": remap, "tag_caches": tag_caches or [], "tag": tag}
     report.mkdir(parents=True, exist_ok=True)
     try:
         tuned = tune(plan, index, out, jobs, force)
@@ -225,10 +295,15 @@ def run(
             title = c["title"].format(variant=variant)
             if g["saw_eval_half"]:
                 title += " (DETECTOR SAW THE EVAL HALF: not a clean result)"
+            tagged = is_tagged(key, tag_patterns)
+            if tagged:
+                title += f" [{tag}: {key}]"
             if not g["has_embeddings"]:
                 summary["waiting"].append(f"{cid}: {key} has no embeddings")
                 continue
             entries = substitute(c["entries"], params)
+            if tagged:
+                entries = tag_entries(entries, tag)
             try:
                 m = _manifest(index, key, c["dataset"], c["split"], entries, title)
             except FileNotFoundError as e:
@@ -238,20 +313,35 @@ def run(
                                      latency=latency and bool(c.get("latency")),
                                      latency_repeats=latency_repeats)  # fmt: skip
             print(md + "\n")
-            summary["ran"].append({"id": cid, "cache": key, "saw_eval_half": g["saw_eval_half"]})
+            summary["ran"].append({"id": cid, "cache": key, "saw_eval_half": g["saw_eval_half"],
+                                   "laptop_detector": tagged})  # fmt: skip
             if c["id"] == "mot17_val_half" and key == plan["reproduction"]["cache"]:
-                rows = ablate.collect(m, out / cid)
-                summary["reproduction"] = reproduction(plan, rows, report, out / cid)
-    gng = go_no_go_v2(plan, index, out, report, jobs, force, latency)
+                if tagged:
+                    summary["reproduction"] = pending_reproduction(plan, key, tag, report)
+                else:
+                    rows = ablate.collect(m, out / cid)
+                    summary["reproduction"] = reproduction(plan, rows, report, out / cid)
+    primary = plan.get("go_no_go_v2", {}).get("primary", {}).get("cache")
+    if primary in index["caches"] and is_tagged(primary, tag_patterns):
+        gng: dict[str, Any] | None = pending_go_no_go(primary, tag, report)
+    else:
+        gng = go_no_go_v2(plan, index, out, report, jobs, force, latency)
     if gng is None:
         summary["waiting"].append("go_no_go_v2: needs MOT17/ablation/train")
     else:
         summary["go_no_go_v2"] = gng["verdict"]
     (report / "summary.json").write_text(json.dumps(summary, indent=1))
     lines = ["# Phase 3 results index", "", f"Tuned on MOT17 train_half: `{params}`", ""]
+    if "deviation" in summary:
+        lines += [
+            f"**Rows marked [{tag}] are not comparable to published numbers.** "
+            f"Plan deviation (recorded, plan file unchanged): `{summary['deviation']}`",
+            "",
+        ]
     for r in summary["ran"]:
-        tag = " **(SAW_EVAL_HALF)**" if r["saw_eval_half"] else ""
-        lines.append(f"* [{r['id']}]({r['id']}/ablation.md){tag}")
+        mark = " **(SAW_EVAL_HALF)**" if r["saw_eval_half"] else ""
+        mark += f" **[{tag}]**" if r.get("laptop_detector") else ""
+        lines.append(f"* [{r['id']}]({r['id']}/ablation.md){mark}")
     if "reproduction" in summary:
         lines.append(f"* [ByteTrack reproduction](reproduction.md): "
                      f"{summary['reproduction']['verdict']}")  # fmt: skip
@@ -276,11 +366,33 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--force", action="store_true")
     p.add_argument("--no-latency", action="store_true")
     p.add_argument("--latency-repeats", type=int, default=1)
+    p.add_argument(
+        "--remap-cache",
+        action="append",
+        default=[],
+        metavar="SRC=DST",
+        help="use cache DST wherever the plan names SRC (laptop detector)",
+    )
+    p.add_argument(
+        "--tag-cache",
+        action="append",
+        default=[],
+        metavar="PATTERN",
+        help="caches (fnmatch) whose rows get --tag appended",
+    )
+    p.add_argument("--tag", default=LAPTOP_TAG)
     a = p.parse_args(argv)
     if not a.index.exists():
         print(f"{a.index} not found: run `make ingest BRING_BACK=<path>` first")
         return 1
-    run(a.plan, a.index, a.out, a.report, a.jobs, a.force, a.latency_repeats, not a.no_latency)
+    remap = {}
+    for r in a.remap_cache:
+        src, sep, dst = r.partition("=")
+        if not sep or not src or not dst:
+            p.error(f"--remap-cache wants SRC=DST, got {r!r}")
+        remap[src] = dst
+    run(a.plan, a.index, a.out, a.report, a.jobs, a.force, a.latency_repeats, not a.no_latency,
+        remap=remap, tag_caches=a.tag_cache, tag=a.tag)  # fmt: skip
     return 0
 
 
