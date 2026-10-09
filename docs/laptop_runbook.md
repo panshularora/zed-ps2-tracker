@@ -48,7 +48,8 @@ the repo cloned at `~/zed-ps2-tracker`.
 
 🐧 **UBUNTU**
 ```bash
-sudo apt update && sudo apt install -y git wget unzip tmux make build-essential curl nodejs npm
+sudo apt update && sudo apt install -y git wget unzip tmux make build-essential curl
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs   # Node 22 (Ubuntu's apt nodejs is 18, end-of-life)
 curl -LsSf https://astral.sh/uv/install.sh | sh && source ~/.local/bin/env   # uv brings Python 3.11
 nvidia-smi                       # must list "NVIDIA GeForce RTX 3050 Laptop GPU"
 df -h ~                          # want >= 40 GB free (refuses below 25 GB)
@@ -78,6 +79,7 @@ STATUS and the results.
 
 🐧 **UBUNTU**
 ```bash
+tmux new -s zed                                 # or: tmux attach -t zed  (a closed terminal would kill the download)
 cd ~/zed-ps2-tracker
 bash run.sh download mot17 mot20 dancetrack     # re-run the same line if it stops; wget resumes
 ```
