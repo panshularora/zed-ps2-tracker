@@ -32,7 +32,7 @@
 #   --gpu N  --batch N  --jobs N      (env GPU, BATCH, JOBS work too)
 #
 # State: $ZED_ROOT/STATUS (cat it), $ZED_ROOT/run_all/ (done-markers, notes, gpu.json),
-#        $ZED_ROOT/logs/run_all_<time>.log (+ run_all_latest.log symlink).
+#        $ZED_ROOT/run_all/logs/run_all_<time>.log (+ $ZED_ROOT/run_all.log -> the latest).
 BATCH_FROM_ENV="${BATCH:+1}" MOT20_VARIANTS_FROM_ENV="${MOT20_VARIANTS:+1}"   # before config.env defaults
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 # shellcheck source=pipeline_lib.sh
@@ -372,7 +372,7 @@ stage_stagea() {
         if [[ -d "$CACHE/$lbl" ]]; then mkdir -p "$dst/$(dirname "$lbl")"; mv "$CACHE/$lbl" "$dst/$lbl"; fi
       done
       echo s > "$PIPE_STATE/detector"
-      pipe_note "CUDA out of memory with YOLOX-X on $d (GPU ${GPU_NAME:-$GPU}). Switched to YOLOX-S bytetrack_s_mot17 for $d and every later dataset; its rows are tagged 'laptop detector, not comparable to published numbers'. Partial YOLOX-X caches moved to $dst"
+      pipe_note "CUDA out of memory with YOLOX-X on $d ($(cut -d, -f1-2 "$PIPE_STATE/gpu.csv" 2>/dev/null | head -1) MiB). Switched to YOLOX-S bytetrack_s_mot17 for $d and every later dataset; its rows are tagged 'laptop detector, not comparable to published numbers'. Partial YOLOX-X caches moved to $dst"
       pipe_write_status
       rc=0; run_stagea_once "$d" s || rc=$?
       [[ $rc -eq 0 ]] || die "Stage A $d failed again with YOLOX-S (exit $rc); see $out"
@@ -474,9 +474,11 @@ if [[ -f "$PIPE_STATE/profile.env" ]] && ! grep -qx "profile=$PROFILE" "$PIPE_ST
 fi
 exec 9>"$PIPE_STATE/lock"
 flock -n 9 || die "another 'run.sh all' is already running on $ZED_ROOT (see: cat $PIPE_STATUS)"
-PIPE_LOG="$LOGS/run_all_$(date +%Y%m%d_%H%M%S).log"
+# outside $LOGS on purpose: bring_back/ hard-links $LOGS, and this file grows while ingest runs
+mkdir -p "$PIPE_STATE/logs"
+PIPE_LOG="$PIPE_STATE/logs/run_all_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$PIPE_LOG") 2>&1
-ln -sfn "$PIPE_LOG" "$LOGS/run_all_latest.log"
+ln -sfn "$PIPE_LOG" "$ZED_ROOT/run_all.log"
 log "logging to $PIPE_LOG ; status: cat $PIPE_STATUS"
 if [[ "$PIPE_FORCE_ALL" == 1 ]]; then rm -f "$PIPE_STATE/detector" "$PIPE_STATE"/detector_*; fi
 pipe_run

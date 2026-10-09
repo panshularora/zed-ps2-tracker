@@ -123,6 +123,7 @@ def collect_files(
     add_tree(repo / "configs", "configs")
     add_tree(repo / "docs" / "preregistration", "docs/preregistration")
     add_tree(zed_root / "logs", "logs", capped=True)
+    add_tree(zed_root / "run_all" / "logs", "logs/run_all", capped=True)
     add_tree(zed_root / "results", "results", capped=True)
     if state is not None and state.exists():
         for f in sorted(state.glob("*")):
@@ -141,9 +142,11 @@ def build(zed_root: Path, repo: Path, report: Path, out_dir: Path, *, profile: s
     now = now or dt.datetime.now().astimezone()
     files, skipped = collect_files(zed_root, repo, report, index, state, max_file_mb)
     summary = json.loads((report / "summary.json").read_text())
-    entries = []
-    for arc, src in sorted(files.items()):
-        entries.append({"path": arc, "bytes": src.stat().st_size, "sha256": sha256_file(src)})
+    # read each file ONCE: the same bytes are hashed and archived (a live log may still grow)
+    blobs = {arc: src.read_bytes() for arc, src in sorted(files.items())}
+    entries = [
+        {"path": arc, "bytes": len(b), "sha256": sha256_bytes(b)} for arc, b in blobs.items()
+    ]
     info = run_info
     if info is None and (report / "run_info.json").exists():
         info = json.loads((report / "run_info.json").read_text())
@@ -175,14 +178,13 @@ def build(zed_root: Path, repo: Path, report: Path, out_dir: Path, *, profile: s
     path = out_dir / name
     tmp = out_dir / (name + ".part")
     with tarfile.open(tmp, "w:gz") as tf:
-        for arc, data in ((MANIFEST, json.dumps(manifest, indent=1).encode()),
-                          (SUMS, sums.encode())):  # fmt: skip
+        head = {MANIFEST: json.dumps(manifest, indent=1).encode(), SUMS: sums.encode()}
+        for arc, data in [*head.items(), *blobs.items()]:
             ti = tarfile.TarInfo(arc)
             ti.size = len(data)
             ti.mtime = int(now.timestamp())
+            ti.mode = 0o644
             tf.addfile(ti, io.BytesIO(data))
-        for arc, src in sorted(files.items()):
-            tf.add(src, arcname=arc, recursive=False)
     tmp.replace(path)
     digest = sha256_file(path)
     (out_dir / (name + ".sha256")).write_text(f"{digest}  {name}\n")
