@@ -18,3 +18,5 @@ data
 viewer/node_modules/
 viewer/dist/
 viewer/src/generated/
+web/node_modules/
+web/dist/
