@@ -1,0 +1,13 @@
+# Ours, headline row of docs/results/ablation/ablation.md ("BoT-SORT (CMC) + visibility"):
+# BoT-SORT + the depth-order visibility estimate with the frozen values of visibility.yaml.
+# Identical to the `ours_vis_botsort` entry of configs/ablations/manifest.yaml (base config +
+# overrides), written out as a file so the demo service can name it. MOT17 val-half, public
+# FRCNN: HOTA 52.5 / IDF1 59.8 / IDSW 180 (tests/test_serve_jobs.py checks the equivalence).
+# On a demo clip there is no CMC file, so `cmc.method: auto` falls back to off.
+inherit: ../baselines/botsort.yaml
+visibility:
+  estimator: depth_order
+  score_fusion: product
+  occluder_min_score: 0.1
+  occluded_buffer_scale: 3.0
+  occluded_thresh: 0.7
