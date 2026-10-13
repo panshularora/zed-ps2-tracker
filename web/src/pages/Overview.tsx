@@ -1,3 +1,4 @@
+import { Term } from "../components/Term";
 import { Link } from "react-router-dom";
 import { api, type Benchmarks, type Clip } from "../api";
 import { DASH, int, num } from "../lib/format";
@@ -22,9 +23,9 @@ export function OverviewView({ data }: { data: OverviewData | null }) {
   const head = data?.bench?.headline ?? null;
   const still = data?.still?.poster_url ?? null;
   const tiles = [
-    { label: "IDF1", value: num(head?.IDF1), unit: head ? "%" : "", src: "identity F1, higher is better" },
-    { label: "ID switches", value: int(head?.IDSW), unit: "", src: "over the 7 val-half sequences, lower is better" },
-    { label: "Tracker p95 latency", value: num(head?.p95_ms, 2), unit: head?.p95_ms != null ? "ms" : "", src: "per frame, one CPU thread, tracker only" },
+    { label: "IDF1", term: "IDF1", value: num(head?.IDF1), unit: head ? "%" : "", src: "identity F1, higher is better" },
+    { label: "ID switches", term: "IDSW", value: int(head?.IDSW), unit: "", src: "over the 7 val-half sequences, lower is better" },
+    { label: "Tracker p95 latency", term: "p95 ms", value: num(head?.p95_ms, 2), unit: head?.p95_ms != null ? "ms" : "", src: "per frame, one CPU thread, tracker only" },
   ];
   return (
     <div>
@@ -41,7 +42,7 @@ export function OverviewView({ data }: { data: OverviewData | null }) {
       <div className="tiles">
         {tiles.map((t) => (
           <div className="panel tile" key={t.label} data-testid="tile">
-            <div className="label">{t.label}</div>
+            <div className="label"><Term name={t.term}>{t.label}</Term></div>
             <div className="value">
               {t.value}
               {t.value !== DASH && t.unit && <small>{t.unit}</small>}
@@ -57,7 +58,7 @@ export function OverviewView({ data }: { data: OverviewData | null }) {
       </p>
 
       <div className="cta">
-        <Link to="/demo" className="btn primary">
+        <Link to="/dashboard/demo" className="btn primary">
           Open the demo
         </Link>
       </div>

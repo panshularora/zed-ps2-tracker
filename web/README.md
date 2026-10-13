@@ -52,3 +52,19 @@ page, and by default presses **Run tracking** on the turnstile clip and waits fo
 - `src/lib/playback.ts`: pure maths (video frame ↔ tracked frame with stride, trails, counts, rings, ticks). Reuses `viewer/src/media.ts` via the `@viewer` alias.
 - `src/lib/draw.ts`: canvas overlay: gate, trails under boxes, boxes, ID tabs, rings.
 - `src/pages/*`: one file per page; each exports a pure view for tests.
+
+## Landing page and Scenarios tab
+
+- `/` is a six-step landing page for non-specialists; the dashboard lives under `/dashboard`
+  (`/dashboard/scenarios`, `/dashboard/demo`, `/dashboard/results`, `/dashboard/architecture`).
+- Every number on the landing page comes from `src/lib/summary.ts`, which reads
+  `docs/results/summary.json` at build time (`import.meta.glob`, so a missing file is fine).
+  Expected shape: `{ "metrics": { "mot17.idsw_reduction_pct": 0, "mot20.idsw_reduction_pct": 0,
+  "mot17.idf1_gain_pts": 0, "mot17.p95_ms": 0, "mot20.deta_delta_pts": 0 }, "source": "..." }`.
+  A missing or non-numeric key renders "pending". No number is hard-coded.
+- The Scenarios tab plays the six face-blurred Pexels clips (served by `/api/clips/<id>/video`
+  from `data/demo/blurred`, gitignored) with overlays from `public/scenarios/*.json`, made by
+  `.venv/bin/python scripts/demo/precompute_scenarios.py` (CPU YOLOX-S detections once per clip,
+  then ByteTrack and ours on the identical detections). These clips have no ground truth: the
+  ID-switch counts are the `serve.analysis.suspected_switches` heuristic, illustrative only.
+  Two benchmark slots (MOT17/MOT20 val, human labels) are reserved and show as pending.

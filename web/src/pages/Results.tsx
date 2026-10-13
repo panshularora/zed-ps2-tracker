@@ -1,3 +1,4 @@
+import { Term } from "../components/Term";
 import { api, type AblationRow, type Benchmarks } from "../api";
 import StressChart from "../components/StressChart";
 import { DASH, int, num, pct } from "../lib/format";
@@ -37,13 +38,13 @@ export function ResultsView({ b }: { b: Benchmarks }) {
                 <thead>
                   <tr>
                     <th>Tracker</th>
-                    <th>HOTA</th>
-                    <th>IDF1</th>
-                    <th>MOTA</th>
-                    <th>IDSW</th>
-                    <th>AssA</th>
-                    <th>DetA</th>
-                    <th>p95 ms</th>
+                    <th><Term name="HOTA" /></th>
+                    <th><Term name="IDF1" /></th>
+                    <th><Term name="MOTA" /></th>
+                    <th><Term name="IDSW" /></th>
+                    <th><Term name="AssA" /></th>
+                    <th><Term name="DetA" /></th>
+                    <th><Term name="p95 ms" /></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -145,8 +146,8 @@ export function ResultsView({ b }: { b: Benchmarks }) {
                 <tr>
                   <th>Estimate</th>
                   <th>n</th>
-                  <th>MAE</th>
-                  <th>Spearman ρ</th>
+                  <th><Term name="MAE" /></th>
+                  <th><Term name="Spearman ρ" /></th>
                   <th>AUROC v&lt;0.5</th>
                   <th>AP v&lt;0.5</th>
                 </tr>
@@ -186,10 +187,10 @@ export function ResultsView({ b }: { b: Benchmarks }) {
                 <tr>
                   <th>Condition</th>
                   <th>K (frames)</th>
-                  <th>HOTA</th>
-                  <th>IDF1</th>
-                  <th>IDSW</th>
-                  <th>p95 ms</th>
+                  <th><Term name="HOTA" /></th>
+                  <th><Term name="IDF1" /></th>
+                  <th><Term name="IDSW" /></th>
+                  <th><Term name="p95 ms" /></th>
                 </tr>
               </thead>
               <tbody>
