@@ -126,6 +126,8 @@ class DelayedAssignmentConfig:
     trigger_max_visibility: float = 1.0
     """Only look ahead on clusters where some detection has estimated visibility below this
     (needs ``visibility.estimator: depth_order``). 1 = no visibility condition."""
+    trigger_require_all: bool = False
+    """Stricter trigger: EVERY cluster detection must be below ``trigger_max_visibility``."""
 
 
 @dataclass(frozen=True)

@@ -174,3 +174,25 @@ def test_v2_config_k0_identical_and_trigger_is_more_selective() -> None:
         loose.update(f)
         tight.update(f)
     assert tight.stats.ambiguous_frames <= loose.stats.ambiguous_frames
+
+
+def test_strict_trigger_requires_every_cluster_detection_occluded() -> None:
+    rec = _rec([[0.30, 0.95, 1.0], [0.32, 0.50, 1.0], [1.0, 1.0, 0.2]], [(0, 0), (1, 1), (2, 2)])
+
+    def with_vis(v: list[float]) -> Stage1Record:
+        return Stage1Record(rec.track_ids, rec.lost, rec.cost, rec.dets_tlwh, rec.matches, 0.9,
+                            np.array(v))  # fmt: skip
+
+    one_occluded = with_vis([0.3, 0.9, 0.9])
+    assert len(find_clusters(one_occluded, 0.05, 4, max_visibility=0.5)[0]) == 1
+    assert find_clusters(one_occluded, 0.05, 4, max_visibility=0.5,
+                         require_all_occluded=True)[0] == []  # fmt: skip
+    both = with_vis([0.3, 0.2, 0.9])
+    assert len(find_clusters(both, 0.05, 4, max_visibility=0.5, require_all_occluded=True)[0]) == 1
+
+
+def test_delayed_is_off_by_default_and_strict_config_loads() -> None:
+    assert load_config().delayed.enabled is False
+    cfg = load_config("configs/ours/delayed_v3_strict.yaml")
+    assert cfg.delayed.trigger_require_all is True
+    assert cfg.delayed.min_gain > load_config("configs/ours/delayed_v2_reid.yaml").delayed.min_gain
