@@ -210,3 +210,77 @@ td.pending { color: var(--muted); }
   .edge { flex-basis: 24px; justify-content: center; }
   .edge svg { transform: rotate(90deg); }
 }
+
+/* ---------- tooltips for technical terms */
+.term { border-bottom: 1px dotted var(--muted); cursor: help; position: relative; }
+.term:hover::after, .term:focus::after {
+  content: attr(data-tip); position: absolute; left: 0; top: calc(100% + 6px); z-index: 20; white-space: nowrap;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 5px 8px;
+  font: 400 12px/1.4 var(--sans); color: var(--text); text-transform: none; letter-spacing: 0;
+}
+
+/* ---------- landing */
+.landing { display: flex; flex-direction: column; }
+.step {
+  min-height: calc(100vh - 56px - 48px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 40px; align-items: center; padding: 32px 0; border-bottom: 1px solid var(--border);
+  opacity: 0; transform: translateY(12px); transition: opacity 320ms ease-out, transform 320ms ease-out;
+}
+.step.in { opacity: 1; transform: none; }
+.step-text { display: flex; flex-direction: column; gap: 12px; }
+.step-text h2 { font-size: 28px; line-height: 1.2; }
+.step-text p { font-size: 16px; line-height: 1.6; }
+.small { font-size: 13px !important; }
+.step-visual { min-width: 0; }
+.diagram { width: 100%; height: auto; font-family: var(--sans); }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.why .panel { padding: 20px; }
+.why h3 { font-size: 18px; margin-bottom: 8px; }
+.ncards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.ncard { padding: 20px; display: flex; flex-direction: column; gap: 8px; min-height: 180px; }
+.ncard .nvalue { font-size: 44px; font-weight: 600; letter-spacing: -0.02em; color: var(--ours); line-height: 1.1; }
+.ncard.loss .nvalue { color: var(--baseline); }
+.ncard .nvalue.pending { font-size: 28px; color: var(--muted); font-weight: 500; }
+.ncard p { font-size: 14px; }
+.ncard .nmetric { margin-top: auto; font-size: 11px; color: var(--muted); }
+.try { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn.big { padding: 12px 22px; font-size: 16px; height: auto; }
+.marker-label {
+  position: absolute; right: 10px; top: 10px; font: 500 12px var(--sans); background: rgba(14,16,19,0.85);
+  color: #fff; border: 2px solid #fff; padding: 3px 8px; border-radius: var(--radius);
+}
+@media (max-width: 900px) {
+  .step { grid-template-columns: 1fr; min-height: auto; }
+  .why { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { .step { transition: none; opacity: 1; transform: none; } }
+
+/* ---------- scenarios */
+.scenarios { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 20px; align-items: start; }
+.rail { display: flex; flex-direction: column; gap: 10px; }
+.scard {
+  width: 240px; text-align: left; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0; cursor: pointer; overflow: hidden; display: flex; flex-direction: column;
+}
+.scard.active { border-color: var(--ours); }
+.scard.pending { cursor: default; }
+.scard .thumb { width: 100%; height: 100px; object-fit: cover; display: block; background: #0b0d10; }
+.pending-thumb { display: grid !important; place-items: center; color: var(--muted); font-size: 12px; }
+.scard-body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.scard-title { font-weight: 500; }
+.tag-illustrative { border: 1px solid var(--baseline); color: var(--baseline); background: transparent; }
+.tag-measured { background: var(--ours); border: 1px solid var(--ours); color: #0e1013; }
+.credit { font-size: 11px; color: var(--muted); margin-top: 8px; }
+.player-caption { margin-bottom: 10px; font-size: 15px; }
+.seek { position: relative; height: 28px; margin-top: 8px; }
+.seek input[type="range"] { position: absolute; inset: 0; width: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+.seek-track { position: absolute; left: 0; right: 0; top: 12px; height: 4px; background: var(--border); border-radius: 2px; }
+.seek-fill { height: 100%; background: var(--ours); border-radius: 2px; }
+.seek-marker {
+  position: absolute; top: 6px; width: 10px; height: 16px; margin-left: -5px; padding: 0; z-index: 2; cursor: pointer;
+  background: transparent; border: 2px solid #fff; border-radius: 2px;
+}
+.toggle { display: flex; gap: 6px; }
+.btn.on-ours { border-color: var(--ours); color: var(--ours); }
+.btn.on-baseline { border-color: var(--baseline); color: var(--text); }
+@media (max-width: 900px) { .scenarios { grid-template-columns: 1fr; } .rail { flex-direction: row; overflow-x: auto; } .scard { flex: 0 0 240px; } }

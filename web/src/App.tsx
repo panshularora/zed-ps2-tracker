@@ -1,17 +1,21 @@
-import { NavLink, Route, Routes } from "react-router-dom";
+import { NavLink, Route, Routes, useLocation } from "react-router-dom";
 import Architecture from "./pages/Architecture";
 import Demo from "./pages/Demo";
+import Landing from "./pages/Landing";
 import Overview from "./pages/Overview";
 import Results from "./pages/Results";
+import Scenarios from "./pages/Scenarios";
 
 const PAGES = [
-  { to: "/", label: "Overview" },
-  { to: "/demo", label: "Demo" },
-  { to: "/results", label: "Results" },
-  { to: "/architecture", label: "Architecture" },
+  { to: "/dashboard", label: "Overview" },
+  { to: "/dashboard/scenarios", label: "Scenarios" },
+  { to: "/dashboard/demo", label: "Demo" },
+  { to: "/dashboard/results", label: "Results" },
+  { to: "/dashboard/architecture", label: "Architecture" },
 ];
 
 export default function App() {
+  const landing = useLocation().pathname === "/";
   return (
     <div className="shell">
       <header className="topbar">
@@ -22,19 +26,25 @@ export default function App() {
           </span>
         </NavLink>
         <nav className="nav" aria-label="Pages">
-          {PAGES.map((p) => (
-            <NavLink key={p.to} to={p.to} end={p.to === "/"} className={({ isActive }) => (isActive ? "active" : "")}>
-              {p.label}
-            </NavLink>
-          ))}
+          {landing ? (
+            <NavLink to="/dashboard">Dashboard</NavLink>
+          ) : (
+            PAGES.map((p) => (
+              <NavLink key={p.to} to={p.to} end={p.to === "/dashboard"} className={({ isActive }) => (isActive ? "active" : "")}>
+                {p.label}
+              </NavLink>
+            ))
+          )}
         </nav>
       </header>
       <main>
         <Routes>
-          <Route path="/" element={<Overview />} />
-          <Route path="/demo" element={<Demo />} />
-          <Route path="/results" element={<Results />} />
-          <Route path="/architecture" element={<Architecture />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/dashboard" element={<Overview />} />
+          <Route path="/dashboard/scenarios" element={<Scenarios />} />
+          <Route path="/dashboard/demo" element={<Demo />} />
+          <Route path="/dashboard/results" element={<Results />} />
+          <Route path="/dashboard/architecture" element={<Architecture />} />
           <Route path="*" element={<p className="muted">Page not found.</p>} />
         </Routes>
       </main>
