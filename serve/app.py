@@ -38,16 +38,7 @@ from eval.export_viewer import build_clip, pending_entries, results_to_rows
 from eval.gate_events import Gate
 from serve import errors
 from serve.api import Service, router
-from serve.dashboard_api import router as workstation_router
-from serve.detector import MODELS
-from serve.events import EventParams, gate_events
-from serve.settings import Settings
-from tracker.config import load_config
-from tracker.io import CacheFormatError, load_cache
-from tracker.runner import run_sequence
-
-# shared with serve/dashboard_api.py (re-exported here so existing imports keep working)
-from serve.catalog import (  # noqa: E402
+from serve.catalog import (
     CONFIG_DIRS,
     CONFIG_ROOT,
     MAX_UPLOAD_MB,
@@ -56,6 +47,13 @@ from serve.catalog import (  # noqa: E402
     VIEWER_DIST,
     available_configs,
 )
+from serve.dashboard_api import router as workstation_router
+from serve.detector import MODELS
+from serve.events import EventParams, gate_events
+from serve.settings import Settings
+from tracker.config import load_config
+from tracker.io import CacheFormatError, load_cache
+from tracker.runner import run_sequence
 
 __all__ = ["CONFIG_DIRS", "CONFIG_ROOT", "ROOT", "app", "available_configs", "create_app"]
 
