@@ -36,15 +36,37 @@ class NoCMC:
 
 
 def parse_cmc_file(path: Path) -> FloatArray:
-    """``(N, 2, 3)`` affines, row ``i`` = line ``i`` (``idx a00 a01 a02 a10 a11 a12``)."""
+    """Return row-ordered affines while validating contiguous explicit frame indices.
+
+    Files may use zero-based indices or absolute MOT frame numbers. FileCMC maps renumbered
+    cache frames to rows; the first file index is not a cache-frame offset.
+    """
     rows = []
+    first_index: int | None = None
     for k, line in enumerate(path.read_text().splitlines()):
         tok = line.split()
         if not tok:
-            continue
-        if int(float(tok[0])) != k:
+            raise ValueError(f"{path}: line {k} is empty")
+        if len(tok) != 7:
+            raise ValueError(f"{path}: line {k} has {len(tok)} fields, expected 7")
+        try:
+            raw_index = float(tok[0])
+            index = int(raw_index)
+        except (ValueError, OverflowError) as exc:
+            raise ValueError(f"{path}: line {k} has invalid index {tok[0]!r}") from exc
+        if not np.isfinite(raw_index) or raw_index != index or index < 0:
+            raise ValueError(f"{path}: line {k} has invalid frame index {tok[0]!r}")
+        if first_index is None:
+            first_index = index
+        if index != first_index + len(rows):
             raise ValueError(f"{path}: line {k} has index {tok[0]}")
-        rows.append([float(v) for v in tok[1:7]])
+        try:
+            affine = [float(v) for v in tok[1:]]
+        except ValueError as exc:
+            raise ValueError(f"{path}: line {k} has a nonnumeric affine value") from exc
+        if not np.isfinite(affine).all():
+            raise ValueError(f"{path}: line {k} has a non-finite affine value")
+        rows.append(affine)
     return np.asarray(rows, np.float64).reshape(-1, 2, 3)
 
 
