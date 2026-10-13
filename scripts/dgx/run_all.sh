@@ -30,6 +30,8 @@
 #   --until STAGE          stop after STAGE        --skip mot20,dancetrack,sompt22
 #   --gate PATH            also cache your gate clip    --with-pexels   also the Pexels clips
 #   --gpu N  --batch N  --jobs N      (env GPU, BATCH, JOBS work too)
+#   --fp32                 FP32 detector + re-ID instead of FP16 (env FP16=0)
+#   (env) PHASE3_TIMEOUT_MIN_MOT20=MIN   go/no-go MOT20 replication timeout (laptop 240, plan 60)
 #
 # State: $ZED_ROOT/STATUS (cat it), $ZED_ROOT/run_all/ (done-markers, notes, gpu.json),
 #        $ZED_ROOT/run_all/logs/run_all_<time>.log (+ $ZED_ROOT/run_all.log -> the latest).
@@ -40,7 +42,7 @@ source "$HERE/pipeline_lib.sh"
 
 : "${RUN_SH:=$HERE/run.sh}"           # tests point this at a stub
 : "${ETA_WATCH:=1}"
-usage() { sed -n 2,37p "$HERE/run_all.sh"; }
+usage() { sed -n 2,39p "$HERE/run_all.sh"; }
 
 is_wsl() { [[ -n "${WSL_DISTRO_NAME:-}" ]] || grep -qi microsoft /proc/version 2>/dev/null; }
 
@@ -64,6 +66,7 @@ parse_args() {
       --gate)       GATE="${2:?--gate needs a video path}"; shift 2 ;;
       --gate=*)     GATE="${1#*=}"; shift ;;
       --with-pexels) WITH_PEXELS=1; shift ;;
+      --fp32)       FP16=0; shift ;;
       --gpu)        GPU="${2:?}"; shift 2 ;;
       --batch)      BATCH="${2:?}"; BATCH_SET=1; shift 2 ;;
       --jobs)       JOBS="${2:?}"; shift 2 ;;
@@ -89,7 +92,8 @@ parse_args() {
     : "${JOBS:=$(( ncpu < 16 ? ncpu : 16 ))}"
     MIN_GB=${MIN_FREE_GB:-25} WARN_GB=70
   fi
-  export GPU BATCH JOBS MOT20_VARIANTS
+  : "${FP16:=1}"
+  export GPU BATCH JOBS MOT20_VARIANTS FP16
 }
 
 # The detector to use from now on: the --detector choice, or s after a recorded OOM fallback
@@ -407,6 +411,11 @@ phase3_args() {   # STAGE -> the PHASE3_ARGS string for `make phase3`
     esac
   done
   [[ -z "$(small_datasets)" ]] || p3+=" --tag-cache '*/laptop_yolox_s_*/*'"
+  # per-run timeout of the go/no-go MOT20 replication (plan default 60 min was too short for the
+  # laptop: the Oct 2026 sparsetrack K=5 arm timed out). Finished arms are kept, so re-running resumes.
+  local t20="${PHASE3_TIMEOUT_MIN_MOT20:-}"
+  [[ -n "$t20" || "$PROFILE" != laptop ]] || t20=240
+  [[ -z "$t20" ]] || p3+=" --timeout-min MOT20=$t20"
   if pipe_forced "$1"; then p3+=" --force"; fi
   echo "$p3"
 }

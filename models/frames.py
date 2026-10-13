@@ -37,9 +37,7 @@ class ImageFolderSource:
         elif eight_digit.is_file():
             self.frame_digits = 8
         else:
-            raise FileNotFoundError(
-                f"No first frame found: checked {six_digit} and {eight_digit}"
-            )
+            raise FileNotFoundError(f"No first frame found: checked {six_digit} and {eight_digit}")
 
     def path(self, frame_id: int) -> Path:
         return self.im_dir / f"{frame_id:0{self.frame_digits}d}{self.ext}"

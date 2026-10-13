@@ -143,6 +143,15 @@ def test_dancetrack_8_digit_sequence_produces_a_cache(tmp_path: Path) -> None:
 
     src = ImageFolderSource(_seq(tmp_path / "val", "dancetrack0004", 8))
     out = tmp_path / "cache" / "DanceTrack" / "dancetrack" / "val"
-    (p,) = run_many([src], FakeDetector(), FakeEmbedder(), out, dataset="DanceTrack", split="val",
-                   detector_saw_eval_half=False, batch_size=2)
-    assert p.name == "dancetrack0004.npz" and is_done(p)
+    (p,) = run_many(
+        [src],
+        FakeDetector(),
+        FakeEmbedder(),
+        out,
+        dataset="DanceTrack",
+        split="val",
+        detector_saw_eval_half=False,
+        batch_size=2,
+    )
+    assert p.name == "dancetrack0004.npz"
+    assert is_done(p)

@@ -41,7 +41,7 @@ def parse_cmc_file(path: Path) -> FloatArray:
     Files may use zero-based indices or absolute MOT frame numbers. FileCMC maps renumbered
     cache frames to rows; the first file index is not a cache-frame offset.
     """
-    rows = []
+    rows: list[list[float]] = []
     first_index: int | None = None
     for k, line in enumerate(path.read_text().splitlines()):
         tok = line.split()

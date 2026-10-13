@@ -1,0 +1,12 @@
+# ByteTrack's own MOT17 val-half evaluator behaviour (ifzhang/ByteTrack @ d1bf019,
+# tools/track.py + yolox/evaluators/mot_evaluator.py + yolox/tracker/byte_tracker.py), for the
+# reproduction check only. Differences from bytetrack.yaml (our baseline, unchanged):
+#   * unconfirmed (tentative) tracks are NOT Kalman-predicted (only tracked + lost are);
+#   * removal bookkeeping lag (a just-removed lost track can still be re-found once);
+#   * per-sequence track_buffer hacks: MOT17-05 -> 14, MOT17-13 -> 25. These cannot live in a
+#     config file; eval.repro_check passes them with --seq-override (see BYTETRACK_SEQ_OVERRIDES).
+# Remaining known deviation: our Kalman filter is xywh (BoT-SORT style), ByteTrack's is xyah.
+inherit: bytetrack.yaml
+lifecycle:
+  predict_tentative: false
+  removal_lag: true

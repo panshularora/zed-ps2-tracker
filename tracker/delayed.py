@@ -119,8 +119,8 @@ def find_clusters(
             continue
         vis = rec.dets_vis
         if max_visibility < 1.0 and vis is not None:
-            v = vis[cols]
-            worst = float(np.max(v)) if require_all_occluded else float(np.min(v))
+            vv = vis[cols]
+            worst = float(np.max(vv)) if require_all_occluded else float(np.min(vv))
             if worst >= max_visibility:
                 continue
         edges = {

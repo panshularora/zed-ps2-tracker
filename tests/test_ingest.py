@@ -61,8 +61,13 @@ def test_partial_then_rest_ingest_and_phase3(bundle: Path, tmp_path: Path) -> No
     ing.ingest(bundle, dest, nodata)  # the rest (folder of tars; re-ingesting is idempotent)
     s2 = phase3.run(PLAN, dest / "index.json", out, rep, jobs=4)
     ids = {r["id"] for r in s2["ran"]}
-    assert {"dancetrack_val", "mot20_val_half__mot17full_xdomain",
-            "mot20_val_half__mot20full_SAW_EVAL_HALF"} <= ids  # fmt: skip
+    assert {"dancetrack_val", "mot20_val_half__mot17full_xdomain"} <= ids
+    # leaked (SAW_EVAL_HALF) caches are excluded by default and say so
+    assert "mot20_val_half__mot20full_SAW_EVAL_HALF" not in ids
+    assert not any(r["saw_eval_half"] for r in s2["ran"])
+    assert any("SAW_EVAL_HALF" in x and "leaked, excluded" in x for x in s2["excluded"])
+    s3 = phase3.run(PLAN, dest / "index.json", out, rep, jobs=4, include_leaked=True)
+    assert "mot20_val_half__mot20full_SAW_EVAL_HALF" in {r["id"] for r in s3["ran"]}
     saw_dir = rep / "mot20_val_half__mot20full_SAW_EVAL_HALF"
     saw = json.loads((saw_dir / "ablation.json").read_text())
     assert len(saw) == 10

@@ -57,7 +57,8 @@ unzip_once() {
 
 # stage_a ARGS... : run models.stage_a with the shared defaults
 stage_a() {
-  python -m models.stage_a "$@" --conf-floor "$CONF_FLOOR" --nms "$NMS" --batch-size "$BATCH" \
+  local prec=(); [[ "${FP16:-1}" == 0 ]] && prec=(--no-fp16)
+  python -m models.stage_a "$@" "${prec[@]}" --conf-floor "$CONF_FLOOR" --nms "$NMS" --batch-size "$BATCH" \
     --device "$DEVICE" --variant "$VARIANT" \
     --reid-weights "$WEIGHTS/osnet_ain_x1_0_msmt17.pth"
 }

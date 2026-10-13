@@ -220,7 +220,6 @@ def test_cmc_file_lookup_and_indexing(tmp_path):
         build_cmc("file", meta2)
 
 
-
 def test_cmc_absolute_indices_map_rows_to_local_frames(tmp_path):
     f = tmp_path / "GMC-MOT20-01.txt"
     f.write_text("215 1 0 10 0 1 -10\n216 1 0 20 0 1 -20\n217 1 0 30 0 1 -30\n")

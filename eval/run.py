@@ -66,6 +66,7 @@ def run(
     dataset: str, root: Path, split: str, dets: str, config: Path, overrides: list[str],
     name: str, out: Path, evaluate: bool = True, stress: bool = True,
     det_variant: str = "FRCNN", score_map: str = "none",
+    seq_overrides: dict[str, list[str]] | None = None,
 ) -> dict[str, Any]:  # fmt: skip
     """``score_map = logistic`` maps raw detector scores with ``1 / (1 + e^-s)``. That is needed
     for MOT17 DPM, whose public scores are unbounded (about -0.5 to 4.8)."""
@@ -85,7 +86,9 @@ def run(
         elif score_map != "none":
             raise ValueError(f"unknown score_map {score_map!r}")
         saw.append(bool(cache.meta.detector_saw_eval_half))
-        res = run_sequence(cache, cfg)
+        extra = [o for pre, ov in (seq_overrides or {}).items()
+                 if seq_dir.name.startswith(pre) for o in ov]  # fmt: skip
+        res = run_sequence(cache, load_config(config, [*overrides, *extra]) if extra else cfg)
         write_mot_results(trk_dir / "data" / f"{seq_dir.name}.txt", res.results)
         per_seq[seq_dir.name] = {**summarise_latency(res.latency_ms), "tracker_info": res.info}
         per_seq[seq_dir.name]["dets_per_frame"] = (
@@ -95,7 +98,8 @@ def run(
     info: dict[str, Any] = {
         "dataset": dataset, "split": split, "sequences": names, "dets": dets,
         "detector_saw_eval_half": any(saw), "det_variant": det_variant,
-        "score_map": score_map, "config_file": str(config), "overrides": overrides,
+        "score_map": score_map, "seq_overrides": seq_overrides or {},
+        "config_file": str(config), "overrides": overrides,
         "config": config_to_dict(cfg), "git_commit": git_commit(),
         "latency_note": "tracker update() only (no detector, no I/O); not a pinned-thread "
                         "measurement; use `python -m eval.latency` for the reported numbers",
@@ -155,11 +159,24 @@ def main(argv: list[str] | None = None) -> int:
         choices=["none", "logistic"],
         help="logistic: map unbounded scores (MOT17 DPM) into (0, 1)",
     )
+    p.add_argument("--seq-override", action="append", default=[], metavar="SEQ_PREFIX:key=value",
+                   help="override for sequences whose name starts with SEQ_PREFIX "
+                        "(ByteTrack's evaluator: MOT17-05:lifecycle.track_buffer=14)")  # fmt: skip
     a = p.parse_args(argv)
     run(a.dataset, a.root, a.split, a.dets, a.config, a.override, a.name, a.out,
         evaluate=not a.no_eval, stress=not a.no_stress, det_variant=a.det_variant,
-        score_map=a.score_map)  # fmt: skip
+        score_map=a.score_map, seq_overrides=parse_seq_overrides(a.seq_override))  # fmt: skip
     return 0
+
+
+def parse_seq_overrides(items: list[str]) -> dict[str, list[str]]:
+    out: dict[str, list[str]] = {}
+    for it in items:
+        pre, sep, ov = it.partition(":")
+        if not sep or not pre or "=" not in ov:
+            raise SystemExit(f"--seq-override wants SEQ_PREFIX:key=value, got {it!r}")
+        out.setdefault(pre, []).append(ov)
+    return out
 
 
 if __name__ == "__main__":
