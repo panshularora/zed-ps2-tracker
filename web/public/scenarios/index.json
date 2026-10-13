@@ -1,0 +1,152 @@
+[
+ {
+  "id": "man_entering_metro",
+  "title": "Single passenger, metro",
+  "problem": "What tracking is",
+  "caption": "One person, one box, one ID from entry to exit.",
+  "source": "https://www.pexels.com/video/man-entering-a-metro-station-7251031/",
+  "licence": "Pexels License",
+  "detector": "yolox_s",
+  "kind": "illustrative",
+  "width": 1920,
+  "height": 1080,
+  "src_fps": 25.0,
+  "stride": 1,
+  "frames_tracked": 387,
+  "covered_s": 15.48,
+  "id_switches": {
+   "baseline": 0,
+   "ours": 0
+  },
+  "tracks": {
+   "baseline": 1,
+   "ours": 3
+  },
+  "disagreements": 0
+ },
+ {
+  "id": "subway_turnstile",
+  "title": "Subway turnstiles",
+  "problem": "Counting at a gate",
+  "caption": "Each person keeps one ID as they pass the turnstiles.",
+  "source": "https://www.pexels.com/video/busy-subway-turnstile-in-urban-station-32511497/",
+  "licence": "Pexels License",
+  "detector": "yolox_s",
+  "kind": "illustrative",
+  "width": 1920,
+  "height": 1080,
+  "src_fps": 30.0,
+  "stride": 1,
+  "frames_tracked": 351,
+  "covered_s": 11.7,
+  "id_switches": {
+   "baseline": 8,
+   "ours": 13
+  },
+  "tracks": {
+   "baseline": 45,
+   "ours": 56
+  },
+  "disagreements": 25
+ },
+ {
+  "id": "milan_turnstiles",
+  "title": "Milan metro turnstiles",
+  "problem": "Bunching at the barrier",
+  "caption": "People squeeze together at the barrier; watch whether IDs survive the overlap.",
+  "source": "https://www.pexels.com/video/modern-milan-metro-station-turnstiles-31540854/",
+  "licence": "Pexels License",
+  "detector": "yolox_s",
+  "kind": "illustrative",
+  "width": 1920,
+  "height": 1080,
+  "src_fps": 59.940060001224516,
+  "stride": 2,
+  "frames_tracked": 236,
+  "covered_s": 7.87,
+  "id_switches": {
+   "baseline": 0,
+   "ours": 0
+  },
+  "tracks": {
+   "baseline": 3,
+   "ours": 4
+  },
+  "disagreements": 0
+ },
+ {
+  "id": "mexico_city_entrance",
+  "title": "Mexico City metro entrance",
+  "problem": "Recovering after occlusion",
+  "caption": "People pass behind others; watch whether the same ID comes back.",
+  "source": "https://www.pexels.com/video/bustling-mexico-city-metro-entrance-30138564/",
+  "licence": "Pexels License",
+  "detector": "yolox_s",
+  "kind": "illustrative",
+  "width": 1920,
+  "height": 1080,
+  "src_fps": 29.970030000612258,
+  "stride": 1,
+  "frames_tracked": 600,
+  "covered_s": 20.02,
+  "id_switches": {
+   "baseline": 0,
+   "ours": 0
+  },
+  "tracks": {
+   "baseline": 7,
+   "ours": 8
+  },
+  "disagreements": 0
+ },
+ {
+  "id": "shibuya_crossing",
+  "title": "Shibuya crossing, Tokyo",
+  "problem": "Lookalikes in a dense crowd",
+  "caption": "Many similar-looking people cross; the hardest case for keeping IDs apart.",
+  "source": "https://www.pexels.com/video/a-crowded-city-street-with-many-people-walking-25947490/",
+  "licence": "Pexels License",
+  "detector": "yolox_s",
+  "kind": "illustrative",
+  "width": 1920,
+  "height": 1080,
+  "src_fps": 59.940060001224516,
+  "stride": 2,
+  "frames_tracked": 600,
+  "covered_s": 20.02,
+  "id_switches": {
+   "baseline": 20,
+   "ours": 28
+  },
+  "tracks": {
+   "baseline": 104,
+   "ours": 130
+  },
+  "disagreements": 81
+ },
+ {
+  "id": "rabat_stadium",
+  "title": "Stadium entrance, Rabat",
+  "problem": "Event entrance (Fast Lane)",
+  "caption": "Fans stream toward the entrance in portrait phone footage.",
+  "source": "https://www.pexels.com/video/fans-arriving-at-stadium-in-rabat-34452568/",
+  "licence": "Pexels License",
+  "detector": "yolox_s",
+  "kind": "illustrative",
+  "width": 1080,
+  "height": 1920,
+  "src_fps": 30.0,
+  "stride": 1,
+  "frames_tracked": 208,
+  "covered_s": 6.93,
+  "id_switches": {
+   "baseline": 2,
+   "ours": 4
+  },
+  "tracks": {
+   "baseline": 22,
+   "ours": 30
+  },
+  "disagreements": 5
+ }
+]

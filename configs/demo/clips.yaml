@@ -71,7 +71,7 @@ clips:
     pexels_id: 25947490
     page: https://www.pexels.com/video/a-crowded-city-street-with-many-people-walking-25947490/
     file: shibuya_crossing_25947490.mp4
-    note: Densest crowd; heavy occlusion and lookalikes (64 s, 59.94 fps; run with a frame limit on CPU).
+    note: Densest crowd; heavy occlusion and lookalikes (source 64 s, 59.94 fps; the blurred demo copy is the first 20 s).
     consent: false
     event_styling: neutral
     gate: [0.0, 0.6, 1.0, 0.6]

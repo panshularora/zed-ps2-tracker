@@ -22,23 +22,45 @@ const shot = async (name) => {
   console.log(`saved ${OUT}/${name}.png`);
 };
 
+const revealAll = async () => {
+  for (let y = 0; y < 12000; y += 400) { await page.evaluate((v) => window.scrollTo(0, v), y); await page.waitForTimeout(60); }
+  await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(500);
+};
 await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+await page.waitForTimeout(1500);
+await revealAll();
+await shot("landing");
+await page.setViewportSize({ width: 390, height: 844 });
+await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+await page.waitForTimeout(1000);
+await revealAll();
+await shot("landing-mobile");
+await page.setViewportSize({ width: 1440, height: 900 });
+await page.goto(`${BASE}/dashboard/scenarios`, { waitUntil: "networkidle" });
+await page.waitForSelector("[data-testid=scenario-player] video");
+await page.waitForFunction(() => (document.querySelector("video")?.readyState ?? 0) >= 2);
+await page.getByTestId("seek-marker").first().click();
+await page.waitForTimeout(2300);
+await page.evaluate(() => document.querySelector("video")?.pause());
+await shot("scenarios");
+if (process.env.ONLY_NEW) { await browser.close(); process.exit(0); }
+await page.goto(`${BASE}/dashboard`, { waitUntil: "networkidle" });
 await page.waitForSelector("[data-testid=tile]");
 await shot("overview");
 
-await page.goto(`${BASE}/results`, { waitUntil: "networkidle" });
+await page.goto(`${BASE}/dashboard/results`, { waitUntil: "networkidle" });
 await page.waitForSelector("table");
 await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); // load the lazy PNG plots
 await page.waitForFunction(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0));
 await page.evaluate(() => window.scrollTo(0, 0));
 await shot("results");
 
-await page.goto(`${BASE}/architecture`, { waitUntil: "networkidle" });
+await page.goto(`${BASE}/dashboard/architecture`, { waitUntil: "networkidle" });
 await page.getByRole("tab").nth(3).click();
 await page.waitForTimeout(500);
 await shot("architecture");
 
-await page.goto(`${BASE}/demo`, { waitUntil: "networkidle" });
+await page.goto(`${BASE}/dashboard/demo`, { waitUntil: "networkidle" });
 await page.getByLabel("Clip").selectOption(CLIP);
 if (RUN_JOB) {
   const t0 = Date.now();
