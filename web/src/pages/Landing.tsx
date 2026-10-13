@@ -1,10 +1,8 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ExampleClip } from "../components/ExampleClip";
-import { fetchScenario, type ScenarioData } from "../lib/scenarios";
+import { HiddenPersonDiagram, IdMixupExplainer } from "../components/IdMixup";
 import { CARDS, cardValue, loadSummary, PENDING, type SummaryFile } from "../lib/summary";
 
-export const EXAMPLE_CLIP = "subway_turnstile";
 const GH = "https://github.com/panshularora/zed-ps2-tracker/blob/main/";
 
 /** Fade in with a 12 px rise over 320 ms, once, when the step first scrolls into view. */
@@ -75,14 +73,12 @@ export function NumberCards({ summary }: { summary: SummaryFile | null }) {
   );
 }
 
-export function LandingView({ example, summary }: { example: ScenarioData | null; summary: SummaryFile | null }) {
-  const clip = (run: "baseline" | "ours") =>
-    example ? <ExampleClip data={example} run={run} /> : <div className="stage"><div className="empty">Example clip loading…</div></div>;
+export function LandingView({ summary }: { summary: SummaryFile | null }) {
   return (
     <div className="landing">
-      <Step n={1} title="A gate camera mixes people up" visual={clip("baseline")}>
-        <p>When two people pass a gate close together, a standard tracker can lose one and give them a new ID. One person then counts twice, or an alert fires for the wrong person.</p>
-        <p className="muted small">Real station footage (Pexels, faces blurred). Watch for the moment the box label changes.</p>
+      <Step n={1} title="What is an ID mix-up?" visual={<IdMixupExplainer />}>
+        <p>A tracker gives every person a number (an ID) and should keep it until they leave. When two people pass a gate close together, or one is hidden behind another, the tracker can swap their numbers or give the returning person a new one. That is an ID mix-up.</p>
+        <p className="muted small">At a gate it matters because one person can then count twice, or an alert can land on the wrong person.</p>
       </Step>
       <Step n={2} title="Why this is hard" visual={
         <div className="why">
@@ -93,8 +89,9 @@ export function LandingView({ example, summary }: { example: ScenarioData | null
       }>
         <p>The camera only sees boxes around people. When boxes overlap or someone is hidden, the tracker has to guess who is who.</p>
       </Step>
-      <Step n={3} title="What we built" visual={clip("ours")}>
-        <p>We took a strong existing tracker (BoT-SORT) and taught it to notice when a person is hidden behind someone else, so it waits for them instead of handing out a new ID.</p>
+      <Step n={3} title="What we built" visual={<HiddenPersonDiagram />}>
+        <p>We started from a strong existing tracker (BoT-SORT) and added a check for when a person is hidden behind someone else, so it holds their ID for a while instead of handing out a new one straight away.</p>
+        <p className="muted small">Whether this reduces mix-ups overall is what step 5 measures. On some of our clips it makes more switches, not fewer.</p>
       </Step>
       <Step n={4} title="How we tested it fairly" visual={<FairTestDiagram />}>
         <p>Every tracker gets exactly the same detected boxes and is scored by the same standard scorer (TrackEval) on two public, human-labelled datasets: MOT17 and MOT20.</p>
@@ -114,9 +111,5 @@ export function LandingView({ example, summary }: { example: ScenarioData | null
 }
 
 export default function Landing() {
-  const [example, setExample] = useState<ScenarioData | null>(null);
-  useEffect(() => {
-    fetchScenario(EXAMPLE_CLIP).then(setExample, () => setExample(null));
-  }, []);
-  return <LandingView example={example} summary={loadSummary()} />;
+  return <LandingView summary={loadSummary()} />;
 }

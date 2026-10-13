@@ -1,6 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { exampleWindow } from "../src/components/ExampleClip";
 import { Term } from "../src/components/Term";
 import { frameAt, markerLabel, markers, neutralColor, NEUTRAL_IDS, type ScenarioData, seekBefore } from "../src/lib/scenarios";
 import { CARDS, cardValue, loadSummary, PENDING } from "../src/lib/summary";
@@ -48,8 +47,12 @@ describe("summary numbers", () => {
     expect(CARDS.filter((c) => c.loss)).toHaveLength(1);
   });
   it("landing has six steps and a Try it link to the dashboard", () => {
-    render(<MemoryRouter future={R}><LandingView example={null} summary={null} /></MemoryRouter>);
+    render(<MemoryRouter future={R}><LandingView summary={null} /></MemoryRouter>);
     expect(screen.getAllByTestId("step")).toHaveLength(6);
+    expect(screen.getByTestId("id-mixup")).toBeTruthy();
+    expect(screen.getByText("What is an ID mix-up?")).toBeTruthy();
+    // neutral explainer: no tracker is named as winning or losing in step 1
+    expect(screen.getByTestId("id-mixup").textContent).not.toMatch(/ByteTrack|ours kept|BoT-SORT/i);
     expect(screen.getByRole("link", { name: "Open the dashboard" })).toHaveProperty("href", expect.stringContaining("/dashboard"));
   });
 });
@@ -78,11 +81,6 @@ describe("scenarios helpers", () => {
       expect(r > 180 && g < 120 && b < 120).toBe(false);
     }
     expect(neutralColor(-1)).toMatch(/^#/);
-  });
-  it("picks the example window around a swap that ours kept", () => {
-    const w = exampleWindow(scenario());
-    expect(w.swapFrame).toBe(90);
-    expect(w.end - w.start).toBeCloseTo(6);
   });
 });
 

@@ -20,3 +20,5 @@ viewer/dist/
 viewer/src/generated/
 web/node_modules/
 web/dist/
+dashboard/node_modules/
+dashboard/dist/

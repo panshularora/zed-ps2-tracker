@@ -24,10 +24,10 @@ sys.path.insert(0, str(ROOT))
 from serve.analysis import suspected_switches  # noqa: E402
 from serve.clips import load_manifest  # noqa: E402
 from serve.detector import MODELS, YoloxDetector, model_path  # noqa: E402
+from serve.events import track_rows  # noqa: E402
 from serve.pipeline import detect_video, probe  # noqa: E402
 from tracker.config import load_config  # noqa: E402
 from tracker.runner import run_sequence  # noqa: E402
-from serve.events import track_rows  # noqa: E402
 
 DETECTOR = "yolox_s"
 TRACKERS = {
@@ -36,18 +36,48 @@ TRACKERS = {
 }
 # scenario order, problem phrase, what to watch, stride, tracked-frame cap (CPU budget)
 SCENARIOS: list[tuple[str, str, str, int, int | None]] = [
-    ("man_entering_metro", "What tracking is",
-     "One person, one box, one ID from entry to exit.", 1, None),
-    ("subway_turnstile", "Counting at a gate",
-     "Each person keeps one ID as they pass the turnstiles.", 1, None),
-    ("milan_turnstiles", "Bunching at the barrier",
-     "People squeeze together at the barrier; watch whether IDs survive the overlap.", 2, None),
-    ("mexico_city_entrance", "Recovering after occlusion",
-     "People pass behind others; watch whether the same ID comes back.", 1, 600),
-    ("shibuya_crossing", "Lookalikes in a dense crowd",
-     "Many similar-looking people cross; the hardest case for keeping IDs apart.", 2, 600),
-    ("rabat_stadium", "Event entrance (Fast Lane)",
-     "Fans stream toward the entrance in portrait phone footage.", 1, None),
+    (
+        "man_entering_metro",
+        "What tracking is",
+        "One person, one box, one ID from entry to exit.",
+        1,
+        None,
+    ),
+    (
+        "subway_turnstile",
+        "Counting at a gate",
+        "Each person keeps one ID as they pass the turnstiles.",
+        1,
+        None,
+    ),
+    (
+        "milan_turnstiles",
+        "Bunching at the barrier",
+        "People squeeze together at the barrier; watch whether IDs survive the overlap.",
+        2,
+        None,
+    ),
+    (
+        "mexico_city_entrance",
+        "Recovering after occlusion",
+        "People pass behind others; watch whether the same ID comes back.",
+        1,
+        600,
+    ),
+    (
+        "shibuya_crossing",
+        "Lookalikes in a dense crowd",
+        "Many similar-looking people cross; the hardest case for keeping IDs apart.",
+        2,
+        600,
+    ),
+    (
+        "rabat_stadium",
+        "Event entrance (Fast Lane)",
+        "Fans stream toward the entrance in portrait phone footage.",
+        1,
+        None,
+    ),
 ]
 
 
@@ -79,11 +109,27 @@ def disagreements(rb: np.ndarray, ro: np.ndarray, min_iou: float = 0.5) -> list[
             oid = int(orow[1])
             box = [round(float(x), 1) for x in orow[2:6]]
             if oid in pair_o and pair_o[oid] != bid:
-                out.append({"frame": int(f), "kept": "ours", "ours_id": oid,
-                            "baseline_from": pair_o[oid], "baseline_to": bid, "box": box})
+                out.append(
+                    {
+                        "frame": int(f),
+                        "kept": "ours",
+                        "ours_id": oid,
+                        "baseline_from": pair_o[oid],
+                        "baseline_to": bid,
+                        "box": box,
+                    }
+                )
             elif bid in pair_b and pair_b[bid] != oid:
-                out.append({"frame": int(f), "kept": "baseline", "baseline_id": bid,
-                            "ours_from": pair_b[bid], "ours_to": oid, "box": box})
+                out.append(
+                    {
+                        "frame": int(f),
+                        "kept": "baseline",
+                        "baseline_id": bid,
+                        "ours_from": pair_b[bid],
+                        "ours_to": oid,
+                        "box": box,
+                    }
+                )
             pair_o[oid], pair_b[bid] = bid, oid
     return out
 
@@ -92,7 +138,8 @@ def compact(rows: np.ndarray) -> dict[str, list[list[float]]]:
     frames: dict[str, list[list[float]]] = {}
     for r in rows:
         frames.setdefault(str(int(r[0])), []).append(
-            [int(r[1]), *(round(float(v)) for v in r[2:6])])
+            [int(r[1]), *(round(float(v)) for v in r[2:6])]
+        )
     return frames
 
 
@@ -125,23 +172,45 @@ def main(argv: list[str] | None = None) -> int:
             r = track_rows(run_sequence(cache, load_config(cfg)).results)
             rows[key] = r
             sw = suspected_switches(r, m.frame_rate, m.seq_length)
-            runs[key] = {"label": label, "config": str(cfg.relative_to(ROOT)),
-                         "id_switches": len(sw), "tracks": int(len(np.unique(r[:, 1]))) if len(r) else 0,
-                         "frames": compact(r)}
+            runs[key] = {
+                "label": label,
+                "config": str(cfg.relative_to(ROOT)),
+                "id_switches": len(sw),
+                "tracks": len(np.unique(r[:, 1])) if len(r) else 0,
+                "frames": compact(r),
+            }
         dis = disagreements(rows["baseline"], rows["ours"])
         meta = {
-            "id": cid, "title": clip.title, "problem": problem, "caption": caption,
-            "source": clip.page, "licence": clip.licence, "detector": DETECTOR,
-            "kind": "illustrative", "width": info.width, "height": info.height,
-            "src_fps": info.fps, "stride": stride, "frames_tracked": m.seq_length,
+            "id": cid,
+            "title": clip.title,
+            "problem": problem,
+            "caption": caption,
+            "source": clip.page,
+            "licence": clip.licence,
+            "detector": DETECTOR,
+            "kind": "illustrative",
+            "width": info.width,
+            "height": info.height,
+            "src_fps": info.fps,
+            "stride": stride,
+            "frames_tracked": m.seq_length,
             "covered_s": round(m.seq_length * stride / info.fps, 2),
             "id_switches": {k: runs[k]["id_switches"] for k in runs},
             "tracks": {k: runs[k]["tracks"] for k in runs},
             "disagreements": len(dis),
         }
-        dst.write_text(json.dumps({"meta": meta, "runs": runs, "disagreements": dis},
-                                  separators=(",", ":")))
-        print(cid, json.dumps(meta["id_switches"]), "dis", len(dis), "frames", m.seq_length, flush=True)
+        dst.write_text(
+            json.dumps({"meta": meta, "runs": runs, "disagreements": dis}, separators=(",", ":"))
+        )
+        print(
+            cid,
+            json.dumps(meta["id_switches"]),
+            "dis",
+            len(dis),
+            "frames",
+            m.seq_length,
+            flush=True,
+        )
         index.append(meta)
     order = [s[0] for s in SCENARIOS]
     index.sort(key=lambda x: order.index(x["id"]))

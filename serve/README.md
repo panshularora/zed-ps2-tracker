@@ -93,6 +93,13 @@ See `serve/settings.py`: `ZED_DATA_DIR`, `ZED_CLIP_DIR`, `ZED_CLIP_MANIFEST`, `Z
 |---|---|
 | `GET /api/health` | status, version, configs, detector models present, clips, job counts, limits |
 | `GET /api/configs` | names accepted by `config` (`baselines/*`, `ours/*`); paths are never accepted |
+| `GET /api/workstation` | viewer-clip count and which published result files are present |
+| `GET /api/config/{name}` | parsed YAML for a name from `/api/configs` |
+| `GET /api/viewer-clips` | MOT17 viewer clips in `viewer/data`; `GET /api/viewer-clips/{file}` the gzip |
+| `GET /api/results/ablation` | `docs/results/ablation/ablation.json` |
+| `GET /api/results/gate-events` | `docs/results/gate_events/gate_events.json` |
+| `GET /api/results/go-no-go` | `docs/results/go_no_go/rows_v2.json` |
+| `GET /api/outputs` | COMBINED metrics from local `outputs/*/metrics/*/metrics.json` |
 | `POST /api/track` | multipart `cache` (.npz, ≤ `ZED_MAX_UPLOAD_MB`, default 200), `config`, optional `gate` `x1,y1,x2,y2`, optional `start_time` (ISO 8601 with offset) |
 
 ```bash

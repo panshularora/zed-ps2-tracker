@@ -5,17 +5,22 @@ import Landing from "./pages/Landing";
 import Overview from "./pages/Overview";
 import Results from "./pages/Results";
 import Scenarios from "./pages/Scenarios";
+import Workstation from "./workstation/Workstation";
 
 const PAGES = [
   { to: "/dashboard", label: "Overview" },
   { to: "/dashboard/scenarios", label: "Scenarios" },
+  { to: "/dashboard/studio", label: "Studio" },
+  { to: "/dashboard/evidence", label: "Analytics" },
+  { to: "/dashboard/experiments", label: "Experiments" },
   { to: "/dashboard/demo", label: "Demo" },
   { to: "/dashboard/results", label: "Results" },
   { to: "/dashboard/architecture", label: "Architecture" },
 ];
 
 export default function App() {
-  const landing = useLocation().pathname === "/";
+  const path = useLocation().pathname;
+  const landing = path === "/";
   return (
     <div className="shell">
       <header className="topbar">
@@ -30,7 +35,7 @@ export default function App() {
             <NavLink to="/dashboard">Dashboard</NavLink>
           ) : (
             PAGES.map((p) => (
-              <NavLink key={p.to} to={p.to} end={p.to === "/dashboard"} className={({ isActive }) => (isActive ? "active" : "")}>
+              <NavLink key={p.to} to={p.to} end={p.to === "/dashboard"} className={({ isActive }) => (isActive || (p.to === "/dashboard/studio" && path === "/dashboard/compare") ? "active" : "")}>
                 {p.label}
               </NavLink>
             ))
@@ -42,6 +47,10 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/dashboard" element={<Overview />} />
           <Route path="/dashboard/scenarios" element={<Scenarios />} />
+          <Route path="/dashboard/studio" element={<Workstation screen="watch" />} />
+          <Route path="/dashboard/compare" element={<Workstation screen="compare" />} />
+          <Route path="/dashboard/evidence" element={<Workstation screen="evidence" />} />
+          <Route path="/dashboard/experiments" element={<Workstation screen="try" />} />
           <Route path="/dashboard/demo" element={<Demo />} />
           <Route path="/dashboard/results" element={<Results />} />
           <Route path="/dashboard/architecture" element={<Architecture />} />

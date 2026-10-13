@@ -7,6 +7,8 @@ import type { FrameImage } from "./Panel";
 export interface PickedMedia {
   video?: string; // object URL
   frames?: Map<number, string>; // video frame -> object URL
+  /** clip frame f shows video frame f + frame_offset (overrides clip.media.frame_offset). */
+  frame_offset?: number;
 }
 
 export function pickMedia(files: File[]): PickedMedia {
@@ -46,7 +48,7 @@ export function useMedia(
   const [error, setError] = useState<string | null>(null);
   const [clock, setClock] = useState<VideoClock | null>(null);
   const spec: MediaSpec | null = clip?.media ?? null;
-  const offset = spec?.frame_offset ?? 0;
+  const offset = picked.frame_offset ?? spec?.frame_offset ?? 0;
   const videoSrc = picked.video ?? (spec?.type === "video" ? spec.src : null);
   const framesPattern = !picked.video && !picked.frames && spec?.type === "frames" ? spec.src : null;
   const kind = error ? "blank" : videoSrc ? "video" : picked.frames || framesPattern ? "frames" : "blank";

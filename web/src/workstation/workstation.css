@@ -1,0 +1,43 @@
+/* Workstation screens (ported from dashboard/): Tailwind utilities for Panshul's layout, with his
+   light tokens remapped onto the web app's dark theme (#0E1013 bg, #161A1F panels, Inter, 4 px).
+   No preflight, so the rest of the web app keeps its own base styles. */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme {
+  --color-page: #0e1013;
+  --color-paper: #161a1f;
+  --color-raised: #1b2027;
+  --color-line: #262b33;
+  --color-ink: #e6e8eb;
+  --color-mute: #8a929c;
+  --color-signal: #56b4e9;
+  --color-fail: #e5484d;
+  --color-keep: #3dba7c;
+  --color-brand-50: #161a1f;
+  --color-brand-100: #1b2027;
+  --color-brand-200: #262b33;
+  --color-brand-500: #56b4e9;
+  --color-brand-600: #56b4e9;
+  --color-brand-700: #6cc0ef;
+  /* his slate greys, inverted for the dark surface */
+  --color-slate-50: #1b2027;
+  --color-slate-200: #262b33;
+  --color-slate-400: #6b737d;
+  --color-slate-500: #8a929c;
+  --color-slate-600: #a3abb4;
+  --color-slate-700: #c3c9cf;
+  --color-slate-800: #d5dade;
+  --color-slate-900: #e6e8eb;
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  /* Barlow Condensed is not bundled (no external font CDN); Inter semibold stands in */
+  --font-display: Inter, ui-sans-serif, sans-serif;
+  --radius-sm: 4px;
+}
+
+.ws { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; min-height: calc(100vh - 160px); }
+.ws *, .ws *::before, .ws *::after { box-sizing: border-box; border-width: 0; border-style: solid; border-color: var(--color-line); }
+.ws button { background: none; cursor: pointer; padding: 0; }
+.ws h1, .ws h2, .ws h3, .ws p { margin: 0; font-size: inherit; font-weight: inherit; }
+.ws-icon { font-family: var(--font-sans); line-height: 1; }

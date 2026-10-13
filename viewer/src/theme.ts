@@ -15,6 +15,7 @@ export const theme = {
   held: "rgba(255, 255, 255, 0.8)", // #FFFFFF at 80 %
   heldDash: [6, 4] as number[],
   error: "#E5484D",
+  success: "#3dba7c",
   gate: "#F5A524",
   gateWidth: 2,
   boxWidth: 2,
