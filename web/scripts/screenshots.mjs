@@ -37,6 +37,7 @@ await revealAll();
 await shot("landing-mobile");
 await page.setViewportSize({ width: 1440, height: 900 });
 await page.goto(`${BASE}/dashboard/scenarios`, { waitUntil: "networkidle" });
+await page.getByText("Counting at a gate").click();
 await page.waitForSelector("[data-testid=scenario-player] video");
 await page.waitForFunction(() => (document.querySelector("video")?.readyState ?? 0) >= 2);
 await page.getByTestId("seek-marker").first().click();
