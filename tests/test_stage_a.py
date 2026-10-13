@@ -103,3 +103,46 @@ def test_stage_a_cache_feeds_stage_b(tmp_path: Path) -> None:
     cfg = load_config(Path(__file__).parents[1] / "configs/baselines/bytetrack_reid.yaml")
     run = run_sequence(load_cache(p), cfg)
     assert len(run.results) == 5
+
+
+def _seq(root: Path, name: str, digits: int, n: int = 3) -> Path:
+    import cv2
+
+    d = root / name
+    (d / "img1").mkdir(parents=True)
+    (d / "seqinfo.ini").write_text(
+        f"[Sequence]\nname={name}\nimDir=img1\nframeRate=20\nseqLength={n}\n"
+        "imWidth=32\nimHeight=24\nimExt=.jpg\n"
+    )
+    for f in range(1, n + 1):
+        cv2.imwrite(str(d / "img1" / f"{f:0{digits}d}.jpg"), np.full((24, 32, 3), 100, np.uint8))
+    return d
+
+
+@pytest.mark.parametrize("digits", [6, 8])
+def test_image_folder_6_and_8_digit_names(tmp_path: Path, digits: int) -> None:
+    from models.frames import ImageFolderSource
+
+    src = ImageFolderSource(_seq(tmp_path, "s", digits))
+    assert src.frame_digits == digits
+    assert [f for f, _ in src] == [1, 2, 3]
+
+
+def test_image_folder_without_first_frame_names_both_candidates(tmp_path: Path) -> None:
+    from models.frames import ImageFolderSource
+
+    d = _seq(tmp_path, "s", 6)
+    (d / "img1" / "000001.jpg").unlink()
+    with pytest.raises(FileNotFoundError, match="00000001"):
+        ImageFolderSource(d)
+
+
+def test_dancetrack_8_digit_sequence_produces_a_cache(tmp_path: Path) -> None:
+    """The October 2026 laptop run crashed here (DanceTrack img1/00000001.jpg)."""
+    from models.frames import ImageFolderSource
+
+    src = ImageFolderSource(_seq(tmp_path / "val", "dancetrack0004", 8))
+    out = tmp_path / "cache" / "DanceTrack" / "dancetrack" / "val"
+    (p,) = run_many([src], FakeDetector(), FakeEmbedder(), out, dataset="DanceTrack", split="val",
+                   detector_saw_eval_half=False, batch_size=2)
+    assert p.name == "dancetrack0004.npz" and is_done(p)
