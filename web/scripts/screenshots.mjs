@@ -44,6 +44,18 @@ await page.getByTestId("seek-marker").first().click();
 await page.waitForTimeout(2300);
 await page.evaluate(() => document.querySelector("video")?.pause());
 await shot("scenarios");
+// Panshul's workstation screens, ported from dashboard/ (needs /api/viewer-clips from serve/)
+for (const [name, path, sel] of [
+  ["studio", "/dashboard/studio", "[data-testid=gate-ticker]"],
+  ["compare", "/dashboard/compare", "[data-testid=jump-switch]"],
+  ["analytics", "/dashboard/evidence", "[data-testid=papers]"],
+  ["experiments", "/dashboard/experiments", "[data-testid=workstation]"],
+]) {
+  await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
+  await page.waitForSelector(sel);
+  await page.waitForTimeout(800);
+  await shot(name);
+}
 if (process.env.ONLY_NEW) { await browser.close(); process.exit(0); }
 await page.goto(`${BASE}/dashboard`, { waitUntil: "networkidle" });
 await page.waitForSelector("[data-testid=tile]");
