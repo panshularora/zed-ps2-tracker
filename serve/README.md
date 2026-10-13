@@ -2,7 +2,8 @@
 
 FastAPI app (`serve/app.py`) that replays a detection cache through any tracker config and returns
 **gate events** in the ZIG contract (`serve/events.py`, `docs/integration.md` section 2), together
-with a viewer clip and the tracker's own latency. The built viewer is served at `/`.
+with a viewer clip and the tracker's own latency. The MOT research dashboard (`dashboard/`,
+`make dashboard`) is served at `/` when built; the older static viewer is at `/viewer`.
 
 It is an **offline replay demo**. It does not decode video and does not run a detector (that needs a
 GPU). Its input is the detector output an edge box would produce: a Stage A `.npz` cache (format in
@@ -27,8 +28,15 @@ docker run --rm -p 8000:8000 zed-ps2-demo
 
 | Endpoint | |
 |---|---|
-| `GET /api/health` | status, version, number of configs, whether the viewer is bundled |
+| `GET /api/health` | status, version, number of configs, whether the viewer/dashboard is bundled |
+| `GET /api/dashboard` | clip count and which published result files are present |
 | `GET /api/configs` | names accepted by `config` (`baselines/*`, `ours/*`); paths are never accepted |
+| `GET /api/config/{name}` | parsed YAML for a name from `/api/configs` |
+| `GET /api/clips` | viewer clips in `viewer/data`; `GET /api/clips/{file}` the gzip |
+| `GET /api/results/ablation` | `docs/results/ablation/ablation.json` |
+| `GET /api/results/gate-events` | `docs/results/gate_events/gate_events.json` |
+| `GET /api/results/go-no-go` | `docs/results/go_no_go/rows_v2.json` |
+| `GET /api/outputs` | COMBINED metrics from local `outputs/*/metrics/*/metrics.json` |
 | `POST /api/track` | multipart `cache` (.npz, ≤ `ZED_MAX_UPLOAD_MB`, default 200), `config`, optional `gate` `x1,y1,x2,y2` (default: horizontal line at 60 % height), optional `start_time` (ISO 8601 with offset; default 1970-01-01T00:00:00+00:00 = replay time) |
 
 Response: `{"sequence", "config", "events": [...], "latency": {"frames", "p50_ms", "p95_ms",

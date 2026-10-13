@@ -84,7 +84,8 @@ make oracle  DATASET=MOT17          # visibility-0 ceiling
 make ablate                         # ablation table + stress plots -> docs/results/ablation/
 make gates                          # after make ablate: gate events on the frozen MOT17 lines
 make viewer                         # export clips + build viewer/dist/index.html (needs Node 20)
-make serve                          # CPU demo API + viewer (FastAPI, `pip install -e .[serve]`)
+make dashboard                      # MOT research workstation UI (studio / analytics / experiments)
+make serve                          # CPU demo API + dashboard (FastAPI, `pip install -e .[serve]`)
 make ingest BRING_BACK=<tar> DELETE=1   # DGX bundle -> data/stagea (sha256-checked), one tar at a time
 make phase3                         # frozen phase-3 plan on the ingested caches -> docs/results/phase3/
 make phase3-selftest                # the same chain on a synthetic bundle (~25 s)

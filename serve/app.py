@@ -8,7 +8,10 @@ Endpoints
   in pixels; default: horizontal line at 60 % of the frame height, the ``h60`` rule),
   optional ``start_time`` (ISO 8601 wall time of frame 1; default ``1970-01-01T00:00:00+00:00``
   = replay time). Returns gate events (``serve/events.py``), a viewer clip and latency.
-* ``GET  /``             the built viewer (``viewer/dist``) when present.
+* ``GET  /api/dashboard`` clips, published results, and whether the workstation UI is bundled.
+* ``GET  /api/results/*`` ablation, gate-event and go/no-go JSON from ``docs/results/``.
+* ``GET  /api/clips``    viewer clip list; ``GET /api/clips/{file}`` the gzipped clip.
+* ``GET  /``             the built dashboard (``dashboard/dist``) when present, else the viewer.
 
 This is an offline replay demo: frames are not decoded here (no detector on CPU); the input is
 the detector output the edge box would produce. Nothing is stored; the upload is deleted after
@@ -17,7 +20,6 @@ the request.
 
 from __future__ import annotations
 
-import os
 import platform
 import tempfile
 from datetime import datetime
@@ -26,31 +28,24 @@ from typing import Annotated, Any
 
 import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from eval.export_viewer import build_clip, pending_entries, results_to_rows
 from eval.gate_events import Gate
+from serve.catalog import (
+    DASHBOARD_DIST,
+    MAX_UPLOAD_MB,
+    VERSION,
+    VIEWER_DIST,
+    available_configs,
+)
+from serve.dashboard_api import router as dashboard_router
 from serve.events import EventParams, gate_events
 from tracker.config import load_config
 from tracker.io import CacheFormatError, load_cache
 from tracker.runner import run_sequence
-
-ROOT = Path(__file__).resolve().parent.parent
-CONFIG_ROOT = Path(os.environ.get("ZED_CONFIG_ROOT", ROOT / "configs"))
-VIEWER_DIST = Path(os.environ.get("ZED_VIEWER_DIST", ROOT / "viewer" / "dist"))
-MAX_UPLOAD_MB = float(os.environ.get("ZED_MAX_UPLOAD_MB", "200"))
-CONFIG_DIRS = ("baselines", "ours")
-VERSION = "0.1.0"
-
-
-def available_configs(root: Path = CONFIG_ROOT) -> dict[str, Path]:
-    """``{"baselines/bytetrack": path, ...}``; only these names are accepted (no paths)."""
-    out = {}
-    for d in CONFIG_DIRS:
-        for p in sorted((root / d).glob("*.yaml")):
-            out[f"{d}/{p.stem}"] = p
-    return out
 
 
 def parse_gate(text: str | None, width: int, height: int) -> Gate:
@@ -87,12 +82,19 @@ def _save_upload(upload: UploadFile, dst: Path) -> None:
 
 
 app = FastAPI(title="zed-ps2-tracker demo", version=VERSION)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/api/health")
 def health() -> dict[str, Any]:
     return {"status": "ok", "version": VERSION, "configs": len(available_configs()),
-            "viewer": (VIEWER_DIST / "index.html").exists()}  # fmt: skip
+            "viewer": (VIEWER_DIST / "index.html").exists(),
+            "dashboard": (DASHBOARD_DIST / "index.html").exists()}  # fmt: skip
 
 
 @app.get("/api/configs")
@@ -146,5 +148,11 @@ def track(
                          "latency": timing, "clip": clip})  # fmt: skip
 
 
+app.include_router(dashboard_router)
+
 if (VIEWER_DIST / "index.html").exists():
-    app.mount("/", StaticFiles(directory=VIEWER_DIST, html=True), name="viewer")
+    app.mount("/viewer", StaticFiles(directory=VIEWER_DIST, html=True), name="viewer")
+if (DASHBOARD_DIST / "index.html").exists():
+    app.mount("/", StaticFiles(directory=DASHBOARD_DIST, html=True), name="dashboard")
+elif (VIEWER_DIST / "index.html").exists():
+    app.mount("/", StaticFiles(directory=VIEWER_DIST, html=True), name="legacy-viewer")

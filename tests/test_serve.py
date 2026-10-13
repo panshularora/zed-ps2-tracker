@@ -172,3 +172,33 @@ def test_upload_limit(client: TestClient, tmp_path: Path, monkeypatch: pytest.Mo
     monkeypatch.setattr(sa, "MAX_UPLOAD_MB", 0.0001)
     r = client.post("/api/track", files={"cache": ("c.npz", npz_bytes(tmp_path, walkers()))})
     assert r.status_code == 413
+
+
+def test_dashboard_results_and_clips(client: TestClient) -> None:
+    h = client.get("/api/health").json()
+    assert "dashboard" in h
+    meta = client.get("/api/dashboard").json()
+    assert meta["status"] == "ok"
+    assert meta["results"]["ablation"] is True
+    rows = client.get("/api/results/ablation").json()
+    names = {r["name"] for r in rows}
+    assert "bytetrack" in names
+    assert "ours_delayed_k5" in names
+    gates = client.get("/api/results/gate-events").json()
+    assert "ByteTrackLike" in gates
+    assert gates["ByteTrackLike"]["gt_crossings"] == 25
+    gng = client.get("/api/results/go-no-go").json()
+    assert gng[0]["K"] == 0
+    clips = client.get("/api/clips").json()["clips"]
+    assert any(c["file"] == "MOT17-04.bytetrack.json.gz" for c in clips)
+    gz = client.get("/api/clips/MOT17-04.bytetrack.json.gz")
+    assert gz.status_code == 200
+    assert gz.content[:2] == b"\x1f\x8b"
+    assert client.get("/api/clips/../serve/app.py").status_code == 404
+    assert client.get("/api/clips/nope.json.gz").status_code == 404
+    cfg = client.get("/api/config/ours/delayed").json()
+    assert cfg["name"] == "ours/delayed"
+    assert cfg["config"]["delayed"]["enabled"] is True
+    assert client.get("/api/config/not/a/config").status_code == 404
+    outs = client.get("/api/outputs").json()["runs"]
+    assert isinstance(outs, list)
