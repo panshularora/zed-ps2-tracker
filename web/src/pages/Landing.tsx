@@ -1,7 +1,8 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { HiddenPersonDiagram, IdMixupExplainer } from "../components/IdMixup";
-import { CARDS, cardValue, loadSummary, PENDING, type SummaryFile } from "../lib/summary";
+import { FoundChecks } from "../components/Checks";
+import { loadSummary, type SummaryFile } from "../lib/summary";
 
 const GH = "https://github.com/panshularora/zed-ps2-tracker/blob/main/";
 
@@ -56,23 +57,6 @@ function FairTestDiagram() {
   );
 }
 
-export function NumberCards({ summary }: { summary: SummaryFile | null }) {
-  return (
-    <div className="ncards">
-      {CARDS.map((c) => {
-        const v = cardValue(c, summary);
-        return (
-          <div key={c.key} className={`panel ncard${c.loss ? " loss" : ""}`} data-testid="number-card">
-            <div className={`nvalue${v === PENDING ? " pending" : ""}`}>{v}</div>
-            <p>{c.sentence}</p>
-            <div className="nmetric">{c.metric}</div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 export function LandingView({ summary }: { summary: SummaryFile | null }) {
   return (
     <div className="landing">
@@ -97,8 +81,9 @@ export function LandingView({ summary }: { summary: SummaryFile | null }) {
         <p>Every tracker gets exactly the same detected boxes and is scored by the same standard scorer (TrackEval) on two public, human-labelled datasets: MOT17 and MOT20.</p>
         <p className="muted small">Method: <a href={`${GH}docs/evaluation.md`} target="_blank" rel="noreferrer">docs/evaluation.md</a></p>
       </Step>
-      <Step n={5} title="What we found" visual={<NumberCards summary={summary} />}>
-        <p>Numbers come straight from the results file of the full GPU run. Cards say “pending” until that run is in.</p>
+      <Step n={5} title="What we found" visual={<FoundChecks summary={summary} />}>
+        <p>First, what the evaluation setup proved: whether any run was trained on the frames it is scored on, whether our copy of ByteTrack matches its published numbers, and what the rule we wrote down in advance decided. Then the method result itself.</p>
+        <p className="muted small">Everything here is read from docs/results/summary.json, written by the GPU run. “Pending” means that number is not in the file.</p>
         <p className="muted small">Source: <a href={`${GH}docs/results`} target="_blank" rel="noreferrer">docs/results</a></p>
       </Step>
       <Step n={6} title="Try it" visual={

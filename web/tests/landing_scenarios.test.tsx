@@ -2,8 +2,9 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { Term } from "../src/components/Term";
 import { frameAt, markerLabel, markers, neutralColor, NEUTRAL_IDS, type ScenarioData, seekBefore } from "../src/lib/scenarios";
-import { CARDS, cardValue, loadSummary, PENDING } from "../src/lib/summary";
-import { LandingView, NumberCards } from "../src/pages/Landing";
+import { FoundChecks, VerdictPill } from "../src/components/Checks";
+import { checks, cleanRuns, LEAK_NOTE, loadSummary, methodResult, PENDING, showProvisionalBanner, type SummaryFile } from "../src/lib/summary";
+import { LandingView } from "../src/pages/Landing";
 import { ScenarioPlayer, ScenarioRail } from "../src/pages/Scenarios";
 
 const R = { v7_startTransition: true, v7_relativeSplatPath: true };
@@ -28,23 +29,61 @@ function scenario(over: Partial<ScenarioData["meta"]> = {}): ScenarioData {
   };
 }
 
-describe("summary numbers", () => {
-  it("renders 'pending' when the summary file or a key is missing", () => {
-    expect(cardValue(CARDS[0], null)).toBe(PENDING);
-    expect(cardValue(CARDS[0], { metrics: {} })).toBe(PENDING);
-    expect(cardValue(CARDS[0], { metrics: { [CARDS[0].key]: null } })).toBe(PENDING);
-    expect(cardValue(CARDS[0], { metrics: { [CARDS[0].key]: Number.NaN } })).toBe(PENDING);
+const WIN: SummaryFile = {
+  ran: [{ id: "mot17_val_half", cache: "MOT17/ablation/train", saw_eval_half: false }],
+  reproduction: { reference: { MOTA: 76.6, IDF1: 79.3 }, ours: { MOTA: 76.2, IDF1: 79.0 }, verdict: "REPRODUCED" },
+  go_no_go_v2: "GO",
+  metrics: { "mot17.p95_ms": 3.2, "delayed.idsw_k0": 100, "delayed.idsw_k5": 80, "delayed.held_frames_pct": 4 },
+};
+
+describe("what we found (docs/results/summary.json)", () => {
+  it("the repo summary: leak excluded, NOT REPRODUCED with numbers, NO-GO, latency + method pending", () => {
+    const s = loadSummary();
+    expect(s).not.toBeNull();
+    const c = checks(s);
+    expect(c.map((x) => x.id)).toEqual(["leak", "reproduction", "go_no_go", "latency"]);
+    expect(c.map((x) => x.pill)).toEqual(["PASS", "NOT REPRODUCED", "NO-GO", "PENDING"]);
+    const leak = c[0].evidence.find((e) => e.struck);
+    expect(leak?.text).toBe("mot20_val_half__mot20full_SAW_EVAL_HALF");
+    expect(leak?.struck).toBe(LEAK_NOTE);
+    expect(c[1].evidence[0].text).toBe("MOTA 66.4 vs 76.6 published");
+    expect(c[1].evidence.map((e) => e.text)).toContain("FN 12,552 vs 9,081 published");
+    expect(cleanRuns(s).some((r) => r.saw_eval_half)).toBe(false);
+    expect(cleanRuns(s)).toHaveLength(3);
+    expect(methodResult(s).pending).toBe(true);
+    expect(showProvisionalBanner(s)).toBe(true);
   });
-  it("formats present values with the card's unit", () => {
-    expect(cardValue(CARDS[0], { metrics: { [CARDS[0].key]: 12.4 } })).toBe("12%");
+  it("renders the banner, struck-through leaked row and ✕ outlined fail pills (no red)", () => {
+    render(<FoundChecks summary={loadSummary()} />);
+    expect(screen.getByTestId("provisional-banner").textContent).toBe("Provisional · detector setup being fixed");
+    const cards = screen.getAllByTestId("check-card");
+    expect(cards).toHaveLength(4);
+    expect(cards[0].querySelector("s")?.textContent).toBe("mot20_val_half__mot20full_SAW_EVAL_HALF");
+    const pills = screen.getAllByTestId("pill");
+    expect(pills.map((p) => p.getAttribute("data-state"))).toEqual(["PASS", "NOT REPRODUCED", "NO-GO", "PENDING"]);
+    expect(pills[1].textContent).toBe("✕ NOT REPRODUCED");
+    expect(pills[1].className).toBe("pill fail");
+    expect(pills[3].className).toBe("pill provisional");
+    expect(screen.getByTestId("method-result").textContent).toContain(PENDING);
   });
-  it("has no summary.json yet in the repo, so every landing card is pending", () => {
-    expect(loadSummary()).toBeNull();
-    render(<NumberCards summary={loadSummary()} />);
-    const cards = screen.getAllByTestId("number-card");
-    expect(cards).toHaveLength(CARDS.length);
-    for (const c of cards) expect(c.textContent).toContain(PENDING);
-    expect(CARDS.filter((c) => c.loss)).toHaveLength(1);
+  it("a passing run renders without code changes: PASS pills, no banner, before/after numbers", () => {
+    const c = checks(WIN);
+    expect(c.map((x) => x.pill)).toEqual(["PASS", "PASS", "PASS", "PASS"]);
+    expect(showProvisionalBanner(WIN)).toBe(false);
+    render(<FoundChecks summary={WIN} />);
+    expect(screen.queryByTestId("provisional-banner")).toBeNull();
+    const m = screen.getByTestId("method-result").textContent ?? "";
+    expect(m).toContain("100");
+    expect(m).toContain("80");
+    expect(m).toContain("4%");
+  });
+  it("no summary: every check pending, banner shown; latency provisional until reproduced", () => {
+    expect(checks(null).every((x) => x.pill === "PENDING")).toBe(true);
+    expect(showProvisionalBanner(null)).toBe(true);
+    const notRepro = { ...WIN, reproduction: { verdict: "NOT REPRODUCED" } };
+    expect(checks(notRepro)[3].pill).toBe("PROVISIONAL");
+    render(<VerdictPill pill="PASS" />);
+    expect(screen.getByTestId("pill").className).toBe("pill pass");
   });
   it("landing has six steps and a Try it link to the dashboard", () => {
     render(<MemoryRouter future={R}><LandingView summary={null} /></MemoryRouter>);

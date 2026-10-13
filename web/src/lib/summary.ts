@@ -1,43 +1,165 @@
-// The ONE source of every number on the landing page: docs/results/summary.json, read at build
-// time. The file is written by the GPU run; until it exists (or while a key is missing) the card
-// shows "pending". Nothing here is a hard-coded result.
+// The ONE source of the landing "What we found" checks and the Results page header:
+// docs/results/summary.json (written by `make phase3`, eval/phase3.py), read at build time.
+// Every number shown comes from that file; a missing key renders as "pending". Nothing here is a
+// hard-coded result, so a win or a NO-GO both render without code changes.
 const files = import.meta.glob<SummaryFile>("../../../docs/results/summary.json", { eager: true, import: "default" });
 
+export interface RanRow {
+  id: string;
+  cache: string;
+  saw_eval_half: boolean;
+  laptop_detector?: boolean;
+}
+
+export interface MetricSet {
+  MOTA?: number;
+  IDF1?: number;
+  IDSW?: number;
+  FP?: number;
+  FN?: number;
+}
+
 export interface SummaryFile {
-  /** flat metric map, e.g. { "mot17.idsw_reduction_pct": 12.3 } */
+  plan?: string;
+  ran?: RanRow[];
+  waiting?: string[];
+  excluded?: string[];
+  reproduction?: {
+    reference?: MetricSet;
+    ours?: MetricSet;
+    within_tolerance?: Record<string, boolean>;
+    verdict?: string;
+  };
+  go_no_go_v2?: string;
+  /** optional flat metric map, e.g. { "mot17.p95_ms": 3.2, "delayed.idsw_k0": 183 } */
   metrics?: Record<string, number | null | undefined>;
-  source?: string;
 }
 
-export interface CardSpec {
-  key: string;
-  unit: string;
+export type Pill = "PASS" | "NOT REPRODUCED" | "NO-GO" | "PROVISIONAL" | "PENDING";
+
+export interface Check {
+  id: "leak" | "reproduction" | "go_no_go" | "latency";
+  title: string;
+  pill: Pill;
   sentence: string;
-  metric: string;
-  decimals: number;
-  /** true for the "where we didn't win" card */
-  loss?: boolean;
+  /** evidence lines; `struck` lines are shown struck through with their note */
+  evidence: { text: string; struck?: string }[];
 }
-
-export const CARDS: CardSpec[] = [
-  { key: "mot17.idsw_reduction_pct", unit: "%", decimals: 0, sentence: "fewer times a person is given a new ID by mistake", metric: "IDSW vs best baseline · MOT17 val" },
-  { key: "mot20.idsw_reduction_pct", unit: "%", decimals: 0, sentence: "fewer ID mix-ups in very dense crowds", metric: "IDSW vs best baseline · MOT20 val" },
-  { key: "mot17.idf1_gain_pts", unit: " pts", decimals: 1, sentence: "more of each person's path kept under one ID", metric: "IDF1 gain · MOT17 val" },
-  { key: "mot17.p95_ms", unit: " ms", decimals: 1, sentence: "worst-case time to track one frame, fast enough for a live gate", metric: "tracker p95 latency per frame" },
-  { key: "mot20.deta_delta_pts", unit: " pts", decimals: 1, sentence: "Where we didn't win: finding people in the first place is no better, because every tracker shares the same detections", metric: "DetA difference · MOT20 val", loss: true },
-];
 
 export const PENDING = "pending";
+export const LEAK_NOTE = "excluded: saw the evaluation half";
+/** p95 tracker latency budget per frame (the go/no-go v2 rule, configs/phase3/plan.yaml) */
+export const LATENCY_BUDGET_MS = 20;
 
 export function loadSummary(): SummaryFile | null {
   const v = Object.values(files)[0];
   return v ?? null;
 }
 
-/** Value text for a card, or "pending" when the summary or the key is missing / not finite. */
-export function cardValue(spec: CardSpec, summary: SummaryFile | null): string {
-  const v = summary?.metrics?.[spec.key];
-  if (typeof v !== "number" || !Number.isFinite(v)) return PENDING;
-  const sign = spec.key.includes("delta") && v > 0 ? "+" : "";
-  return `${sign}${v.toFixed(spec.decimals)}${spec.unit}`;
+const fin = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+const fmt = (v: number | undefined, d: number): string =>
+  fin(v) ? (d === 0 ? Math.round(v).toLocaleString("en-US") : v.toFixed(d)) : PENDING;
+
+/** Rows that may appear in any reported table: never a detector that saw the evaluation half. */
+export function cleanRuns(s: SummaryFile | null): RanRow[] {
+  return (s?.ran ?? []).filter((r) => !r.saw_eval_half);
+}
+
+export function reproduced(s: SummaryFile | null): boolean {
+  return s?.reproduction?.verdict === "REPRODUCED";
+}
+
+/** The muted "Provisional" banner shows unless the ByteTrack reproduction passed. */
+export function showProvisionalBanner(s: SummaryFile | null): boolean {
+  return !reproduced(s);
+}
+
+export function checks(s: SummaryFile | null): Check[] {
+  const out: Check[] = [];
+  // 1. leak check
+  const ran = s?.ran ?? [];
+  const leaked = ran.filter((r) => r.saw_eval_half);
+  out.push(
+    !s?.ran
+      ? { id: "leak", title: "Leak check", pill: "PENDING", sentence: "No results file yet.", evidence: [] }
+      : {
+          id: "leak",
+          title: "Leak check",
+          pill: "PASS",
+          sentence:
+            leaked.length === 0
+              ? "No detector was trained on the frames it is scored on."
+              : `${leaked.length} run${leaked.length > 1 ? "s" : ""} used a detector trained on the scored frames, so ${leaked.length > 1 ? "they are" : "it is"} left out of every result.`,
+          evidence: ran.map((r) => (r.saw_eval_half ? { text: r.id, struck: LEAK_NOTE } : { text: r.id })),
+        },
+  );
+  // 2. reproduction
+  const rp = s?.reproduction;
+  if (!rp?.verdict) {
+    out.push({ id: "reproduction", title: "Baseline reproduction", pill: "PENDING", sentence: "ByteTrack has not been re-run yet.", evidence: [] });
+  } else {
+    const keys: [keyof MetricSet, number][] = [["MOTA", 1], ["IDF1", 1], ["IDSW", 0], ["FP", 0], ["FN", 0]];
+    const ok = rp.verdict === "REPRODUCED";
+    out.push({
+      id: "reproduction",
+      title: "Baseline reproduction",
+      pill: ok ? "PASS" : "NOT REPRODUCED",
+      sentence: ok
+        ? "Our ByteTrack run matches the published MOT17 numbers, so the test setup is sound."
+        : "Our ByteTrack run does not match the published MOT17 numbers yet, so the detector setup is being fixed and re-run.",
+      evidence: keys
+        .filter(([k]) => fin(rp.ours?.[k]) || fin(rp.reference?.[k]))
+        .map(([k, d]) => ({ text: `${k} ${fmt(rp.ours?.[k], d)} vs ${fmt(rp.reference?.[k], d)} published` })),
+    });
+  }
+  // 3. go / no-go
+  const g = s?.go_no_go_v2;
+  out.push(
+    !g
+      ? { id: "go_no_go", title: "Go / no-go (delayed assignment)", pill: "PENDING", sentence: "Not decided yet.", evidence: [] }
+      : {
+          id: "go_no_go",
+          title: "Go / no-go (delayed assignment)",
+          pill: g.startsWith("GO") ? "PASS" : "NO-GO",
+          sentence: g.startsWith("GO")
+            ? "The rule we wrote down before the run says the delayed assignment helps."
+            : "The rule we wrote down before the run says the delayed assignment does not help, so it stays off.",
+          evidence: [{ text: `go_no_go_v2: ${g}` }, { text: "rule: docs/preregistration/go_no_go_v2.md" }],
+        },
+  );
+  // 4. latency
+  const p95 = s?.metrics?.["mot17.p95_ms"];
+  out.push(
+    !fin(p95)
+      ? { id: "latency", title: "Speed", pill: "PENDING", sentence: "Per-frame timing is not in the results file yet.", evidence: [] }
+      : {
+          id: "latency",
+          title: "Speed",
+          pill: !reproduced(s) ? "PROVISIONAL" : p95 <= LATENCY_BUDGET_MS ? "PASS" : "NO-GO",
+          sentence: `The tracker needs at most ${p95.toFixed(1)} ms for 95% of frames.`,
+          evidence: [{ text: `p95 ${p95.toFixed(1)} ms · budget ${LATENCY_BUDGET_MS} ms` }],
+        },
+  );
+  return out;
+}
+
+export interface MethodResult {
+  before: string;
+  after: string;
+  held: string;
+  pending: boolean;
+}
+
+/** Delayed-assignment before/after (IDSW K=0 vs K=5, share of frames with held boxes). */
+export function methodResult(s: SummaryFile | null): MethodResult {
+  const m = s?.metrics ?? {};
+  const k0 = m["delayed.idsw_k0"];
+  const k5 = m["delayed.idsw_k5"];
+  const held = m["delayed.held_frames_pct"];
+  return {
+    before: fin(k0) ? Math.round(k0).toString() : PENDING,
+    after: fin(k5) ? Math.round(k5).toString() : PENDING,
+    held: fin(held) ? `${held.toFixed(0)}%` : PENDING,
+    pending: !fin(k0) || !fin(k5),
+  };
 }

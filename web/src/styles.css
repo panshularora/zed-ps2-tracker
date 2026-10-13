@@ -284,3 +284,26 @@ td.pending { color: var(--muted); }
 .btn.on-ours { border-color: var(--ours); color: var(--ours); }
 .btn.on-baseline { border-color: var(--baseline); color: var(--text); }
 @media (max-width: 900px) { .scenarios { grid-template-columns: 1fr; } .rail { flex-direction: row; overflow-x: auto; } .scard { flex: 0 0 240px; } }
+
+/* "What we found" checks (src/components/Checks.tsx). No red: a failed check is an outline + ✕. */
+.found { display: flex; flex-direction: column; gap: 16px; }
+.prov-banner { border: 1px solid var(--border); background: var(--panel-2); color: var(--muted); font-size: 13px; padding: 8px 12px; border-radius: var(--radius); }
+.checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.check { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.check-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.check-head h3 { font-size: 14px; margin: 0; }
+.check p { font-size: 14px; }
+.evidence { font-family: var(--mono); font-size: 11px; color: var(--muted); list-style: none; padding: 0; margin: 0; }
+.evidence s { color: var(--muted); }
+.struck-note { font-style: italic; }
+.pill { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 132px; height: 24px; flex: none; border-radius: 12px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap; }
+.pill.pass { background: #56b4e9; color: #0e1013; border: 1px solid #56b4e9; }
+.pill.fail { background: transparent; color: #e6e8eb; border: 1px solid #e6e8eb; }
+.pill.provisional { background: transparent; color: var(--muted); border: 1px dashed var(--muted); }
+.method { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.method h3 { font-size: 14px; margin: 0; }
+.method .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.method .half { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
+.method .label { font-size: 11px; color: var(--muted); }
+.method .nvalue { font-size: 36px; font-weight: 600; color: var(--text); }
+.method .nvalue.pending { font-size: 22px; color: var(--muted); font-weight: 500; }
