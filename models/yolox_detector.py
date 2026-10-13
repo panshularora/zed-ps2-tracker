@@ -5,9 +5,16 @@ clones it at a pinned commit). Pre/post-processing reproduces ByteTrack's ``prep
 ``postprocess`` exactly (letterbox to ``test_size`` with 114 padding, BGR→RGB, ImageNet
 normalisation; score = objectness × class confidence; class-wise NMS at ``nms_thresh``).
 
-The only difference from ByteTrack's evaluation pipeline is the confidence floor: ByteTrack
-keeps boxes ≥ 0.001 in the detector and the tracker discards < 0.1; we keep ≥ ``conf_floor``
-(default 0.05) so the cache stays small while still leaving room to ablate τ_low below 0.1.
+Differences from ByteTrack's MOT17 ablation evaluation (``tools/track.py -f
+exps/example/mot/yolox_x_ablation.py --fp16 --fuse``; audited 13 Oct 2026 at the pinned commit):
+
+* confidence floor: ByteTrack's ``--conf`` default is 0.01; we keep ≥ ``conf_floor`` (0.05) so the
+  cache stays small. The tracker discards < 0.1 (τ_low) anyway, so tracking is unaffected.
+* box clipping: ByteTrack never clips boxes to the image. Before 13 Oct 2026 we clipped them
+  (shrinking edge boxes, changing IoU and the w/h > 1.6 filter); ``clip_boxes`` now defaults to
+  False to match. Zero-area boxes are still dropped.
+* precision: ByteTrack's reported numbers use FP16. ``fp16=False`` (``--no-fp16``, ``FP16=0``)
+  runs FP32 to rule out half-precision problems on a laptop GPU.
 """
 
 from __future__ import annotations
@@ -68,6 +75,8 @@ class YoloxConfig:
     device: str = "cuda"
     fp16: bool = True
     fuse: bool = True
+    clip_boxes: bool = False
+    """Clip boxes to the image (ByteTrack does not; kept as an option for old caches)."""
     trained_on: str = ""
     """Human-readable training data, stored in the cache meta (leakage audit)."""
 
@@ -125,6 +134,7 @@ class YoloxDetector:
             "conf_floor": c.conf_floor,
             "nms_thresh": c.nms_thresh,
             "fp16": self.half,
+            "clip_boxes": c.clip_boxes,
             "score": "obj_conf * cls_conf",
         }
 
@@ -139,20 +149,26 @@ class YoloxDetector:
         with torch.inference_mode():
             raw = self.model(x)
             outs = postprocess(raw.float(), 1, self.cfg.conf_floor, self.cfg.nms_thresh)
-        result = []
-        for im, r, o in zip(images, ratios, outs, strict=True):
-            if o is None or o.shape[0] == 0:
-                result.append((np.zeros((0, 4), np.float32), np.zeros(0, np.float32)))
-                continue
-            o = o.cpu().numpy()
-            xyxy = o[:, :4] / r
-            h, w = im.shape[:2]
-            xyxy[:, [0, 2]] = xyxy[:, [0, 2]].clip(0, w)
-            xyxy[:, [1, 3]] = xyxy[:, [1, 3]].clip(0, h)
-            tlwh = np.concatenate([xyxy[:, :2], xyxy[:, 2:] - xyxy[:, :2]], axis=1)
-            score = o[:, 4] * o[:, 5]
-            # only degenerate (zero-area after clipping) boxes are dropped; never by score
-            ok = (tlwh[:, 2] > 0) & (tlwh[:, 3] > 0)
-            order = np.argsort(-score[ok], kind="stable")
-            result.append((tlwh[ok][order].astype(np.float32), score[ok][order].astype(np.float32)))
-        return result
+        return [raw_to_tlwh(None if o is None else o.cpu().numpy(), r, im.shape[:2],
+                            self.cfg.clip_boxes)
+                for im, r, o in zip(images, ratios, outs, strict=True)]  # fmt: skip
+
+
+def raw_to_tlwh(
+    o: np.ndarray | None, ratio: float, hw: tuple[int, int], clip: bool = False
+) -> tuple[np.ndarray, np.ndarray]:
+    """``postprocess`` rows ``(x1, y1, x2, y2, obj, cls, cls_id)`` in letterbox pixels → image
+    ``tlwh`` + score ``obj × cls``, sorted by score. Like ByteTrack: divide by the resize ratio and
+    do not clip unless ``clip``; only zero/negative-area boxes are dropped, never by score."""
+    if o is None or o.shape[0] == 0:
+        return np.zeros((0, 4), np.float32), np.zeros(0, np.float32)
+    xyxy = o[:, :4].astype(np.float64) / ratio
+    if clip:
+        h, w = hw
+        xyxy[:, [0, 2]] = xyxy[:, [0, 2]].clip(0, w)
+        xyxy[:, [1, 3]] = xyxy[:, [1, 3]].clip(0, h)
+    tlwh = np.concatenate([xyxy[:, :2], xyxy[:, 2:] - xyxy[:, :2]], axis=1)
+    score = o[:, 4] * o[:, 5]
+    ok = (tlwh[:, 2] > 0) & (tlwh[:, 3] > 0)
+    order = np.argsort(-score[ok], kind="stable")
+    return tlwh[ok][order].astype(np.float32), score[ok][order].astype(np.float32)

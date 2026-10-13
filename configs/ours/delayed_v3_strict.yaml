@@ -1,0 +1,12 @@
+# Delayed decision, STRICTER hold (exploratory, NOT pre-registered; added 13 Oct 2026 after the
+# v2 K=5 NO-GO: IDSW 183 -> 198 with boxes held on ~51% of MOT17 val-half frames).
+# Differences from delayed_v2_reid.yaml (which stays frozen):
+#   * trigger_require_all: every detection in the cluster must look occluded (v̂ < 0.5),
+#     not just one of them;
+#   * margin 0.02 (was 0.03) and min_gain 0.3 (was 0.05): an alternative must win clearly.
+# Delayed assignment stays OFF in every other config (DelayedAssignmentConfig.enabled = false).
+inherit: delayed_v2_reid.yaml
+delayed:
+  margin: 0.02
+  min_gain: 0.3
+  trigger_require_all: true

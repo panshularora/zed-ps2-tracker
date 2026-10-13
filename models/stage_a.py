@@ -210,7 +210,7 @@ def _build_models(a: argparse.Namespace) -> tuple[Detector, Embedder | None]:
     det = YoloxDetector(YoloxConfig(
         weights=a.det_weights, variant=a.variant, test_size=(a.test_size[0], a.test_size[1]),
         conf_floor=a.conf_floor, nms_thresh=a.nms, device=a.device, fp16=not a.no_fp16,
-        trained_on=a.trained_on))  # fmt: skip
+        clip_boxes=a.clip_boxes, trained_on=a.trained_on))  # fmt: skip
     emb = None
     if not a.no_reid:
         emb = OsnetEmbedder(OsnetConfig(weights=a.reid_weights, arch=a.reid_arch,
@@ -241,7 +241,12 @@ def main(argv: list[str] | None = None) -> int:
     common.add_argument("--reid-arch", default="osnet_ain_x1_0")
     common.add_argument("--no-reid", action="store_true")
     common.add_argument("--device", default="cuda")
-    common.add_argument("--no-fp16", action="store_true")
+    common.add_argument("--no-fp16", action="store_true", help="FP32 detector + re-ID")
+    common.add_argument(
+        "--clip-boxes",
+        action="store_true",
+        help="clip boxes to the image (ByteTrack does not; off by default)",
+    )
     common.add_argument("--batch-size", type=int, default=8)
     common.add_argument("--force", action="store_true", help="recompute even if complete")
     d = sub.add_parser("dataset", parents=[common], help="all sequences under a split folder")

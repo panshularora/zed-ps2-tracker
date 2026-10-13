@@ -192,8 +192,13 @@ def _flag_rate(run_dir: Path, name: str) -> float:
 
 
 def go_no_go_v2(plan: dict[str, Any], index: dict[str, Any], out: Path, report: Path,
-                jobs: int, force: bool, latency: bool) -> dict[str, Any] | None:  # fmt: skip
-    """Run the pre-registered v2 check and apply its decision rule mechanically."""
+                jobs: int, force: bool, latency: bool,
+                timeouts: dict[str, float] | None = None) -> dict[str, Any] | None:  # fmt: skip
+    """Run the pre-registered v2 check and apply its decision rule mechanically.
+
+    ``timeouts`` (dataset → minutes, ``--timeout-min MOT20=240``) overrides the plan's per-run
+    replication timeout. Each arm is a separate run whose finished output is kept, so after a
+    timeout a re-run only redoes the arm that did not finish."""
     g = plan.get("go_no_go_v2")
     if not g or g["primary"]["cache"] not in index["caches"]:
         return None
@@ -217,6 +222,7 @@ def go_no_go_v2(plan: dict[str, Any], index: dict[str, Any], out: Path, report: 
     }  # fmt: skip
     rep: dict[str, Any] = {"status": "not evaluated (no clean MOT20 cache ingested)"}
     r = g["replication"]
+    tmin = float((timeouts or {}).get(r["dataset"], r["timeout_min"]))
     key = next((k for k in r["caches"] if k in index["caches"]), None)
     if key is not None:
         rm = _manifest(index, key, r["dataset"], r["split"],
@@ -225,13 +231,15 @@ def go_no_go_v2(plan: dict[str, Any], index: dict[str, Any], out: Path, report: 
         rod = out / "go_no_go_v2_mot20"
         try:
             for e in rm["entries"]:
-                ablate.run_entry(rm, e, rod, force, timeout_s=60.0 * r["timeout_min"])
+                ablate.run_entry(rm, e, rod, force, timeout_s=60.0 * tmin)
             rr = {x["name"]: x for x in ablate.collect(rm, rod)}
             ok = rr["v2_k5"]["IDSW"] <= rr["v2_k0"]["IDSW"]
             rep = {"status": "pass" if ok else "fail", "cache": key,
                    "idsw_k0": rr["v2_k0"]["IDSW"], "idsw_k5": rr["v2_k5"]["IDSW"]}  # fmt: skip
         except subprocess.TimeoutExpired:
-            rep = {"status": "fail (timeout)", "cache": key}
+            rep = {"status": f"incomplete (timeout after {tmin:g} min; re-run resumes finished "
+                             "arms; raise --timeout-min " + f"{r['dataset']}=MIN)",
+                   "cache": key, "timeout_min": tmin}  # fmt: skip
         crit["5_replication"] = rep["status"] == "pass"
     passed = all(crit.values())
     if passed and key is None:
@@ -261,7 +269,8 @@ def run(
     plan_path: Path, index_path: Path, out: Path, report: Path, jobs: int = 6,
     force: bool = False, latency_repeats: int = 1, latency: bool = True,
     remap: dict[str, str] | None = None, tag_caches: list[str] | None = None,
-    tag: str = LAPTOP_TAG,
+    tag: str = LAPTOP_TAG, timeouts: dict[str, float] | None = None,
+    include_leaked: bool = False,
 ) -> dict[str, Any]:  # fmt: skip
     remap = dict(remap or {})
     tag_patterns = [*(tag_caches or []), *remap.values()]
@@ -293,9 +302,16 @@ def run(
             variant = key.split("/")[1]
             cid = c["id"] if len(hits) == 1 and "*" not in c["cache"] else f"{c['id']}__{variant}"
             title = c["title"].format(variant=variant)
+            tagged = is_tagged(key, tag_patterns)
+            if g["saw_eval_half"] and not tagged and not include_leaked:
+                # Oct 2026: a mot20full_SAW_EVAL_HALF row reached the summary. Leaked caches are
+                # skipped unless --include-leaked; the laptop YOLOX-S fallback stays (tagged).
+                summary.setdefault("excluded", []).append(
+                    f"{cid}: {key} leaked, excluded (detector saw the evaluation half)"
+                )
+                continue
             if g["saw_eval_half"]:
                 title += " (DETECTOR SAW THE EVAL HALF: not a clean result)"
-            tagged = is_tagged(key, tag_patterns)
             if tagged:
                 title += f" [{tag}: {key}]"
             if not g["has_embeddings"]:
@@ -325,7 +341,7 @@ def run(
     if primary in index["caches"] and is_tagged(primary, tag_patterns):
         gng: dict[str, Any] | None = pending_go_no_go(primary, tag, report)
     else:
-        gng = go_no_go_v2(plan, index, out, report, jobs, force, latency)
+        gng = go_no_go_v2(plan, index, out, report, jobs, force, latency, timeouts)
     if gng is None:
         summary["waiting"].append("go_no_go_v2: needs MOT17/ablation/train")
     else:
@@ -381,7 +397,24 @@ def main(argv: list[str] | None = None) -> int:
         help="caches (fnmatch) whose rows get --tag appended",
     )
     p.add_argument("--tag", default=LAPTOP_TAG)
+    p.add_argument(
+        "--include-leaked",
+        action="store_true",
+        help="also run caches whose detector saw the evaluation half (SAW_EVAL_HALF)",
+    )
+    p.add_argument("--timeout-min", action="append", default=[], metavar="DATASET=MIN",
+                   help="per-dataset timeout (minutes) of one go/no-go replication run, "
+                        "overriding the plan (e.g. MOT20=240 on a laptop)")  # fmt: skip
     a = p.parse_args(argv)
+    timeouts = {}
+    for t in a.timeout_min:
+        ds, sep, mins = t.partition("=")
+        try:
+            timeouts[ds] = float(mins)
+        except ValueError:
+            sep = ""
+        if not sep or not ds or timeouts.get(ds, 0) <= 0:
+            p.error(f"--timeout-min wants DATASET=MINUTES > 0, got {t!r}")
     if not a.index.exists():
         print(f"{a.index} not found: run `make ingest BRING_BACK=<path>` first")
         return 1
@@ -392,7 +425,8 @@ def main(argv: list[str] | None = None) -> int:
             p.error(f"--remap-cache wants SRC=DST, got {r!r}")
         remap[src] = dst
     run(a.plan, a.index, a.out, a.report, a.jobs, a.force, a.latency_repeats, not a.no_latency,
-        remap=remap, tag_caches=a.tag_cache, tag=a.tag)  # fmt: skip
+        remap=remap, tag_caches=a.tag_cache, tag=a.tag, timeouts=timeouts,
+        include_leaked=a.include_leaked)  # fmt: skip
     return 0
 
 

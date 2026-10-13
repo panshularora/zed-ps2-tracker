@@ -1,4 +1,6 @@
+import { FoundChecks } from "../components/Checks";
 import { Term } from "../components/Term";
+import { loadSummary } from "../lib/summary";
 import { api, type AblationRow, type Benchmarks } from "../api";
 import StressChart from "../components/StressChart";
 import { DASH, int, num, pct } from "../lib/format";
@@ -27,6 +29,12 @@ export function ResultsView({ b }: { b: Benchmarks }) {
         Every number on this page is read from the repo's own output files (named under each table). Tables first, charts after.
         Nothing here uses the demo clips: they have no ground truth.
       </p>
+
+      <section className="section" data-testid="gpu-run-checks">
+        <h2>Latest GPU run: checks</h2>
+        <p className="sub">From docs/results/summary.json. Runs whose detector saw the evaluation half are marked “leaked, excluded” and appear in no table.</p>
+        <FoundChecks summary={loadSummary()} />
+      </section>
 
       <section className="section">
         <h2>Tracking accuracy</h2>

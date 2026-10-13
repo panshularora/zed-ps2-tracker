@@ -67,6 +67,7 @@ def build_tracker(
                 score_scope=d.score_scope,
                 birth_penalty=d.birth_penalty,
                 trigger_max_visibility=d.trigger_max_visibility,
+                trigger_require_all=d.trigger_require_all,
             )
             k_ms = round(1000.0 * d.max_delay_frames / frame_rate, 1)
             info["delayed"] = {"K_frames": d.max_delay_frames, "K_ms": k_ms}

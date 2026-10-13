@@ -73,7 +73,7 @@ class DelayedStats:
 
 def find_clusters(
     rec: Stage1Record, margin: float, max_cluster: int, confirmed_only: bool = False,
-    max_visibility: float = 1.0,
+    max_visibility: float = 1.0, require_all_occluded: bool = False,
 ) -> tuple[list[Cluster], int]:  # fmt: skip
     """Ambiguity clusters of one first-association cost matrix. Returns ``(clusters, skipped)``.
 
@@ -118,8 +118,11 @@ def find_clusters(
             skipped += 1
             continue
         vis = rec.dets_vis
-        if max_visibility < 1.0 and vis is not None and float(np.min(vis[cols])) >= max_visibility:
-            continue
+        if max_visibility < 1.0 and vis is not None:
+            vv = vis[cols]
+            worst = float(np.max(vv)) if require_all_occluded else float(np.min(vv))
+            if worst >= max_visibility:
+                continue
         edges = {
             (rec.track_ids[r], col): float(c[r, col]) for r in rows for col in cols if ok[r, col]
         }
@@ -203,6 +206,7 @@ class DelayedTracker:
         score_scope: str = "cluster",
         birth_penalty: float = 0.0,
         trigger_max_visibility: float = 1.0,
+        trigger_require_all: bool = False,
     ) -> None:
         if max_delay_frames < 0:
             raise ValueError("max_delay_frames must be >= 0")
@@ -221,6 +225,7 @@ class DelayedTracker:
         self.score_scope = score_scope
         self.birth_penalty = birth_penalty
         self.trigger_max_visibility = trigger_max_visibility
+        self.trigger_require_all = trigger_require_all
         self.buffer: deque[Detections] = deque()
         self.stats = DelayedStats()
         self._received = 0
@@ -278,7 +283,7 @@ class DelayedTracker:
         if rec is not None:
             clusters, skipped = find_clusters(
                 rec, self.margin, self.max_cluster, self.confirmed_only,
-                self.trigger_max_visibility,
+                self.trigger_max_visibility, self.trigger_require_all,
             )  # fmt: skip
             self.stats.skipped_large += skipped
         f = trial.frame_id

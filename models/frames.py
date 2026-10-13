@@ -28,8 +28,19 @@ class ImageFolderSource:
         self.im_dir = self.seq_dir / s.get("imDir", "img1")
         self.ext = s.get("imExt", ".jpg")
 
+        # MOTChallenge typically uses 6 digits; DanceTrack uses 8.
+        # Detect the sequence's actual frame naming convention once.
+        six_digit = self.im_dir / f"{1:06d}{self.ext}"
+        eight_digit = self.im_dir / f"{1:08d}{self.ext}"
+        if six_digit.is_file():
+            self.frame_digits = 6
+        elif eight_digit.is_file():
+            self.frame_digits = 8
+        else:
+            raise FileNotFoundError(f"No first frame found: checked {six_digit} and {eight_digit}")
+
     def path(self, frame_id: int) -> Path:
-        return self.im_dir / f"{frame_id:06d}{self.ext}"
+        return self.im_dir / f"{frame_id:0{self.frame_digits}d}{self.ext}"
 
     def __iter__(self) -> Iterator[tuple[int, BGRImage]]:
         import cv2
