@@ -14,6 +14,7 @@
 #   make ablate   ablation table + stress plots + latency for configs/ablations/manifest.yaml
 #   make gates    gate-event metrics (crossings, attribution, tailgating) on the ablate outputs
 #   make viewer   export demo clips + build the static viewer (viewer/dist/index.html)
+#   make dashboard  alias of make web (the research workstation now lives in web/ at /dashboard/studio)
 #   make ingest   BRING_BACK=<tar|dir>: verify a Stage A bring-back (sha256) into data/stagea,
 #                 or the final results tar of `run.sh all` into docs/results/phase3
 #   make phase3   every post-GPU experiment from the ingested caches -> docs/results/phase3/
@@ -37,7 +38,7 @@ NAME    ?= bytetrack_public
 OUT     ?= outputs/$(DATASET)_$(SPLIT)
 BENCH    = $(if $(filter MOT20,$(DATASET)),MOT20,MOT17)
 
-.PHONY: models clips blur web web-check demo compose test-py test-web setup check lint format typecheck test data eval stress latency oracle smoke ablate gates viewer ingest phase3 phase3-selftest serve docker-build clean
+.PHONY: models clips blur web dashboard web-check demo compose test-py test-web setup check lint format typecheck test data eval stress latency oracle smoke ablate gates viewer ingest phase3 phase3-selftest serve docker-build clean
 
 setup:
 	uv venv -p 3.11 .venv
@@ -198,3 +199,6 @@ demo: web/node_modules
 
 compose:
 	docker compose up --build
+
+# Panshul's workstation (Studio / Experiments / Evidence) is part of the web app now.
+dashboard: web

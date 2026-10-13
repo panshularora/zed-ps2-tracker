@@ -8,6 +8,8 @@ Endpoints (the product API: clips, uploads, tracking jobs, benchmarks, is in ``s
   in pixels; default: horizontal line at 60 % of the frame height, the ``h60`` rule),
   optional ``start_time`` (ISO 8601 wall time of frame 1; default ``1970-01-01T00:00:00+00:00``
   = replay time). Returns gate events (``serve/events.py``), a viewer clip and latency.
+* ``GET  /api/workstation``, ``/api/results/*``, ``/api/viewer-clips``, ``/api/config/{name}``,
+  ``/api/outputs``: read-only data for the research workstation (``serve/dashboard_api.py``).
 * ``GET  /``             the web app (``web/dist``) when built, else the static viewer
   (``viewer/dist``); the viewer is also at ``/viewer/`` when both exist.
 
@@ -17,7 +19,6 @@ Stage A cache) and stores nothing. The video jobs of ``serve/api.py`` run a CPU 
 
 from __future__ import annotations
 
-import os
 import platform
 import tempfile
 from collections.abc import AsyncIterator
@@ -37,6 +38,7 @@ from eval.export_viewer import build_clip, pending_entries, results_to_rows
 from eval.gate_events import Gate
 from serve import errors
 from serve.api import Service, router
+from serve.dashboard_api import router as workstation_router
 from serve.detector import MODELS
 from serve.events import EventParams, gate_events
 from serve.settings import Settings
@@ -44,21 +46,18 @@ from tracker.config import load_config
 from tracker.io import CacheFormatError, load_cache
 from tracker.runner import run_sequence
 
-ROOT = Path(__file__).resolve().parent.parent
-CONFIG_ROOT = Path(os.environ.get("ZED_CONFIG_ROOT", ROOT / "configs"))
-VIEWER_DIST = Path(os.environ.get("ZED_VIEWER_DIST", ROOT / "viewer" / "dist"))
-MAX_UPLOAD_MB = float(os.environ.get("ZED_MAX_UPLOAD_MB", "200"))
-CONFIG_DIRS = ("baselines", "ours")
-VERSION = "0.2.0"
+# shared with serve/dashboard_api.py (re-exported here so existing imports keep working)
+from serve.catalog import (  # noqa: E402
+    CONFIG_DIRS,
+    CONFIG_ROOT,
+    MAX_UPLOAD_MB,
+    ROOT,
+    VERSION,
+    VIEWER_DIST,
+    available_configs,
+)
 
-
-def available_configs(root: Path = CONFIG_ROOT) -> dict[str, Path]:
-    """``{"baselines/bytetrack": path, ...}``; only these names are accepted (no paths)."""
-    out = {}
-    for d in CONFIG_DIRS:
-        for p in sorted((root / d).glob("*.yaml")):
-            out[f"{d}/{p.stem}"] = p
-    return out
+__all__ = ["CONFIG_DIRS", "CONFIG_ROOT", "ROOT", "app", "available_configs", "create_app"]
 
 
 def parse_gate(text: str | None, width: int, height: int) -> Gate:
@@ -130,6 +129,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.add_api_route("/api/configs", configs, methods=["GET"])
     application.add_api_route("/api/track", track, methods=["POST"])
     application.include_router(router)
+    application.include_router(workstation_router)
 
     web = settings.web_dist
     viewer = (VIEWER_DIST / "index.html").exists()

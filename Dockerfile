@@ -30,7 +30,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPATH=/app \
     ZED_CONFIG_ROOT=/app/configs ZED_VIEWER_DIST=/app/viewer ZED_WEB_DIST=/app/web \
     ZED_RESULTS_DIR=/app/docs/results ZED_CLIP_MANIFEST=/app/configs/demo/clips.yaml \
-    ZED_DATA_DIR=/data/serve ZED_CLIP_DIR=/data/demo/blurred ZED_MODEL_DIR=/data/models
+    ZED_DATA_DIR=/data/serve ZED_CLIP_DIR=/data/demo/blurred ZED_MODEL_DIR=/data/models \
+    ZED_CLIP_ROOT=/app/clips ZED_RESULTS_ROOT=/app/docs/results
 WORKDIR /app
 COPY serve/requirements.txt serve/requirements.txt
 RUN pip install --no-cache-dir -r serve/requirements.txt
@@ -40,6 +41,8 @@ COPY models/ models/
 COPY serve/ serve/
 COPY configs/ configs/
 COPY docs/results/ docs/results/
+# MOT17 viewer clips for the workstation screens (/dashboard/studio, /api/viewer-clips)
+COPY viewer/data/ clips/
 COPY --from=viewer /src/viewer/dist/ viewer/
 COPY --from=web /src/web/dist/ web/
 RUN useradd --create-home --uid 10001 app \

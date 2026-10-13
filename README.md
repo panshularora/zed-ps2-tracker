@@ -118,6 +118,7 @@ make gates                          # after make ablate: gate events on the froz
 make viewer                         # export clips + build viewer/dist/index.html (needs Node 20)
 make serve                          # CPU job API + built web app / viewer (FastAPI, `pip install -e .[serve]`)
 make web                            # build the web app (web/dist); make demo runs API + dev server
+make dashboard                      # same as make web; workstation at /dashboard/studio, /experiments, /evidence
 make ingest BRING_BACK=<tar> DELETE=1   # DGX bundle -> data/stagea (sha256-checked), one tar at a time
 make phase3                         # frozen phase-3 plan on the ingested caches -> docs/results/phase3/
 make phase3-selftest                # the same chain on a synthetic bundle (~25 s)
