@@ -110,6 +110,7 @@ def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     s = Settings(
         data_dir=tmp_path / "serve",
         clip_dir=blurred,
+        demo_cut_dir=tmp_path / "cuts",
         clip_manifest=manifest,
         model_dir=tmp_path / "models",
         results_dir=ROOT / "docs" / "results",
@@ -167,6 +168,30 @@ def test_clip_listing_serves_only_blurred_copies(env: dict[str, Any]) -> None:
 
 
 # ---------------------------------------------------------------- jobs
+def test_demo_cut_fallback_when_full_clip_absent(env: dict[str, Any]) -> None:
+    """No full clip, but a committed (already blurred) demo cut: listed, served, trackable."""
+    c, s = env["client"], env["settings"]
+    (s.clip_dir / "walk.mp4").unlink()
+    assert c.get("/api/clips").json() == []
+    s.demo_cut_dir.mkdir()
+    write_video(s.demo_cut_dir / "walk.mp4")
+    clips = c.get("/api/clips").json()
+    assert [(x["id"], x["demo_cut"]) for x in clips] == [("walk", True)]
+    assert c.get("/api/clips/walk/video").status_code == 200
+    rec = c.post("/api/jobs", json={"clip_id": "walk", "detector": "yolox_s"}).json()
+    assert wait(c, rec["id"])["status"] == "succeeded"
+    # the full clip wins once it exists
+    write_video(s.clip_dir / "walk.mp4")
+    assert c.get("/api/clips").json()[0]["demo_cut"] is False
+
+
+def test_demo_cut_is_rejected_when_neither_copy_exists(env: dict[str, Any]) -> None:
+    c, s = env["client"], env["settings"]
+    (s.clip_dir / "walk.mp4").unlink()
+    assert c.get("/api/clips").json() == []
+    assert c.get("/api/clips/walk/video").status_code == 404
+
+
 def test_job_lifecycle_and_outputs(env: dict[str, Any]) -> None:
     c = env["client"]
     r = c.post("/api/jobs", json={"clip_id": "walk", "config": "ours/visibility_botsort"})
