@@ -6,7 +6,6 @@ import { BENCHMARK_CLIPS, benchmarkPairs, benchmarkReplay } from "../../guided/v
 import { fetchIndex, fetchScenario, type ScenarioMeta, videoUrl } from "../../lib/scenarios";
 
 const DEFAULT = "subway_turnstile";
-const OPENER = "bench:MOT17-09";
 
 export { benchmarkPairs };
 
@@ -16,7 +15,7 @@ export function GuidedStudio({ clips, onNext }: { clips: IndexedClip[]; onNext: 
   const [scen, setScen] = useState<ReplayData | null>(null);
   const pairs = useMemo(() => benchmarkPairs(clips), [clips]);
   // opener: MOT17-09 (measured) explains the problem; Pexels turnstile if it is not exported
-  const sel = pick ?? (pairs.some((p) => `bench:${p.name}` === OPENER) ? OPENER : DEFAULT);
+  const sel = pick ?? DEFAULT; // open on a clip that plays; benchmarks are boxes-only here
   useEffect(() => { fetchIndex().then(setIndex).catch(() => setIndex([])); }, []);
   const bench = pairs.find((p) => `bench:${p.name}` === sel);
   useEffect(() => {

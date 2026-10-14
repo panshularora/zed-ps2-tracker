@@ -20,6 +20,11 @@ export function paint(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: 
   ctx.save();
   ctx.fillStyle = "#0E1013";
   ctx.fillRect(0, 0, cw, ch);
+  if (!src) {
+    // schematic fallback: a #13171C clip-shaped rectangle, overlays drawn on top as usual
+    ctx.fillStyle = "#13171C";
+    ctx.fillRect(0, 0, cw, ch);
+  }
   ctx.setTransform(ctx.getTransform().scale(s, ch / vh).translate(-vx, -vy));
   if (src) ctx.drawImage(src, 0, 0, d.width, d.height);
   const boxes: Box[] = p.f != null ? d.runs[p.run].frames[String(p.f)] ?? [] : [];

@@ -106,6 +106,21 @@ make data         # MOT17 + MOT20 labels and public detections only (no images, 
 make smoke        # MOT17 train (full) + val-half with public dets: TrackEval + stress + latency
 ```
 
+### Getting the demo videos
+
+A fresh clone already plays the Scenarios tab: short 720p face-blurred cuts of each clip's tracked
+range are committed in `web/public/demo/` (about 11 MB, made by `scripts/demo/make_demo_pack.sh`).
+For the full-length clips, which are optional:
+
+```bash
+make models clips blur   # ONNX models, Pexels clips (data/demo/raw), face-blurred copies (data/demo/blurred)
+make serve               # API on :8000 (serves only the blurred clips)
+make web                 # build web/dist (or `make demo` for API + Vite dev server)
+```
+
+If a clip is missing, the player draws the boxes on a plain clip-shaped panel and shows
+"Clip not downloaded on this machine. In ~/zed-ps2-tracker run: make clips blur  then reload."
+
 Run any config on any split (outputs go to `outputs/<DATASET>_<SPLIT>/`):
 
 ```bash

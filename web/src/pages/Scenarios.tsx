@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { GuidedPlayer } from "../guided/GuidedPlayer";
-import { fromScenario } from "../guided/model";
+import { fromScenario, thumbUrlFor } from "../guided/model";
 import { Tag } from "../guided/Tag";
 import { benchmarkReplay, loadBenchmarkPairs, type BenchPair } from "../guided/viewer";
 import {
-  fetchIndex, fetchScenario, posterUrl, type ScenarioData, type ScenarioMeta, videoUrl,
+  fetchIndex, fetchScenario, type ScenarioData, type ScenarioMeta, videoUrl,
 } from "../lib/scenarios";
 import { useAsync } from "../lib/useAsync";
 
@@ -18,37 +18,38 @@ export const BENCH_CARDS = [
 ];
 export const benchKey = (name: string) => `bench:${name}`;
 
+export function Thumb({ id }: { id: string }) {
+  const [bad, setBad] = useState(false);
+  return (
+    <div className="thumb thumb-frame">
+      {bad ? <span className="thumb-ph" aria-hidden /> : <img src={thumbUrlFor(id)} alt="" loading="lazy" onError={() => setBad(true)} />}
+    </div>
+  );
+}
+
 export function ScenarioRail({ items, bench = [], selected, onSelect }: { items: ScenarioMeta[]; bench?: string[]; selected: string | null; onSelect: (id: string) => void }) {
   return (
     <nav className="rail" aria-label="Scenarios">
-      {BENCH_CARDS.map((b) => bench.includes(b.id) ? (
-        <button key={b.id} type="button" className={`scard${selected === benchKey(b.id) ? " active" : ""}`} onClick={() => onSelect(benchKey(b.id))} data-testid="bench-card">
-          <div className="thumb pending-thumb">{b.id} · boxes only</div>
-          <div className="scard-body">
-            <div className="scard-title">{b.problem}</div>
-            <Tag kind="measured" />
-            <div className="credit">{b.licence}</div>
-          </div>
-        </button>
-      ) : (
-        <div key={b.id} className="scard pending" data-testid="bench-slot" aria-disabled>
-          <div className="thumb pending-thumb">{b.id} · pending</div>
-          <div className="scard-body">
-            <div className="scard-title">{b.problem}</div>
-            <Tag kind="measured" />
-            <div className="credit">Not exported yet · {b.licence}</div>
-          </div>
-        </div>
-      ))}
       {items.map((m) => (
         <button key={m.id} type="button" className={`scard${selected === m.id ? " active" : ""}`} onClick={() => onSelect(m.id)} data-testid="scenario-card">
-          <img className="thumb" src={posterUrl(m.id)} alt="" loading="lazy" />
+          <Thumb id={m.id} />
           <div className="scard-body">
             <div className="scard-title">{m.problem}</div>
             <Tag kind={m.kind} />
           </div>
         </button>
       ))}
+      {/* benchmark clips have no video here: one line each, below the clips that play */}
+      {BENCH_CARDS.map((b) => {
+        const has = bench.includes(b.id);
+        return (
+          <button key={b.id} type="button" disabled={!has} title={b.licence}
+            className={`bench-line${selected === benchKey(b.id) ? " active" : ""}`}
+            onClick={() => has && onSelect(benchKey(b.id))} data-testid={has ? "bench-card" : "bench-slot"}>
+            <b>{b.id}</b> · Measured · {has ? "video not exported yet (boxes only)" : "not exported yet"}
+          </button>
+        );
+      })}
     </nav>
   );
 }
@@ -79,8 +80,9 @@ export default function Scenarios() {
   const [data, setData] = useState<ScenarioData | null>(null);
   useEffect(() => { loadBenchmarkPairs().then(setPairs).catch(() => setPairs([])); }, []);
   const items = idx.data ?? [];
-  const opener = pairs?.some((p) => p.name === "MOT17-09") ? benchKey("MOT17-09") : (items[0]?.id ?? null);
-  const current = sel ?? (pairs == null ? null : opener);
+  // open on a clip that plays (the committed demo cut), not on a boxes-only benchmark
+  const opener = items.find((m) => m.id === "subway_turnstile")?.id ?? items[0]?.id ?? null;
+  const current = sel ?? opener;
   const pair = pairs?.find((p) => benchKey(p.name) === current);
   const bench = useMemo(() => (pair ? benchmarkReplay(pair) : null), [pair]);
   useEffect(() => {

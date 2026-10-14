@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   activeMoment, answerFor, askText, chipText, countsAt, eventLog, extraCountsAt, rateAt, resultText, schedule,
-  SLOW_RATE, stepMoment, stripTicks, tally, tallyText, MOMENT_RULE, spotlightIds, stopCrossed, stopKey, timeOfFrame, trailOf, viewRect, zoomAt, type GEvent, type Moment,
+  SLOW_RATE, visibleLog, fallbackText, videoSources, MISSING_CLIP_TEXT, NO_EXPORT_TEXT, stepMoment, stripTicks, tally, tallyText, MOMENT_RULE, spotlightIds, stopCrossed, stopKey, timeOfFrame, trailOf, viewRect, zoomAt, type GEvent, type Moment,
 } from "../src/guided/model";
 
 const fps = 10;
@@ -145,5 +145,21 @@ describe("moment tally, strip and stepping", () => {
     expect(stepMoment(d2, 9.5, 1)).toBeNull();
     expect(stepMoment(d2, 0, -1)).toBeNull();
     expect(stepMoment({ fps, moments: [] }, 0, 1)).toBeNull();
+  });
+});
+
+describe("missing video and the log", () => {
+  it("log shows only events at or before the frame on screen", () => {
+    const log = [{ f: 1, t: 0, text: "a", kind: "cross" as const }, { f: 130, t: 12.9, text: "b", kind: "cross" as const }];
+    expect(visibleLog(log, null)).toEqual([]);
+    expect(visibleLog(log, 1).map((l) => l.text)).toEqual(["a"]);
+    expect(visibleLog(log, 130).map((l) => l.text)).toEqual(["a", "b"]);
+  });
+  it("sources: full clip, then demo cut; banner text per case", () => {
+    expect(videoSources({ videoUrl: "/api/x", demoUrl: "/demo/x.mp4" })).toEqual(["/api/x", "/demo/x.mp4"]);
+    expect(fallbackText({ kind: "illustrative", videoUrl: "/api/x", demoUrl: "/demo/x.mp4" }, false)).toBeNull();
+    expect(fallbackText({ kind: "illustrative", videoUrl: "/api/x", demoUrl: null }, true)).toBe(MISSING_CLIP_TEXT);
+    expect(fallbackText({ kind: "measured", videoUrl: null, demoUrl: null }, false)).toBe(NO_EXPORT_TEXT);
+    expect(MISSING_CLIP_TEXT).toContain("make clips blur");
   });
 });
