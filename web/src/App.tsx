@@ -15,7 +15,7 @@ export const NAV_GROUPS: { label: string; pages: { to: string; label: string; su
       { to: "/dashboard/results", label: "Results" },
       { to: "/dashboard/experiments", label: "Experiments" },
       { to: "/dashboard/evidence", label: "Analytics" },
-      { to: "/dashboard/architecture", label: "Architecture", sub: true },
+      { to: "/dashboard/architecture", label: "Architecture" },
     ],
   },
 ];

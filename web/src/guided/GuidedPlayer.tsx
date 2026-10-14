@@ -9,8 +9,6 @@ import {
 import { Tag } from "./Tag";
 
 const AUTO_RESUME_MS = 4000;
-/** header + title + legend + caption + tally/strip + controls: keep them on screen at ~768 px */
-const CHROME_PX = 470;
 
 export function Legend() {
   return (
@@ -225,7 +223,7 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
       <Legend />
       <div className="g-main">
         <div className="g-left">
-          <div className="g-stage" style={{ aspectRatio: `${data.width} / ${data.height}`, width: `min(100%, calc((100vh - ${CHROME_PX}px) * ${(data.width / data.height).toFixed(4)}))` }}>
+          <div className="g-stage" style={{ aspectRatio: `${data.width} / ${data.height}`, width: "100%" }}>
             {src && (
               <video key={src} ref={video} src={src} muted playsInline autoPlay aria-label={data.title} className="g-video"
                 onError={onVideoError} onLoadedMetadata={(e) => { if (!(e.currentTarget.duration > 0)) onVideoError(); }} />
@@ -268,6 +266,23 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
               ))}
             </div>
           </div>
+          <aside className="g-log" aria-label="What's happening">
+            <h3>What&apos;s happening <small className="muted">({names[run]})</small></h3>
+            <ol ref={logRef} data-testid="event-log">
+              {log.length === 0 && <li className="muted">Events appear as the replay reaches them.</li>}
+              {log.map((l, i) => {
+                const past = f != null && l.f <= f;
+                const current = past && (i === log.length - 1 || log[i + 1].f > (f ?? 0));
+                return (
+                  <li key={`${l.f}-${i}`} className={`g-log-${l.kind}${past ? " past" : ""}${l.moment != null ? " key" : ""}`} data-current={current}>
+                    <button type="button" onClick={() => seek(Math.max(0, l.t - 1))}>
+                      <span className="mono">{l.t.toFixed(1)}s</span> {l.text}{l.moment != null && data.kind === "illustrative" ? " The two trackers disagree here." : ""}
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </aside>
           {paused?.kind === "answer" && m && (
             <div className="g-stills" data-testid="guided-stills">
               {(["baseline", "ours"] as const).map((r) => (
@@ -280,23 +295,6 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
             </div>
           )}
         </div>
-        <aside className="g-log" aria-label="What's happening">
-          <h3>What&apos;s happening <small className="muted">({names[run]})</small></h3>
-          <ol ref={logRef} data-testid="event-log">
-            {log.length === 0 && <li className="muted">No events yet.</li>}
-            {log.map((l, i) => {
-              const past = f != null && l.f <= f;
-              const current = past && (i === log.length - 1 || log[i + 1].f > (f ?? 0));
-              return (
-                <li key={`${l.f}-${i}`} className={`g-log-${l.kind}${past ? " past" : ""}${l.moment != null ? " key" : ""}`} data-current={current}>
-                  <button type="button" onClick={() => seek(Math.max(0, l.t - 1))}>
-                    <span className="mono">{l.t.toFixed(1)}s</span> {l.text}{l.moment != null && data.kind === "illustrative" ? " The two trackers disagree here." : ""}
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
-        </aside>
       </div>
     </div>
   );
