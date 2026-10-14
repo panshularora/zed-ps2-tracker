@@ -32,7 +32,7 @@ describe("results", () => {
     expect(screen.getByTestId("row-botsort").className).toContain("bar-baseline");
     expect(screen.getAllByText("sanity check").length).toBeGreaterThanOrEqual(2); // gt-as-tracker + go/no-go
     expect(screen.getAllByText("pending DGX run").length).toBeGreaterThanOrEqual(3);
-    const tables = document.querySelectorAll("table");
+    const tables = document.querySelectorAll<HTMLElement>("table:not(.cmp-table)");
     const firstFigure = document.querySelector("figure");
     // tables come before charts
     if (firstFigure) expect(tables[0].compareDocumentPosition(firstFigure) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

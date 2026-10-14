@@ -2,6 +2,7 @@ import { offlinePath } from "../lib/offline";
 import { FoundChecks } from "../components/Checks";
 import { Term } from "../components/Term";
 import { loadSummary } from "../lib/summary";
+import { DatasetTable } from "../components/DatasetTable";
 import { api, type AblationRow, type Benchmarks } from "../api";
 import StressChart from "../components/StressChart";
 import { DASH, int, num, pct } from "../lib/format";
@@ -37,6 +38,11 @@ export function ResultsView({ b }: { b: Benchmarks }) {
         <FoundChecks summary={loadSummary()} />
       </section>
 
+      <section className="section" data-testid="overall-comparison">
+        <h2>All datasets at a glance</h2>
+        <p className="sub">ByteTrack vs BoT-SORT vs ours on every dataset, read only from summary.json. Provisional: see the reproduction check above.</p>
+        <DatasetTable />
+      </section>
       <section className="section">
         <h2>Tracking accuracy</h2>
         <p className="sub">{abl ? abl.setting : "docs/results/ablation/ablation.json not found."}</p>
