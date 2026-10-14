@@ -30,6 +30,8 @@ export function paint(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: 
     const here = new Set(boxes.map((b) => b[0]));
     for (const id of p.spot) {
       if (here.has(id)) continue;
+      // a number that was just replaced is not "hidden": its new number is drawn instead
+      if (d.events[p.run].some((e) => e.t === "renumber" && e.from === id && e.f <= p.f!)) continue;
       const ls = lastSeen(d.runs[p.run].frames, id, p.f, d.fps);
       // only if no later number took over this spot (avoid ghosting an id that was renumbered)
       if (ls && !spotBoxes.some((b) => overlap(b, ls.box) > 0.3)) ghosts.push(ls.box);
@@ -65,8 +67,10 @@ export function paint(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: 
     ctx.fillStyle = GATE;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("IN side", Math.max(40 * px, mx + nx * 18 * px), my + ny * 18 * px);
-    ctx.fillText("OUT side", Math.max(40 * px, mx - nx * 18 * px), my - ny * 18 * px);
+    const off = (Math.abs(nx) > 0.5 ? 46 : 18) * px; // vertical line: labels sit left / right
+    const vmy = Math.max(my, vy + 40 * px);
+    ctx.fillText("IN side", Math.max(40 * px, mx + nx * off), vmy + ny * off);
+    ctx.fillText("OUT side", Math.max(40 * px, mx - nx * off), vmy - ny * off);
   }
   if (p.f != null) {
     // others: 1 px, 35 % opacity, no labels

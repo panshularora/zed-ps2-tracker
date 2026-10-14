@@ -37,7 +37,7 @@ await p.waitForSelector("[data-testid=guided-stills]", { timeout: 30000 });
 await p.click("text=Continue");
 await p.getByRole("button", { name: "ByteTrack (baseline)" }).click();
 await p.waitForTimeout(900);
-await shot(p, "after_scenarios_5_baseline_counted_twice");
+await shot(p, "after_scenarios_5_baseline_view");
 await p.getByRole("button", { name: "Free play" }).click();
 await p.waitForTimeout(1500);
 await shot(p, "after_scenarios_6_free_play");
@@ -65,17 +65,18 @@ await m.locator("[data-testid=guided-stills]").scrollIntoViewIfNeeded();
 await m.screenshot({ path: `${OUT}/after_mobile_stills.png` });
 
 // demo video: guided turnstile replay, ~25 s
-const ctx = await br.newContext({ viewport: { width: 1280, height: 860 }, recordVideo: { dir: `${OUT}/_video`, size: { width: 1280, height: 860 } } });
+const ctx = await br.newContext({ viewport: { width: 1280, height: 1000 }, recordVideo: { dir: `${OUT}/_video`, size: { width: 1280, height: 1000 } } });
 const v = await ctx.newPage();
 watch(v);
 await v.goto(`${BASE}/dashboard/scenarios`, { waitUntil: "networkidle" });
 await v.getByText("Counting at a gate").click();
 await v.waitForSelector("[data-testid=guided-player] video");
+await v.evaluate(() => window.scrollTo(0, document.querySelector(".player-caption").getBoundingClientRect().top + window.scrollY - 60));
 const t0 = Date.now();
 for (let i = 0; i < 4 && Date.now() - t0 < 24000; i++) {
   await v.waitForSelector("text=Continue", { timeout: 30000 });
   await v.waitForTimeout(2600);
-  await v.click("text=Continue");
+  await v.evaluate(() => document.querySelector(".g-continue")?.click()); // no auto-scroll
 }
 await v.waitForTimeout(Math.max(0, 27000 - (Date.now() - t0)));
 const path = await v.video().path();
