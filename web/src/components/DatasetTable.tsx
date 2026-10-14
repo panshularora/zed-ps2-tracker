@@ -1,4 +1,4 @@
-import { datasetRows, loadSummary, TRACKERS, type Cell, type SummaryFile } from "../lib/summary";
+import { datasetRows, loadSummary, loadSynthetic, TRACKERS, type Cell, type SummaryFile } from "../lib/summary";
 
 function CellView({ c }: { c: Cell }) {
   return (
@@ -12,7 +12,7 @@ function CellView({ c }: { c: Cell }) {
 }
 
 /** Overall comparison across datasets, every value from docs/results/summary.json. */
-export function DatasetTable({ summary = loadSummary(), synthetic = null }: { summary?: SummaryFile | null; synthetic?: Parameters<typeof datasetRows>[1] }) {
+export function DatasetTable({ summary = loadSummary(), synthetic = loadSynthetic() }: { summary?: SummaryFile | null; synthetic?: Parameters<typeof datasetRows>[1] }) {
   const rows = datasetRows(summary, synthetic);
   const ref = summary?.reproduction?.reference;
   return (
@@ -33,7 +33,7 @@ export function DatasetTable({ summary = loadSummary(), synthetic = null }: { su
       </table>
       <p className="credit" style={{ marginTop: 8 }}>
         Source: docs/results/summary.json only (laptop GPU run, provisional). MOT17 ByteTrack is our reproduction
-        {ref?.MOTA != null ? `; ByteTrack's published numbers are MOTA ${ref.MOTA} / IDF1 ${ref.IDF1}, and the reproduction verdict is ${summary?.reproduction?.verdict ?? "pending"}` : ""}, so no tracker comparison from this run should be quoted.
+        {ref?.MOTA != null ? `; ByteTrack's published numbers are MOTA ${ref.MOTA} / IDF1 ${ref.IDF1}, and the reproduction verdict is ${summary?.reproduction?.verdict ?? "pending"}` : ""}, so no tracker comparison from this run should be quoted. The synthetic row is one seeded run of the live gate scene (docs/results/synthetic_gate), exact ground truth but a toy world: static camera, so BoT-SORT runs without camera-motion correction there.
         Cells without a number say why: the run happened but summary.json carries no per-tracker metric, it has not run, or there is no ground truth.
       </p>
     </div>

@@ -21,9 +21,19 @@ def client(tmp_path_factory):
 
 
 @pytest.mark.parametrize(
-    "route", ["/api/benchmarks", "/api/viewer-clips", "/api/results/ablation", "/api/results/gate-events", "/api/results/go-no-go", "/api/configs"]
+    "route",
+    [
+        "/api/benchmarks",
+        "/api/viewer-clips",
+        "/api/results/ablation",
+        "/api/results/gate-events",
+        "/api/results/go-no-go",
+        "/api/configs",
+    ],
 )
 def test_snapshot_matches_route(client, route):
     name = route.removeprefix("/api/").replace("/", "__") + ".json"
     snap = json.loads((SNAP / name).read_text())
-    assert client.get(route).json() == snap, f"stale {name}: run python scripts/web/export_offline.py"
+    assert client.get(route).json() == snap, (
+        f"stale {name}: run python scripts/web/export_offline.py"
+    )

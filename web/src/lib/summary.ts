@@ -215,7 +215,7 @@ export function datasetRows(s: SummaryFile | null, synthetic?: { seed: number; r
   }
   const syn: DatasetRow = { id: "synthetic", dataset: "Synthetic gate scene", status: "not run yet", cells: all({ tag: "not run yet" }) };
   if (synthetic) {
-    syn.status = `seeded backend run, seed ${synthetic.seed} (exact ground truth)`;
+    syn.status = `one seeded backend run, seed ${synthetic.seed} (exact ground truth)`;
     for (const t of TRACKERS) {
       const r = synthetic.rows[t.key];
       if (r) syn.cells[t.key] = { tag: "provisional", values: [{ label: "ID changes", value: String(r.idChanges) }, { label: "counted / true", value: `${r.counted} / ${r.truth}` }] };
@@ -228,4 +228,15 @@ export function datasetRows(s: SummaryFile | null, synthetic?: { seed: number; r
     { id: "pexels", dataset: "Pexels demo clips", status: "illustrative only", cells: all({ tag: "no ground truth" }) },
     syn,
   ];
+}
+
+// Recorded seeded run of the synthetic gate scene (scripts/web/export_gate_sim.py), if committed.
+const synFiles = import.meta.glob<{ params: { seed: number }; summary: Record<string, { id_changes: number; counted: number; truth: number }> }>(
+  "../../../docs/results/synthetic_gate/seed*.json", { eager: true, import: "default" },
+);
+export function loadSynthetic(): Parameters<typeof datasetRows>[1] {
+  const f = Object.values(synFiles)[0];
+  if (!f) return null;
+  const pick = (k: string) => (f.summary[k] ? { idChanges: f.summary[k].id_changes, counted: f.summary[k].counted, truth: f.summary[k].truth } : undefined);
+  return { seed: f.params.seed, rows: { bytetrack: pick("bytetrack"), botsort: pick("botsort"), ours: pick("ours") } };
 }

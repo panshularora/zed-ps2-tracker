@@ -21,7 +21,7 @@ describe("navigation", () => {
     const groups = screen.getAllByRole("group").map((g) => [g.getAttribute("aria-label"), [...g.querySelectorAll("a:not(.nav-group-label)")].map((a) => a.textContent)]);
     expect(groups).toEqual([
       ["Story", ["Overview"]],
-      ["Try it", ["Scenarios", "Studio"]],
+      ["Try it", ["Gate scene", "Scenarios", "Studio"]],
       ["Evidence", ["Results", "Experiments", "Analytics", "Architecture"]],
     ]);
     expect(screen.queryByRole("link", { name: "Demo" })).toBeNull();

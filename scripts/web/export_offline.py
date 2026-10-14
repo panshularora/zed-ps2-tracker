@@ -63,7 +63,13 @@ def main() -> int:
     for ep in ENDPOINTS:
         dump(ep)
     cfgs = dump("/api/configs")
-    names = cfgs if isinstance(cfgs, list) else (cfgs or {}).get("configs", []) if isinstance(cfgs, dict) else []
+    names = (
+        cfgs
+        if isinstance(cfgs, list)
+        else (cfgs or {}).get("configs", [])
+        if isinstance(cfgs, dict)
+        else []
+    )
     for n in names:
         dump(f"/api/config/{n if isinstance(n, str) else n.get('name')}")
     for p, body in [("/api/outputs", {"runs": []}), ("/api/jobs", [])]:

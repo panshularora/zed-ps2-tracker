@@ -74,12 +74,24 @@ describe("overall dataset table (summary.json only)", () => {
     expect(by.mot20.status).toContain("1 leaked, excluded");
     expect(by.dancetrack.cells.botsort.tag).toBe("not run yet");
     expect(by.pexels.cells.ours.tag).toBe("no ground truth");
-    expect(by.synthetic.cells.ours.tag).toBe("not run yet");
+    expect(by.synthetic.cells.ours.tag).toBe("not run yet"); // without the recorded run passed in
   });
   it("never shows a number that is not in the file", () => {
     const rows = datasetRows({ ran: [{ id: "mot17_val_half", cache: "c", saw_eval_half: false }] });
     expect(rows.every((r) => Object.values(r.cells).every((c) => !c.values))).toBe(true);
     render(<DatasetTable summary={null} />);
     expect(screen.getByTestId("ds-mot17").textContent).toContain("not run yet");
+  });
+});
+
+describe("synthetic row", () => {
+  it("comes from the committed seeded run, seed stated", async () => {
+    const { loadSynthetic } = await import("../src/lib/summary");
+    const syn = loadSynthetic();
+    expect(syn?.seed).toBe(7);
+    const rows = datasetRows(loadSummary(), syn);
+    const s = rows.find((r) => r.id === "synthetic")!;
+    expect(s.status).toContain("seed 7");
+    expect(s.cells.bytetrack.values?.[0].label).toBe("ID changes");
   });
 });

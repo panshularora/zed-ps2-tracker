@@ -1,0 +1,46 @@
+{
+ "source": "scripts/web/export_gate_sim.py (serve/gate_sim.py, real trackers)",
+ "params": {
+  "seed": 7,
+  "density": 0.5,
+  "occlusion_s": 1.0,
+  "noise": 0.3,
+  "speed": 1.0,
+  "seconds": 30.0,
+  "fps": 30.0
+ },
+ "trackers": {
+  "bytetrack": {
+   "label": "ByteTrack",
+   "config": "configs/baselines/bytetrack.yaml"
+  },
+  "botsort": {
+   "label": "BoT-SORT",
+   "config": "configs/baselines/botsort.yaml"
+  },
+  "ours": {
+   "label": "BoT-SORT + visibility (ours)",
+   "config": "configs/ours/visibility_botsort.yaml"
+  }
+ },
+ "frames": 900,
+ "true_count": 34,
+ "summary": {
+  "bytetrack": {
+   "id_changes": 28,
+   "counted": 28,
+   "truth": 34
+  },
+  "botsort": {
+   "id_changes": 32,
+   "counted": 32,
+   "truth": 34
+  },
+  "ours": {
+   "id_changes": 29,
+   "counted": 32,
+   "truth": 34
+  }
+ },
+ "note": "Synthetic scene with exact ground truth; one seed, one run. Static camera, so BoT-SORT runs without CMC."
+}
