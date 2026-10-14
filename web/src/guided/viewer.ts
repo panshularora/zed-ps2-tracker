@@ -3,6 +3,8 @@
 // still only states what each tracker's data shows (no comparison is claimed unless both runs are
 // present and say so).
 import type { IndexedClip } from "@viewer/data";
+import { fetchClip, fetchClips } from "../workstation/api";
+import { prettyTracker } from "../workstation/lib/journey";
 import type { Box, RunKey } from "../lib/scenarios";
 import type { GEvent, Moment, ReplayData } from "./model";
 
@@ -49,23 +51,32 @@ export function fromViewerClips(base: IndexedClip, ours: IndexedClip, labels: Re
   const frames = { baseline: framesOf(base), ours: framesOf(ours) };
   const events = { baseline: eventsOf(base), ours: eventsOf(ours) };
   const moments: Moment[] = [];
+  type Sw = { f: number; gt: number; from: number; to: number };
+  const sw = (c: IndexedClip): Sw[] => c.events.flatMap((e) => (e.type === "id_switch" ? [{ f: e.f, gt: e.gt, from: e.from, to: e.to }] : []));
+  const all = { baseline: sw(base), ours: sw(ours) };
+  const used = new Set<Sw>();
+  const crossed = (run: RunKey, id: number) => new Set(events[run].flatMap((x) => (x.t === "cross" && x.id === id ? [x.dir] : [])));
+  const twice = (run: RunKey, a: number, b: number) => [...crossed(run, a)].some((d) => crossed(run, b).has(d));
   for (const run of ["baseline", "ours"] as const) {
     const other: RunKey = run === "baseline" ? "ours" : "baseline";
-    const clip = run === "baseline" ? base : ours;
-    for (const e of clip.events) {
-      if (e.type !== "id_switch") continue;
-      if (moments.some((m) => Math.abs(m.f - e.f) < 2 * clip.fps)) continue;
+    for (const e of all[run]) {
+      if (used.has(e)) continue;
+      used.add(e);
+      // same labelled person switching on the other tracker within 1 s = one "both" moment
+      const twin = all[other].find((o) => !used.has(o) && o.gt === e.gt && Math.abs(o.f - e.f) <= base.fps);
+      if (twin) used.add(twin);
       const box = boxOf(frames[run], e.f, e.to);
       if (!box) continue;
-      const otherAfter = matchId(frames[other], e.f, box);
       const prev = lastBefore(frames[run], e.f, e.from);
-      const otherBefore = prev ? matchId(frames[other], prev.f, prev.box) : null;
-      const crossed = (id: number) => events[run].filter((x) => x.t === "cross" && x.id === id).map((x) => (x as { dir: string }).dir);
+      const otherIds = twin
+        ? { before: twin.from, after: twin.to }
+        : { before: prev ? matchId(frames[other], prev.f, prev.box) : null, after: matchId(frames[other], e.f, box) };
       moments.push({
-        f: e.f, kind: "occlusion", changed: run, kept: null, verified: true,
-        people: [{ box, ids: { [run]: { before: e.from, after: e.to }, [other]: { before: otherBefore, after: otherAfter } } }],
+        f: twin ? Math.min(e.f, twin.f) : e.f, kind: "occlusion", verified: true,
+        changed: { [run]: true, [other]: !!twin } as Record<RunKey, boolean>,
+        people: [{ box, ids: { [run]: { before: e.from, after: e.to }, [other]: otherIds } }],
         focus: box,
-        counted_twice: crossed(e.from).some((d) => crossed(e.to).includes(d)),
+        counted_twice: { [run]: twice(run, e.from, e.to), [other]: !!twin && twice(other, twin.from, twin.to) } as Record<RunKey, boolean>,
       });
     }
   }
@@ -76,6 +87,46 @@ export function fromViewerClips(base: IndexedClip, ours: IndexedClip, labels: Re
     width: base.width, height: base.height, fps: base.fps, frames: base.frames, duration: base.frames / base.fps,
     videoUrl: media?.src ?? null, videoOffsetS: (media?.frame_offset ?? 0) / base.fps,
     runs: { baseline: { label: labels.baseline, short: labels.baseline, frames: frames.baseline }, ours: { label: labels.ours, short: labels.ours, frames: frames.ours } },
-    gate: base.gate, events, moments: moments.slice(0, 3),
+    gate: base.gate, events, moments,
   };
+}
+
+export interface BenchPair { name: string; base: IndexedClip; ours: IndexedClip }
+
+/** Benchmark pairs (ByteTrack-like vs another tracker, never gt) in the exported viewer clips. */
+export function benchmarkPairs(clips: IndexedClip[]): BenchPair[] {
+  const out: BenchPair[] = [];
+  for (const name of BENCHMARK_CLIPS) {
+    const cs = clips.filter((c) => c.clip.startsWith(name));
+    const base = cs.find((c) => /bytetrack/i.test(c.tracker) && !/reid|vis/i.test(c.tracker));
+    const rest = cs.filter((c) => c !== base && c.tracker !== "gt");
+    const ours = rest.find((c) => /vis/i.test(c.tracker)) ?? rest.find((c) => /botsort/i.test(c.tracker)) ?? rest[0];
+    if (base && ours) out.push({ name, base, ours });
+  }
+  return out;
+}
+
+/** Load only the clip files the benchmark pairs need (Scenarios tab has no workstation state). */
+export async function loadBenchmarkPairs(): Promise<BenchPair[]> {
+  const refs = await fetchClips();
+  const want = refs.filter((r) => BENCHMARK_CLIPS.some((n) => r.clip.startsWith(n)) && r.tracker !== "gt" && /^(bytetrack|botsort|.*vis.*)$/i.test(r.tracker));
+  return benchmarkPairs(await Promise.all(want.map((r) => fetchClip(r.file))));
+}
+
+/** Neutral framing of the first measured moment: the problem, not a win for either tracker. */
+export function problemCaption(d: ReplayData): string {
+  const m = d.moments[0];
+  if (!m) return "Human-labelled benchmark clip. No number changes were measured on it.";
+  const ib = m.people[0].ids.baseline, io = m.people[0].ids.ours;
+  const ch = (x?: { before: number | null; after: number | null }) => x?.before != null && x.after != null && x.before !== x.after;
+  const both = ch(ib) && ch(io);
+  const who = both ? "both trackers give them" : ch(ib) ? `${d.runs.baseline.short} gives them` : `${d.runs.ours.short} gives them`;
+  const x = ch(ib) ? ib! : io!;
+  return `The problem: a person passes behind others and comes back, and ${who} a new number (#${x.before} → #${x.after}). A gate could then count one person twice. This clip shows the problem, not a win for either tracker.`;
+}
+
+export function benchmarkReplay(p: BenchPair): ReplayData {
+  const d = fromViewerClips(p.base, p.ours, { baseline: prettyTracker(p.base.tracker).title, ours: prettyTracker(p.ours.tracker).title });
+  const split = p.name.startsWith("MOT20") ? "MOT20 val-half" : "MOT17 val-half";
+  return { ...d, caption: problemCaption(d), title: `${p.name} (${split})` };
 }

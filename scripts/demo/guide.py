@@ -7,8 +7,9 @@ Adds a ``guide`` block to ``web/public/scenarios/<clip>.json``:
 * ``events[run]``: gate crossings (``eval.gate_events.crossings``, 10 px hysteresis), ``lost`` /
   ``back`` (same ID returns after a gap) and ``renumber`` (one tracker changed the number while the
   other kept it: the precomputed disagreements).
-* ``moments``: up to 3 disagreement moments to pause on, with the people involved (per-run IDs
-  before/after) and whether a changed number would be counted twice at the gate.
+* ``moments``: EVERY moment where at least one tracker changed a person's number (``RULE``), with
+  per-run IDs before/after, which tracker(s) changed, and whether the changed number would be
+  counted twice at the gate.
 
 No ground truth: everything here describes what each tracker did, never who was right.
 """
@@ -24,8 +25,6 @@ from eval.gate_events import Gate, crossings
 
 HYST_PX = 10.0
 GAP_S = 0.5  # same-ID gap that counts as "lost then back"
-MAX_MOMENTS = 3
-MIN_SPACING_S = 2.5
 
 # (name, a, b) as fractions of width / height
 CANDIDATES: list[tuple[str, tuple[float, float], tuple[float, float]]] = [
@@ -75,12 +74,6 @@ def _box(r: np.ndarray, f: int, tid: int) -> np.ndarray | None:
     return m[0, 2:6] if len(m) else None
 
 
-def _seen(r: np.ndarray, lo: int, hi: int, tid: int) -> bool:
-    """Is `tid` on screen in the 1.2 s before the change (when the replay slows down)?"""
-    m = (r[:, 1] == tid) & (r[:, 0] >= lo) & (r[:, 0] <= hi)
-    return bool(m.any())
-
-
 def _iou(a: np.ndarray, b: np.ndarray) -> float:
     iw = max(0.0, min(a[0] + a[2], b[0] + b[2]) - max(a[0], b[0]))
     ih = max(0.0, min(a[1] + a[3], b[1] + b[3]) - max(a[1], b[1]))
@@ -98,18 +91,6 @@ def _match(r: np.ndarray, f: int, box: np.ndarray, min_iou: float = 0.3) -> int 
     return bid
 
 
-def _near(r: np.ndarray, f: int, box: np.ndarray, skip: int) -> np.ndarray | None:
-    """The other box at f overlapping `box` most (the person they were mixed up with)."""
-    best, out = 0.02, None
-    for row in r[r[:, 0] == f]:
-        if int(row[1]) == skip:
-            continue
-        v = _iou(row[2:6], box)
-        if best < v < 0.8:  # >= 0.8 is the same person's own box, not someone else
-            best, out = v, row[2:6]
-    return out
-
-
 def annotate(data: dict[str, Any]) -> dict[str, Any]:
     meta = data["meta"]
     w, h = meta["width"], meta["height"]
@@ -122,103 +103,25 @@ def annotate(data: dict[str, Any]) -> dict[str, Any]:
         ev = [{"t": "cross", "f": e.frame, "id": e.track_id, "dir": e.direction} for e in cross[k]]
         ev += gaps(r, fps_t) if len(r) else []
         events[k] = ev
-    for d in data["disagreements"]:
-        if d["kept"] == "ours":
-            events["baseline"].append(
-                {
-                    "t": "renumber",
-                    "f": d["frame"],
-                    "from": d["baseline_from"],
-                    "to": d["baseline_to"],
-                }
-            )
-        else:
-            events["ours"].append(
-                {"t": "renumber", "f": d["frame"], "from": d["ours_from"], "to": d["ours_to"]}
-            )
+    ren = {k: renumbers(r, fps_t) if len(r) else [] for k, r in rows.items()}
+    for k, evs in ren.items():
+        events[k] += [{"t": "renumber", "f": e["f"], "from": e["from"], "to": e["to"]} for e in evs]
     for ev in events.values():
         ev.sort(key=lambda e: (e["f"], e["t"], e.get("id", e.get("to", 0))))
 
-    def crossed(k: str, tid: int) -> list[str]:
-        return [e.direction for e in cross[k] if e.track_id == tid]
+    def crossed(k: str, tid: int) -> set[str]:
+        return {e.direction for e in cross[k] if e.track_id == tid}
 
-    # candidate moments: disagreements, merged within 1 s, scored by overlap and gate proximity
-    cands: list[tuple[float, dict[str, Any]]] = []
-    last_f = -(10**9)
-    for d in data["disagreements"]:
-        f = d["frame"]
-        if (f - last_f) / fps_t < 1.0:
-            continue
-        # need ~1.5 s of lead-in to slow down, and a person small enough to zoom on
-        if f / fps_t < 1.5 or d["box"][3] > 0.7 * h:
-            continue
-        last_f = f
-        box = np.asarray(d["box"], float)
-        changed = "baseline" if d["kept"] == "ours" else "ours"
-        kept = "ours" if changed == "baseline" else "baseline"
-        frm, to = (
-            (d["baseline_from"], d["baseline_to"])
-            if changed == "baseline"
-            else (d["ours_from"], d["ours_to"])
-        )
-        kept_id = d["ours_id"] if kept == "ours" else d["baseline_id"]
-        # the viewer must be able to see the person before the change, on both trackers
-        lo = max(1, f - round(1.2 * fps_t))
-        if not (_seen(rows[changed], lo, f - 1, frm) and _seen(rows[kept], lo, f - 1, kept_id)):
-            continue
-        people = [
-            {
-                "box": [round(float(v)) for v in box],
-                "ids": {
-                    changed: {"before": frm, "after": to},
-                    kept: {"before": kept_id, "after": kept_id},
-                },
-            }
-        ]
-        other = _near(rows["ours"], f, box, skip=kept_id if kept == "ours" else -1)
-        kind = "overlap" if other is not None else "occlusion"
-        if other is not None:
-            ids: dict[str, dict[str, int | None]] = {}
-            for k in rows:
-                ids[k] = {
-                    "before": _match(rows[k], max(1, f - 1), other),
-                    "after": _match(rows[k], f, other),
-                }
-            people.append({"box": [round(float(v)) for v in other], "ids": ids})
-        # counted twice: old and new number both cross the gate in the same direction
-        twice = bool(set(crossed(changed, frm)) & set(crossed(changed, to)))
-        near_gate = any(
-            abs(e.frame - f) / fps_t < 2.0 and e.track_id in (frm, to) for e in cross[changed]
-        )
-        score = (
-            (2.0 if twice else 0.0)
-            + (1.0 if near_gate else 0.0)
-            + (0.5 if other is not None else 0.0)
-        )
-        xs = [p["box"][0] for p in people] + [p["box"][0] + p["box"][2] for p in people]
-        ys = [p["box"][1] for p in people] + [p["box"][1] + p["box"][3] for p in people]
-        cands.append(
-            (
-                score,
-                {
-                    "f": f,
-                    "kind": kind,
-                    "changed": changed,
-                    "kept": kept,
-                    "people": people,
-                    "focus": [min(xs), min(ys), max(xs) - min(xs), max(ys) - min(ys)],
-                    "counted_twice": twice,
-                    "near_gate": near_gate,
-                },
+    moments = merge_moments(ren, rows, fps_t)
+    for m in moments:
+        m["counted_twice"] = {
+            k: bool(m["changed"].get(k))
+            and bool(
+                crossed(k, m["people"][0]["ids"][k]["before"])
+                & crossed(k, m["people"][0]["ids"][k]["after"])
             )
-        )
-    chosen: list[dict[str, Any]] = []
-    for _, m in sorted(cands, key=lambda c: (-c[0], c[1]["f"])):
-        if len(chosen) >= MAX_MOMENTS:
-            break
-        if all(abs(m["f"] - c["f"]) / fps_t >= MIN_SPACING_S for c in chosen):
-            chosen.append(m)
-    chosen.sort(key=lambda m: m["f"])
+            for k in rows
+        }
     return {
         "gate": {
             "name": gate.name,
@@ -226,7 +129,86 @@ def annotate(data: dict[str, Any]) -> dict[str, Any]:
             "b": list(gate.b),
             "how": "fixed-fraction candidate line most often crossed (both trackers summed)",
         },
+        "rule": RULE,
         "events": events,
-        "moments": chosen,
+        "moments": moments,
         "kind": meta["kind"],
+    }
+
+
+RULE = (
+    "every moment where at least one tracker changed a person's number: a number disappears and a"
+    " new number appears in the same place (box overlap >= 0.3) within 1 s"
+)
+
+
+def renumbers(r: np.ndarray, fps_t: float, window_s: float = 1.0) -> list[dict[str, Any]]:
+    """One tracker's number changes: id A ends, a new id B starts at the same spot within 1 s."""
+    first: dict[int, tuple[int, np.ndarray]] = {}
+    last: dict[int, tuple[int, np.ndarray]] = {}
+    for row in r[np.argsort(r[:, 0], kind="stable")]:
+        tid, f = int(row[1]), int(row[0])
+        first.setdefault(tid, (f, row[2:6]))
+        last[tid] = (f, row[2:6])
+    win = max(1, round(window_s * fps_t))
+    used: set[int] = set()
+    out: list[dict[str, Any]] = []
+    for b, (fb, bb) in sorted(first.items(), key=lambda x: x[1][0]):
+        best, pick = 0.3, None
+        for a, (fa, ba) in last.items():
+            if a == b or a in used or not (fb - win <= fa < fb) or first[a][0] >= fb:
+                continue
+            v = _iou(ba, bb)
+            if v >= best:
+                best, pick = v, a
+        if pick is not None:
+            used.add(pick)
+            out.append({"f": fb, "from": pick, "to": b, "box": bb, "last_f": last[pick][0],
+                        "last_box": last[pick][1]})  # fmt: skip
+    return out
+
+
+def merge_moments(
+    ren: dict[str, list[dict[str, Any]]], rows: dict[str, np.ndarray], fps_t: float
+) -> list[dict[str, Any]]:
+    """One moment per number change; a change on both trackers at the same spot within 1 s is one
+    "both" moment. For the other tracker we record what number it had there before and after."""
+    win = max(1, round(fps_t))
+    taken: set[int] = set()
+    out: list[dict[str, Any]] = []
+    for e in ren["baseline"]:
+        twin = None
+        for j, o in enumerate(ren["ours"]):
+            if j not in taken and abs(o["f"] - e["f"]) <= win and _iou(o["box"], e["box"]) >= 0.3:
+                twin = j
+                break
+        if twin is not None:
+            taken.add(twin)
+        out.append(_moment(e, "baseline", ren["ours"][twin] if twin is not None else None, rows))
+    for j, o in enumerate(ren["ours"]):
+        if j not in taken:
+            out.append(_moment(o, "ours", None, rows))
+    return sorted(out, key=lambda m: m["f"])
+
+
+def _moment(
+    e: dict[str, Any], run: str, twin: dict[str, Any] | None, rows: dict[str, np.ndarray]
+) -> dict[str, Any]:
+    other = "ours" if run == "baseline" else "baseline"
+    ids: dict[str, dict[str, int | None]] = {run: {"before": e["from"], "after": e["to"]}}
+    if twin is not None:
+        ids[other] = {"before": twin["from"], "after": twin["to"]}
+    else:
+        ids[other] = {
+            "before": _match(rows[other], e["last_f"], e["last_box"]),
+            "after": _match(rows[other], e["f"], e["box"]),
+        }
+    f = min(e["f"], twin["f"]) if twin else e["f"]
+    box = [round(float(v)) for v in e["box"]]
+    return {
+        "f": int(f),
+        "kind": "occlusion" if e["f"] - e["last_f"] > 1 else "overlap",
+        "changed": {run: True, other: twin is not None},
+        "people": [{"box": box, "ids": ids}],
+        "focus": box,
     }

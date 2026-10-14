@@ -124,12 +124,20 @@ describe("scenarios helpers", () => {
 });
 
 describe("scenarios tab", () => {
-  it("rail shows two pending benchmark slots then the clips with tags", () => {
+  it("rail puts benchmark cards first (live when exported), then the Pexels clips with tags", () => {
     const sel = vi.fn();
-    render(<ScenarioRail items={[scenario().meta]} selected="subway_turnstile" onSelect={sel} />);
-    expect(screen.getAllByTestId("bench-slot")).toHaveLength(2);
-    expect(screen.getAllByText("Measured · human labels")).toHaveLength(2);
-    expect(screen.getAllByText(/non-commercial/)).toHaveLength(2);
+    render(<ScenarioRail items={[scenario().meta]} bench={["MOT17-09", "MOT17-04"]} selected="bench:MOT17-09" onSelect={sel} />);
+    const cards = screen.getAllByTestId("bench-card");
+    expect(cards).toHaveLength(2);
+    expect(cards[0].textContent).toContain("MOT17-09");
+    expect(cards[0].className).toContain("active");
+    expect(screen.getAllByTestId("bench-slot")).toHaveLength(1); // MOT20-02 not exported
+    expect(screen.getAllByText("Measured · human labels")).toHaveLength(3);
+    expect(screen.getAllByText(/non-commercial/)).toHaveLength(3);
+    const nav = screen.getByRole("navigation");
+    expect(nav.firstElementChild?.textContent).toContain("MOT17-09");
+    fireEvent.click(cards[1]);
+    expect(sel).toHaveBeenCalledWith("bench:MOT17-04");
     expect(screen.getByText("Illustrative · no ground truth")).toBeTruthy();
     fireEvent.click(screen.getByTestId("scenario-card"));
     expect(sel).toHaveBeenCalledWith("subway_turnstile");
@@ -139,9 +147,9 @@ describe("scenarios tab", () => {
       gate: { a: [0, 540], b: [1920, 540] },
       events: { baseline: [], ours: [{ t: "cross", f: 3, id: 1, dir: "in" }] },
       moments: [
-        { f: 40, kind: "overlap", changed: "baseline", kept: "ours", counted_twice: false, focus: [0, 0, 10, 10],
+        { f: 100, kind: "overlap", changed: { baseline: true, ours: false }, counted_twice: { baseline: false, ours: false }, focus: [0, 0, 10, 10],
           people: [{ box: [0, 0, 10, 10], ids: { baseline: { before: 2, after: 9 }, ours: { before: 2, after: 2 } } }] },
-        { f: 120, kind: "occlusion", changed: "ours", kept: "baseline", counted_twice: false, focus: [0, 0, 10, 10],
+        { f: 250, kind: "occlusion", changed: { baseline: true, ours: true }, counted_twice: { baseline: false, ours: false }, focus: [0, 0, 10, 10],
           people: [{ box: [0, 0, 10, 10], ids: { ours: { before: 3, after: 5 }, baseline: { before: 3, after: 3 } } }] },
       ],
     };
@@ -154,10 +162,38 @@ describe("scenarios tab", () => {
     expect(screen.getByTestId("switch-counts").textContent).toContain("ByteTrack 8 · ours 13");
     expect(screen.getByText(/Illustrative only/)).toBeTruthy();
     expect(screen.getByText(/detector yolox_s/)).toBeTruthy();
-    expect(screen.getAllByTestId("moment-dot")).toHaveLength(2);
+    expect(screen.getByTestId("moment-tally").textContent).toBe("ByteTrack changed 2 · ours changed 1 · both: 1");
+    expect(screen.getByText("every moment where at least one tracker changed a person's number.")).toBeTruthy();
+    const ticks = screen.getAllByTestId("moment-tick");
+    expect(ticks).toHaveLength(2);
+    expect(ticks.map((k) => [k.dataset.top, k.dataset.bottom])).toEqual([["true", "false"], ["true", "true"]]);
+    expect(screen.getAllByTestId("clip-tag")[0].textContent).toBe("Illustrative · no ground truth");
+    expect(screen.getAllByTestId("clip-tag")[0].className).toContain("tag-illustrative");
+    expect(screen.getByTestId("moment-progress").textContent).toMatch(/^0 of 2/);
     const base = screen.getByRole("button", { name: "ByteTrack (baseline)" });
     fireEvent.click(base);
     expect(base.getAttribute("aria-pressed")).toBe("true");
+  });
+  it("strip ticks and arrow keys jump between moments", async () => {
+    const guide = {
+      gate: { a: [0, 540], b: [1920, 540] }, events: { baseline: [], ours: [] },
+      moments: [100, 400].map((f) => ({ f, kind: "overlap", changed: { baseline: true, ours: false }, counted_twice: { baseline: false, ours: false },
+        focus: [0, 0, 10, 10], people: [{ box: [0, 0, 10, 10], ids: { baseline: { before: 2, after: 9 }, ours: { before: 2, after: 2 } } }] })),
+    };
+    const d = { ...scenario(), guide };
+    const { fromScenario } = await import("../src/guided/model");
+    const { GuidedPlayer } = await import("../src/guided/GuidedPlayer");
+    const replay = { ...fromScenario(d as never, null), duration: 20 };
+    render(<GuidedPlayer data={replay} />);
+    const seek = screen.getByLabelText("Seek position") as HTMLInputElement;
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    expect(Number(seek.value)).toBeCloseTo((100 - 1) / replay.fps - 1.5, 1);
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    expect(Number(seek.value)).toBeCloseTo((400 - 1) / replay.fps - 1.5, 1);
+    fireEvent.keyDown(window, { key: "ArrowLeft" });
+    expect(Number(seek.value)).toBeCloseTo((100 - 1) / replay.fps - 1.5, 1);
+    fireEvent.click(screen.getAllByTestId("moment-tick")[1]);
+    expect(Number(seek.value)).toBeCloseTo((400 - 1) / replay.fps - 1.5, 1);
   });
   it("tooltips give a one-line definition", () => {
     render(<Term name="IDSW" />);
