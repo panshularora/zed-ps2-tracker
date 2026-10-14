@@ -123,7 +123,10 @@ export async function fetchClips(): Promise<ClipRef[]> {
 export async function fetchClip(file: string): Promise<IndexedClip> {
   const r = await fetch(`/api/viewer-clips/${encodeURIComponent(file)}`);
   if (!r.ok) throw new Error(`clip ${file} → ${r.status}`);
-  return loadClipGz(new Uint8Array(await r.arrayBuffer()));
+  const bytes = new Uint8Array(await r.arrayBuffer());
+  // a static host may already have decoded the gzip (Content-Encoding: gzip); accept plain JSON too
+  if (bytes[0] === 0x1f && bytes[1] === 0x8b) return loadClipGz(bytes);
+  return parseClip(JSON.parse(new TextDecoder().decode(bytes)));
 }
 
 export async function fetchAblation(): Promise<AblationRow[]> {

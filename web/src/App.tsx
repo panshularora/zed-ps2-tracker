@@ -5,6 +5,19 @@ import Overview from "./pages/Overview";
 import Results from "./pages/Results";
 import Scenarios from "./pages/Scenarios";
 import Workstation from "./workstation/Workstation";
+import { useEffect, useState } from "react";
+import { isOffline, onOffline } from "./lib/offline";
+
+export function OfflineBanner() {
+  const [off, setOff] = useState(isOffline());
+  useEffect(() => onOffline(setOff), []);
+  if (!off) return null;
+  return (
+    <div className="offline-banner" role="status" data-testid="offline-banner">
+      Backend offline: showing the committed snapshot (docs/results, viewer/data, web/public/demo). Live tracking runs need <code>make serve</code>.
+    </div>
+  );
+}
 
 export const NAV_GROUPS: { label: string; pages: { to: string; label: string; sub?: boolean }[] }[] = [
   { label: "Story", pages: [{ to: "/dashboard", label: "Overview" }] },
@@ -38,7 +51,7 @@ export default function App() {
           ) : (
             NAV_GROUPS.map((g) => (
               <div key={g.label} className="nav-group" role="group" aria-label={g.label}>
-                <span className="nav-group-label">{g.label}</span>
+                <NavLink to={g.pages[0].to} end className="nav-group-label" data-testid="nav-group" title={`${g.label}: open ${g.pages[0].label}`}>{g.label}</NavLink>
                 {g.pages.map((p) => (
                   <NavLink key={p.to} to={p.to} end={p.to === "/dashboard"} className={({ isActive }) => `${p.sub ? "sub " : ""}${isActive || (p.to === "/dashboard/studio" && path === "/dashboard/compare") ? "active" : ""}`}>
                     {p.label}
@@ -49,6 +62,7 @@ export default function App() {
           )}
         </nav>
       </header>
+      <OfflineBanner />
       <main>
         <Routes>
           <Route path="/" element={<Landing />} />
