@@ -1,7 +1,7 @@
 // Canvas painting for the guided replay (video px coordinates, view rect = zoom).
 import type { Box, RunKey } from "../lib/scenarios";
 import { neutralColor } from "../lib/scenarios";
-import { chipText, trailOf, type ReplayData } from "./model";
+import { chipText, lastSeen, trailOf, type ReplayData } from "./model";
 
 export interface Paint {
   run: RunKey;
@@ -24,12 +24,23 @@ export function paint(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: 
   if (src) ctx.drawImage(src, 0, 0, d.width, d.height);
   const boxes: Box[] = p.f != null ? d.runs[p.run].frames[String(p.f)] ?? [] : [];
   const spotBoxes = boxes.filter((b) => p.spot.has(b[0]));
+  // spotlit people hidden right now: dashed "last seen" ghost, so a disappearance is visible
+  const ghosts: Box[] = [];
+  if (p.f != null) {
+    const here = new Set(boxes.map((b) => b[0]));
+    for (const id of p.spot) {
+      if (here.has(id)) continue;
+      const ls = lastSeen(d.runs[p.run].frames, id, p.f, d.fps);
+      // only if no later number took over this spot (avoid ghosting an id that was renumbered)
+      if (ls && !spotBoxes.some((b) => overlap(b, ls.box) > 0.3)) ghosts.push(ls.box);
+    }
+  }
   if (p.dim > 0) {
     // darken everything except spotlit boxes to ~45 % brightness
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, 0, d.width, d.height);
-    for (const [, x, y, w, h] of spotBoxes) ctx.rect(x + w, y, -w, h); // reverse winding = hole
+    for (const [, x, y, w, h] of [...spotBoxes, ...ghosts]) ctx.rect(x + w, y, -w, h); // reverse winding = hole
     ctx.fillStyle = `rgba(0,0,0,${0.55 * p.dim})`;
     ctx.fill("nonzero");
     ctx.restore();
@@ -67,6 +78,30 @@ export function paint(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: 
       ctx.strokeRect(x, y, w, h);
     }
     ctx.globalAlpha = 1;
+    for (const [id, x, y, w, h] of ghosts) {
+      const c = neutralColor(id);
+      ctx.strokeStyle = c;
+      ctx.lineWidth = 2 * px;
+      ctx.setLineDash([8 * px, 6 * px]);
+      ctx.strokeRect(x, y, w, h);
+      ctx.setLineDash([]);
+      const text = `Person ${id} · hidden`;
+      ctx.font = `700 ${15 * px}px Inter, sans-serif`;
+      const tw = ctx.measureText(text).width + 18 * px, chH = 28 * px;
+      const cx = Math.min(Math.max(vx, x + w / 2 - tw / 2), vx + vw - tw);
+      const cy = Math.max(vy + 2 * px, y - chH - 6 * px);
+      ctx.fillStyle = "rgba(14,16,19,.9)";
+      ctx.beginPath();
+      ctx.roundRect(cx, cy, tw, chH, 4 * px);
+      ctx.fill();
+      ctx.strokeStyle = c;
+      ctx.lineWidth = 1.5 * px;
+      ctx.stroke();
+      ctx.fillStyle = c;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, cx + tw / 2, cy + chH / 2 + px);
+    }
     // spotlit: 2 s trail, 3 px box, 28 px chip above head
     for (const [id, x, y, w, h] of spotBoxes) {
       const c = neutralColor(id);
@@ -113,4 +148,11 @@ export function paintStill(ctx: CanvasRenderingContext2D, cw: number, ch: number
   const x = Math.min(Math.max(0, focus[0] + focus[2] / 2 - w / 2), Math.max(0, d.width - w));
   const y = Math.min(Math.max(0, focus[1] + focus[3] / 2 - h / 2), Math.max(0, d.height - h));
   paint(ctx, cw, ch, d, src, { run, f, view: [x, y, Math.min(w, d.width), Math.min(h, d.height)], spot, dim: 0.6, gatePulse: 0 });
+}
+
+function overlap(a: Box, b: Box): number {
+  const iw = Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]));
+  const ih = Math.max(0, Math.min(a[2] + a[4], b[2] + b[4]) - Math.max(a[2], b[2]));
+  const i = iw * ih, u = a[3] * a[4] + b[3] * b[4] - i;
+  return u > 0 ? i / u : 0;
 }

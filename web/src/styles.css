@@ -313,9 +313,9 @@ td.pending { color: var(--muted); }
 .g-legend { display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 8px 12px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; color: var(--text); }
 .g-legend span { display: inline-flex; align-items: center; gap: 8px; }
 .g-ic { display: inline-flex; align-items: center; justify-content: center; flex: none; font-style: normal; }
-.g-ic-box { width: 14px; height: 18px; border: 2px solid var(--ours); border-radius: 2px; }
+.guided .g-ic-box { width: 14px; height: 18px; border: 2px solid var(--ours); border-radius: 2px; }
 .g-ic-chip { min-width: 20px; height: 18px; padding: 0 4px; background: var(--ours); color: var(--bg); border-radius: 4px; font: 700 12px var(--sans); }
-.g-ic-line { width: 22px; height: 0; border-top: 3px dashed var(--gate); }
+.guided .g-ic-line { width: 22px; height: 0; border-top: 3px dashed var(--gate); }
 .g-main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 12px; align-items: start; }
 @media (max-width: 1000px) { .g-main { grid-template-columns: 1fr; } }
 .g-left { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
@@ -355,3 +355,16 @@ td.pending { color: var(--muted); }
 .g-log li[data-current="true"] button { background: var(--panel-2); }
 .g-log li button:hover { background: var(--panel-2); }
 .g-log .mono { color: var(--muted); margin-right: 4px; }
+/* inside the workstation (.ws resets borders/buttons) */
+.ws .guided .btn, .ws .ws-btn { height: 32px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); color: var(--text); font: 500 13px var(--sans); }
+.ws .guided .btn.on-ours { border-color: var(--ours); color: var(--ours); }
+.ws .guided .btn.on-baseline { border-color: var(--baseline); }
+.ws .guided .g-legend, .ws .guided .g-stage, .ws .guided .g-caption, .ws .guided .g-log, .ws .guided .g-still, .ws .guided .g-runbadge { border: 1px solid var(--border); }
+.ws .guided .g-caption { border-left: 3px solid var(--ours); }
+.ws .guided .g-count { border: 1px solid var(--gate); }
+.ws .guided .g-extra { border: 1px solid var(--muted); }
+.ws .guided .g-dot { border: 1px solid var(--border); }
+.ws .guided .g-log li.key button { border-left: 3px solid var(--ours); }
+.ws .guided .g-log h3 { font-size: 14px; font-weight: 600; margin: 0 12px 8px; }
+.ws .guided .g-log li button { padding: 5px 12px; }
+.g-nomedia { position: absolute; bottom: 10px; left: 10px; color: var(--muted); font-size: 12px; background: rgba(14,16,19,.85); padding: 3px 8px; border-radius: var(--radius); }

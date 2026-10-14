@@ -40,8 +40,8 @@ function matchId(frames: Record<string, Box[]>, f: number, box: number[]): numbe
   for (const b of frames[String(f)] ?? []) { const v = iou(b.slice(1), box); if (v > best) { best = v; id = b[0]; } }
   return id;
 }
-function lastBefore(frames: Record<string, Box[]>, f: number, id: number): number[] | null {
-  for (let k = f - 1; k >= Math.max(1, f - 300); k--) { const b = boxOf(frames, k, id); if (b) return b; }
+function lastBefore(frames: Record<string, Box[]>, f: number, id: number): { box: number[]; f: number } | null {
+  for (let k = f - 1; k >= Math.max(1, f - 300); k--) { const b = boxOf(frames, k, id); if (b) return { box: b, f: k }; }
   return null;
 }
 
@@ -59,7 +59,7 @@ export function fromViewerClips(base: IndexedClip, ours: IndexedClip, labels: Re
       if (!box) continue;
       const otherAfter = matchId(frames[other], e.f, box);
       const prev = lastBefore(frames[run], e.f, e.from);
-      const otherBefore = prev ? matchId(frames[other], e.f - 1, prev) ?? otherAfter : otherAfter;
+      const otherBefore = prev ? matchId(frames[other], prev.f, prev.box) : null;
       const crossed = (id: number) => events[run].filter((x) => x.t === "cross" && x.id === id).map((x) => (x as { dir: string }).dir);
       moments.push({
         f: e.f, kind: "occlusion", changed: run, kept: null, verified: true,

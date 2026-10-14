@@ -166,8 +166,8 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
   let caption: string;
   if (paused?.kind === "ask" && m) caption = askText(m);
   else if (paused?.kind === "answer" && m) caption = resultText(m, data.kind, names);
-  else if (stake != null && t - timeOfFrame(data, data.moments[stake].f) < 4) caption = STAKE_TEXT;
   else if (!guided) caption = "Free play: no pauses. Switch on Guided to stop at the key moments.";
+  else if (stake != null && t - timeOfFrame(data, data.moments[stake].f) < 4) caption = STAKE_TEXT;
   else if (data.moments.length === 0) caption = "The two trackers agree on this clip. Watch the numbers stay the same as people cross the line.";
   else {
     const next = data.moments.findIndex((x) => timeOfFrame(data, x.f) > t);
@@ -189,6 +189,7 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
               <span className="g-count"><b>OUT</b> {counts.out}</span>
               {extra > 0 && <span className="g-extra" data-testid="extra-count">+{extra} extra (counted twice)</span>}
             </div>
+            {!data.videoUrl && <span className="g-nomedia">No video frames on this server: boxes only.</span>}
             <span className={`g-runbadge g-run-${run}`}>{data.runs[run].label}</span>
           </div>
           <div className="g-caption" data-testid="guided-caption" aria-live="polite">

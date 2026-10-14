@@ -148,8 +148,10 @@ export function zoomAt(stops: Stop[], t: number): { k: number; index: number | n
 }
 
 /** View rectangle (video px) for zoom k toward a 2x crop centred on `focus`, clamped to the frame. */
-export function viewRect(W: number, H: number, focus: number[] | null, k: number, zoom = 2): [number, number, number, number] {
+export function viewRect(W: number, H: number, focus: number[] | null, k: number, maxZoom = 2): [number, number, number, number] {
   if (!focus || k <= 0) return [0, 0, W, H];
+  // up to 2x, but never so far that the people involved no longer fit (with some margin)
+  const zoom = Math.max(1, Math.min(maxZoom, W / (focus[2] * 2.2 || 1), H / (focus[3] * 1.4 || 1)));
   const z = 1 + (zoom - 1) * k;
   const w = W / z, h = H / z;
   const cx = focus[0] + focus[2] / 2, cy = focus[1] + focus[3] / 2;
@@ -268,4 +270,13 @@ export function trailOf(frames: Record<string, Box[]>, id: number, f: number, fp
     if (b) pts.push([b[1] + b[3] / 2, b[2] + b[4], 1 - (f - k) / n]);
   }
   return pts;
+}
+
+/** Last box of `id` within `spanS` before f, for a "last seen here" ghost while hidden. */
+export function lastSeen(frames: Record<string, Box[]>, id: number, f: number, fps: number, spanS = 1.5): { box: Box; f: number } | null {
+  for (let k = f - 1; k >= Math.max(1, f - Math.round(spanS * fps)); k--) {
+    const b = frames[String(k)]?.find((r) => r[0] === id);
+    if (b) return { box: b, f: k };
+  }
+  return null;
 }

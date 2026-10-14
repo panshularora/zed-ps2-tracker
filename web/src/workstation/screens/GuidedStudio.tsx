@@ -52,7 +52,7 @@ export function GuidedStudio({ clips, onNext }: { clips: IndexedClip[]; onNext: 
             {index.map((m) => <option key={m.id} value={m.id}>{m.title} · illustrative</option>)}
           </select>
         </label>
-        <button type="button" className="btn ml-auto" onClick={onNext}>Next: compare side by side ▸</button>
+        <button type="button" className="ws-btn ml-auto" onClick={onNext}>Next: compare side by side ▸</button>
       </div>
       {data ? <GuidedPlayer key={data.id} data={data} /> : <p className="text-mute">Loading clip…</p>}
       {data && data.kind === "illustrative" && (

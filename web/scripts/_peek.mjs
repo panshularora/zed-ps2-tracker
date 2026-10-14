@@ -1,0 +1,10 @@
+import { chromium } from "playwright-core";
+const br=await chromium.launch({executablePath:"/usr/bin/google-chrome",args:["--autoplay-policy=no-user-gesture-required"]});
+const p=await br.newPage({viewport:{width:1440,height:1000}});
+p.on("pageerror",e=>console.log("ERR",e.message)); p.on("console",m=>m.type()==="error"&&console.log("CON",m.text()));
+await p.goto("http://localhost:5180/dashboard/scenarios",{waitUntil:"networkidle"});
+await p.getByText("Counting at a gate").click();
+await p.waitForTimeout(1500); await p.screenshot({path:"/tmp/peek1.png"});
+await p.waitForSelector("text=Continue",{timeout:20000}); await p.waitForTimeout(400); await p.screenshot({path:"/tmp/peek2.png"});
+await p.click("text=Continue"); await p.waitForSelector("[data-testid=guided-stills]",{timeout:20000}); await p.waitForTimeout(400); await p.screenshot({path:"/tmp/peek3.png"});
+await br.close();
