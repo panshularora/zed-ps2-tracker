@@ -10,7 +10,7 @@ import { Tag } from "./Tag";
 
 const AUTO_RESUME_MS = 4000;
 /** header + title + legend + caption + tally/strip + controls: keep them on screen at ~768 px */
-const CHROME_PX = 400;
+const CHROME_PX = 470;
 
 export function Legend() {
   return (
