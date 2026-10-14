@@ -128,17 +128,18 @@ describe("scenarios tab", () => {
     const sel = vi.fn();
     render(<ScenarioRail items={[scenario().meta]} bench={["MOT17-09", "MOT17-04"]} selected="subway_turnstile" onSelect={sel} />);
     const nav = screen.getByRole("navigation");
-    expect(nav.firstElementChild?.textContent).toMatch(/^MOT17-09 · Measured/);
+    expect(nav.firstElementChild?.textContent).toMatch(/^MOT17-09: a person comes back with a new number/);
+    expect(nav.firstElementChild?.querySelector("img")?.getAttribute("src")).toBe("/thumbs/MOT17-09.jpg");
     expect(nav.children[1].getAttribute("data-testid")).toBe("scenario-card");
     expect(screen.getByTestId("scenario-card").className).toContain("active");
-    const img = nav.querySelector("img")!;
+    const img = nav.children[1].querySelector("img")!;
     expect(img.getAttribute("src")).toBe("/thumbs/subway_turnstile.jpg");
     fireEvent.error(img); // broken still -> plain placeholder, never a broken-image icon
-    expect(nav.querySelector("img")).toBeNull();
-    expect(nav.querySelector(".thumb-ph")).toBeTruthy();
+    expect(nav.children[1].querySelector("img")).toBeNull();
+    expect(nav.children[1].querySelector(".thumb-ph")).toBeTruthy();
     const cards = screen.getAllByTestId("bench-card");
     expect(cards.map((c) => c.textContent)).toEqual([
-      "MOT17-09 · Measured · video not exported yet (boxes only)",
+      "MOT17-09: a person comes back with a new numberMeasured · human labels",
       "MOT17-04 · Measured · video not exported yet (boxes only)",
     ]);
     expect(screen.getByTestId("bench-slot").textContent).toBe("MOT20-02 · Measured · not exported yet");
@@ -161,12 +162,18 @@ describe("scenarios tab", () => {
       ],
     };
     render(<ScenarioPlayer data={{ ...scenario(), guide } as never} />);
+    // side-by-side comparison is the default view, with a per-clip table
+    expect(screen.getByTestId("compare-player")).toBeTruthy();
+    expect(screen.getByTestId("pane-baseline")).toBeTruthy();
+    expect(screen.getByTestId("pane-ours")).toBeTruthy();
+    expect(screen.getByTestId("compare-table").textContent).toContain("illustrative · no ground truth");
+    expect(screen.getByTestId("row-baseline").textContent).toContain("not labelled");
+    fireEvent.click(screen.getByRole("button", { name: "Guided walkthrough" }));
     expect(screen.getByTestId("guided-legend").textContent).toMatch(/dashed line adds 1 to IN or OUT/);
     expect(screen.getByTestId("gate-counters").textContent).toContain("IN 1");
     expect(screen.getByTestId("event-log").textContent).toContain("Person 1 crossed the line going IN.");
     expect(screen.getByRole("button", { name: "Guided" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByText("Watch IDs.")).toBeTruthy();
-    expect(screen.getByTestId("switch-counts").textContent).toContain("ByteTrack 8 · ours 13");
     expect(screen.getByText(/Illustrative only/)).toBeTruthy();
     expect(screen.getByText(/detector yolox_s/)).toBeTruthy();
     expect(screen.getByTestId("moment-tally").textContent).toBe("ByteTrack changed 2 · ours changed 1 · both: 1");

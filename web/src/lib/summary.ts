@@ -163,3 +163,69 @@ export function methodResult(s: SummaryFile | null): MethodResult {
     pending: !fin(k0) || !fin(k5),
   };
 }
+
+// ---- overall comparison across datasets (summary.json only) ---------------------------------
+export type TrackerKey = "bytetrack" | "botsort" | "ours";
+export const TRACKERS: { key: TrackerKey; label: string }[] = [
+  { key: "bytetrack", label: "ByteTrack" },
+  { key: "botsort", label: "BoT-SORT" },
+  { key: "ours", label: "BoT-SORT + visibility (ours)" },
+];
+export type CellTag = "provisional" | "not run yet" | "ran, no metric in summary.json" | "no ground truth" | "excluded";
+export interface Cell { tag: CellTag; values?: { label: string; value: string }[] }
+export interface DatasetRow { id: string; dataset: string; status: string; cells: Record<TrackerKey, Cell> }
+
+const all = (c: Cell): Record<TrackerKey, Cell> => ({ bytetrack: c, botsort: c, ours: c });
+
+/** Rows for MOT17, MOT20, DanceTrack, Pexels and the synthetic scene. Every value is read from
+ *  summary.json (reproduction block or the flat `metrics` map "<dataset>.<tracker>.<METRIC>");
+ *  anything absent is tagged, never filled in. `synthetic` is an optional seeded backend run. */
+export function datasetRows(s: SummaryFile | null, synthetic?: { seed: number; rows: Record<TrackerKey, { idChanges: number; counted: number; truth: number } | undefined> } | null): DatasetRow[] {
+  const ran = s?.ran ?? [];
+  const waiting = s?.waiting ?? [];
+  const metric = (ds: string, t: TrackerKey): Cell | null => {
+    const vals = ["HOTA", "IDF1", "MOTA", "IDSW"].flatMap((m) => {
+      const v = s?.metrics?.[`${ds}.${t}.${m}`];
+      return fin(v) ? [{ label: m, value: m === "IDSW" ? String(Math.round(v)) : v.toFixed(1) }] : [];
+    });
+    return vals.length ? { tag: "provisional", values: vals } : null;
+  };
+  const row = (id: string, dataset: string, prefix: string): DatasetRow => {
+    const runs = ran.filter((r) => r.id.toLowerCase().startsWith(prefix));
+    const clean = runs.filter((r) => !r.saw_eval_half);
+    const isWaiting = waiting.some((w) => w.toLowerCase().startsWith(prefix));
+    let status: string;
+    if (clean.length) status = `ran (${clean.length} run${clean.length > 1 ? "s" : ""}${runs.length > clean.length ? `, ${runs.length - clean.length} leaked, excluded` : ""})`;
+    else if (runs.length) status = "leaked, excluded";
+    else status = isWaiting ? `not run yet: ${waiting.find((w) => w.toLowerCase().startsWith(prefix))?.split(": ").slice(1).join(": ")}` : "not run yet";
+    const base: Cell = clean.length ? { tag: "ran, no metric in summary.json" } : { tag: runs.length ? "excluded" : "not run yet" };
+    const cells = all(base);
+    for (const t of TRACKERS) cells[t.key] = metric(id, t.key) ?? base;
+    return { id, dataset, status, cells };
+  };
+  const mot17 = row("mot17", "MOT17 val-half", "mot17");
+  const rep = s?.reproduction?.ours;
+  if (rep && mot17.cells.bytetrack.tag !== "provisional") {
+    const v = [
+      ...(fin(rep.MOTA) ? [{ label: "MOTA", value: rep.MOTA.toFixed(1) }] : []),
+      ...(fin(rep.IDF1) ? [{ label: "IDF1", value: rep.IDF1.toFixed(1) }] : []),
+      ...(fin(rep.IDSW) ? [{ label: "IDSW", value: String(rep.IDSW) }] : []),
+    ];
+    if (v.length) mot17.cells.bytetrack = { tag: "provisional", values: v };
+  }
+  const syn: DatasetRow = { id: "synthetic", dataset: "Synthetic gate scene", status: "not run yet", cells: all({ tag: "not run yet" }) };
+  if (synthetic) {
+    syn.status = `seeded backend run, seed ${synthetic.seed} (exact ground truth)`;
+    for (const t of TRACKERS) {
+      const r = synthetic.rows[t.key];
+      if (r) syn.cells[t.key] = { tag: "provisional", values: [{ label: "ID changes", value: String(r.idChanges) }, { label: "counted / true", value: `${r.counted} / ${r.truth}` }] };
+    }
+  }
+  return [
+    mot17,
+    row("mot20", "MOT20 val-half", "mot20"),
+    row("dancetrack", "DanceTrack val", "dancetrack"),
+    { id: "pexels", dataset: "Pexels demo clips", status: "illustrative only", cells: all({ tag: "no ground truth" }) },
+    syn,
+  ];
+}
