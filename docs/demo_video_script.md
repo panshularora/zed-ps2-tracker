@@ -38,7 +38,7 @@ the swap. Phase-2 v1 was a no-go (`docs/results/go_no_go.md`).
 The `ambiguous_hold` card in shot 6 does **not** depend on the delayed decision (it comes from
 visibility/score state, `docs/integration.md` §2). It can always be shown.
 
-**Partly built.** The web app's Demo page (`make demo`, `web/`) now has the gate-line pulse
+**Partly built.** The web app's live run panel on the Scenarios tab (`make demo`, `web/`) now has the gate-line pulse
 (shot 2), live in/out counters, a 300 ms ring when a track comes back with its ID, an event log
 and a scrubber with event ticks, on real (face-blurred) footage. Still missing: the swap flash
 (shot 3), per-tracker live ID-switch counters (shot 5) and the sliding JSON cards (shot 6).

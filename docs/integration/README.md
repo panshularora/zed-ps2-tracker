@@ -10,7 +10,7 @@ The integration proposal is [../integration.md](../integration.md); the demo vid
 | **PPT** | the presentation deck (problem → method → results with stress bins → gate demo → integration) |
 | **Explainer video** | a 2–3 min narrated overview |
 | **Code-walkthrough video** | a guided tour of `tracker/`, `eval/` and the Stage A/B split |
-| **AI demo** | built: the web app's Demo page (`web/`, `make demo`) on face-blurred Pexels clips, CPU detector + tracker; a recording on the consented gate clip still waits for that clip |
+| **AI demo** | built: the web app's Scenarios tab (`web/`, `make demo`; live run panel) on face-blurred Pexels clips, CPU detector + tracker; a recording on the consented gate clip still waits for that clip |
 
 Licensing constraint for anything product-facing: see [../licenses.md](../licenses.md). The
 benchmark weights are trained on non-commercial data and must be replaced before production.

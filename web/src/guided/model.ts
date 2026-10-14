@@ -227,7 +227,7 @@ export function videoSources(d: Pick<ReplayData, "videoUrl" | "demoUrl">): strin
   return [d.videoUrl, d.demoUrl].filter((x): x is string => !!x);
 }
 
-export const MISSING_CLIP_TEXT = "Clip not downloaded on this machine. In ~/zed-ps2-tracker run: make clips blur  then reload.";
+export const MISSING_CLIP_TEXT = "Clip not downloaded on this machine. In the repo folder run make clips blur, then reload.";
 export const NO_EXPORT_TEXT = "Video not exported yet — showing boxes only";
 /** Banner for the schematic fallback, or null when video frames are showing. */
 export function fallbackText(d: Pick<ReplayData, "kind" | "videoUrl" | "demoUrl">, failed: boolean): string | null {

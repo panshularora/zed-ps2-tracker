@@ -58,7 +58,7 @@ export function OverviewView({ data }: { data: OverviewData | null }) {
       </p>
 
       <div className="cta">
-        <Link to="/dashboard/demo" className="btn primary">
+        <Link to="/dashboard/scenarios" className="btn primary">
           Open the demo
         </Link>
       </div>

@@ -47,7 +47,11 @@ p { margin: 0; }
 .brand-mark { width: 18px; height: 18px; border: 2px solid var(--ours); border-radius: 2px; position: relative; }
 .brand-mark::after { content: ""; position: absolute; left: -5px; right: -5px; bottom: 3px; height: 2px; background: var(--gate); }
 .brand small { color: var(--muted); font-weight: 400; letter-spacing: 0; }
-.nav { display: flex; gap: 4px; }
+.nav { display: flex; gap: 14px; align-items: center; }
+.nav-group { display: flex; gap: 2px; align-items: center; padding-left: 12px; border-left: 1px solid var(--border); }
+.nav-group:first-child { border-left: 0; padding-left: 0; }
+.nav-group-label { color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-right: 4px; }
+.nav a.sub { font-size: 12px; padding: 6px 8px; }
 .nav a {
   color: var(--muted); padding: 6px 12px; border-radius: var(--radius); font-weight: 500;
 }

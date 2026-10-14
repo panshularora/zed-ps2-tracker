@@ -341,7 +341,10 @@ The project's own code is licensed under the **Apache License 2.0**: see [LICENS
 Copyright 2026 Panshul Arora. Ported code from ByteTrack, OC-SORT, BoT-SORT, Deep OC-SORT and
 Hybrid-SORT, the vendored TrackEval, and the CMC files are all MIT. Their notices are kept in
 [NOTICE](NOTICE). The Apache-2.0 licence does not cover the datasets or the detector/re-ID
-weights, which remain **non-commercial research use only**.
+weights, which remain **non-commercial research use only**. Nor does it cover the demo clips in
+`web/public/demo/` and stills in `web/public/thumbs/`: those are Pexels footage under the Pexels
+License, listed with their sources in [web/public/demo/LICENSE_CLIPS.md](web/public/demo/LICENSE_CLIPS.md);
+do not reuse them as stock.
 
 ## CI
 

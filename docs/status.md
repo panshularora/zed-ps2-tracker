@@ -12,7 +12,7 @@ deliberately not attempted on CPU; the web app labels them "pending DGX run".
 | Demo / deploy placeholder | `deploy/README.md` | `docker-compose.yml` (backend + nginx frontend), `Dockerfile` builds the web app too |
 | Video jobs on CPU (detector + tracker on a real clip) | roadmap phase 3 "live pipeline prototype" | `serve/`: uploads, background jobs with progress and cancel, MOT tracks, gate events, recoveries, per-job metrics, benchmarks API; YOLOX ONNX on onnxruntime |
 | Demo footage | `docs/research/video_and_data_sources.md` (Pexels links) | `make models clips blur`: sha256-checked models, 5 Pexels clips, face-blurred copies (YuNet + head regions); only blurred copies are served; credits in `NOTICE` and `docs/licenses.md` |
-| Presentation-mode overlays in `docs/demo_video_script.md` ("not built yet") | gate-line pulse, counters, event cards | partly: the web Demo page has the gate pulse, live in/out counters, the recovery ring and an event log. Still missing: swap flash, per-tracker ID-switch counters, sliding JSON cards (composite in editing, or add later) |
+| Presentation-mode overlays in `docs/demo_video_script.md` ("not built yet") | gate-line pulse, counters, event cards | partly: the live run panel on the Scenarios tab has the gate pulse, live in/out counters, the recovery ring and an event log. Still missing: swap flash, per-tracker ID-switch counters, sliding JSON cards (composite in editing, or add later) |
 | CI for the new code | `ci/github-actions.yml` | moved to `docs/ci/github-actions.yml` with `web` and `docker` jobs; still needs adding as `.github/workflows/ci.yml` by hand (token lacks `workflow` scope) |
 | `make demo`, `make web`, `make test`, README quickstart with screenshots | task brief | done; screenshots in `docs/media/web_*.jpg` from a real turnstile run |
 
@@ -42,6 +42,6 @@ GPU stage has run yet**, so everything in the next table is still open.
 |---|---|
 | Live RTSP / webcam stream prototype | The CPU box runs YOLOX-S at ~16 fps on 1080p, so "live" would mean dropped frames or a toy model; the job service processes clips at the same per-frame cost and is honest about it. A stream adapter is a small wrapper over `serve/pipeline.py` once a GPU or edge box is available |
 | Tailgate / fare-evasion / "swap" alerts on the demo clips | The Pexels clips have no consent from the people in them; they are shown with neutral styling only (IDs, crossings, counts, recoveries). Alert styling exists only for uploads whose uploader ticks "people in my video consented" |
-| Benchmark numbers from the demo clips | No ground truth; the Demo page reports behaviour (tracks, recoveries, crossings, CPU time), never accuracy |
+| Benchmark numbers from the demo clips | No ground truth; the live run panel reports behaviour (tracks, recoveries, crossings, CPU time), never accuracy |
 | Explainer / code-walkthrough videos, PPT | Need the GPU numbers and a human narrator; scripts and outline exist (`docs/demo_video_script.md`, `docs/deck_outline.md`) |
 | Recording the consented gate clip | Needs a camera, a gate and consent (Panshul) |

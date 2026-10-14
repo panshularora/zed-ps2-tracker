@@ -283,7 +283,7 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
         <aside className="g-log" aria-label="What's happening">
           <h3>What&apos;s happening <small className="muted">({names[run]})</small></h3>
           <ol ref={logRef} data-testid="event-log">
-            {log.length === 0 && <li className="muted">Nothing yet.</li>}
+            {log.length === 0 && <li className="muted">No events yet.</li>}
             {log.map((l, i) => {
               const past = f != null && l.f <= f;
               const current = past && (i === log.length - 1 || log[i + 1].f > (f ?? 0));

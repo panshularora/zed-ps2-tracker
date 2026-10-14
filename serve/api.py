@@ -107,10 +107,21 @@ class Service:
             self._info[key] = probe(path)
         return self._info[key]
 
+    def clip_file(self, c: DemoClip) -> tuple[Path, bool] | None:
+        """The blurred full clip, else the committed blurred demo cut; (path, is_demo_cut)."""
+        full = self.settings.clip_dir / c.file
+        if full.exists():
+            return full, False
+        cut = self.settings.demo_cut_dir / f"{c.id}.mp4"
+        if cut.exists():
+            return cut, True
+        return None
+
     def clip_record(self, c: DemoClip) -> dict[str, Any] | None:
-        path = self.settings.clip_dir / c.file
-        if not path.exists():
+        found = self.clip_file(c)
+        if found is None:
             return None
+        path, demo_cut = found
         i = self.info(path)
         return {
             "id": c.id,
@@ -131,6 +142,7 @@ class Service:
             "duration_s": round(i.duration_s, 2),
             "video_url": f"/api/clips/{c.id}/video",
             "poster_url": f"/api/clips/{c.id}/poster.jpg",
+            "demo_cut": demo_cut,
         }
 
     def upload_dir(self, clip_id: str) -> Path:
@@ -186,7 +198,10 @@ class Service:
             return p
         rec = self.clip(clip_id)
         c = next(c for c in self.manifest() if c.id == rec["id"])
-        return self.settings.clip_dir / c.file
+        found = self.clip_file(c)
+        if found is None:
+            raise ApiError(404, "clip_missing", f"clip {clip_id} has no video on this server")
+        return found[0]
 
     def poster(self, clip_id: str) -> Path:
         import cv2

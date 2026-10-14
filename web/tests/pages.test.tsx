@@ -13,7 +13,7 @@ describe("overview", () => {
     expect(tiles[0]).toContain("59.8");
     expect(tiles[1]).toContain("180");
     expect(tiles[2]).toContain("2.27");
-    expect(screen.getByRole("link", { name: "Open the demo" })).toHaveProperty("href", expect.stringContaining("/demo"));
+    expect(screen.getByRole("link", { name: "Open the demo" })).toHaveProperty("href", expect.stringContaining("/scenarios"));
   });
   it("shows an em dash when nothing is measured", () => {
     render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><OverviewView data={{ bench: null, still: null }} /></MemoryRouter>);

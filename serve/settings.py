@@ -46,6 +46,8 @@ def _float(name: str, default: float) -> float:
 class Settings:
     data_dir: Path = ROOT / "data" / "serve"
     clip_dir: Path = ROOT / "data" / "demo" / "blurred"
+    # committed 720p face-blurred cuts (make_demo_pack.sh) for clips missing from clip_dir
+    demo_cut_dir: Path = ROOT / "web" / "public" / "demo"
     clip_manifest: Path = ROOT / "configs" / "demo" / "clips.yaml"
     model_dir: Path = ROOT / "data" / "models"
     results_dir: Path = ROOT / "docs" / "results"
@@ -65,6 +67,7 @@ class Settings:
         return cls(
             data_dir=_path("ZED_DATA_DIR", d.data_dir),
             clip_dir=_path("ZED_CLIP_DIR", d.clip_dir),
+            demo_cut_dir=_path("ZED_DEMO_CUT_DIR", d.demo_cut_dir),
             clip_manifest=_path("ZED_CLIP_MANIFEST", d.clip_manifest),
             model_dir=_path("ZED_MODEL_DIR", d.model_dir),
             results_dir=_path("ZED_RESULTS_DIR", d.results_dir),
