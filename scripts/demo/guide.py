@@ -75,6 +75,12 @@ def _box(r: np.ndarray, f: int, tid: int) -> np.ndarray | None:
     return m[0, 2:6] if len(m) else None
 
 
+def _seen(r: np.ndarray, lo: int, hi: int, tid: int) -> bool:
+    """Is `tid` on screen in the 1.2 s before the change (when the replay slows down)?"""
+    m = (r[:, 1] == tid) & (r[:, 0] >= lo) & (r[:, 0] <= hi)
+    return bool(m.any())
+
+
 def _iou(a: np.ndarray, b: np.ndarray) -> float:
     iw = max(0.0, min(a[0] + a[2], b[0] + b[2]) - max(a[0], b[0]))
     ih = max(0.0, min(a[1] + a[3], b[1] + b[3]) - max(a[1], b[1]))
@@ -156,6 +162,10 @@ def annotate(data: dict[str, Any]) -> dict[str, Any]:
             else (d["ours_from"], d["ours_to"])
         )
         kept_id = d["ours_id"] if kept == "ours" else d["baseline_id"]
+        # the viewer must be able to see the person before the change, on both trackers
+        lo = max(1, f - round(1.2 * fps_t))
+        if not (_seen(rows[changed], lo, f - 1, frm) and _seen(rows[kept], lo, f - 1, kept_id)):
+            continue
         people = [
             {
                 "box": [round(float(v)) for v in box],
