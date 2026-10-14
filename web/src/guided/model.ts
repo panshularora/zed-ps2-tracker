@@ -129,12 +129,13 @@ export const stopKey = (s: Stop) => `${s.kind}:${s.index}`;
 
 /** Moment whose spotlight window contains t: from the slow-down to 1.5 s after the answer. */
 export function activeMoment(stops: Stop[], t: number): number | null {
+  let out: number | null = null; // the latest one whose window has started (moments can overlap)
   for (const s of stops) {
     if (s.kind !== "ask") continue;
     const ans = stops.find((x) => x.kind === "answer" && x.index === s.index)!;
-    if (t >= s.t - SLOW_LEAD_S && t <= ans.t + 1.5) return s.index;
+    if (t >= s.t - SLOW_LEAD_S && t <= ans.t + 1.5) out = s.index;
   }
-  return null;
+  return out;
 }
 
 const ease = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));

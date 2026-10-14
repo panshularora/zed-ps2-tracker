@@ -176,7 +176,13 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
   function seek(s: number) {
     const x = Math.max(0, Math.min(data.duration, s));
     // stops at or after the target play again
-    for (const st of stops) if (st.t >= x - 1e-3) done.current.delete(stopKey(st));
+    // moments whose question is already behind x are skipped whole (no stray answer pause);
+    // everything from x on plays again
+    const askT = new Map(stops.filter((st) => st.kind === "ask").map((st) => [st.index, st.t]));
+    for (const st of stops) {
+      if ((askT.get(st.index) ?? st.t) < x - 1e-3) done.current.add(stopKey(st));
+      else done.current.delete(stopKey(st));
+    }
     prevT.current = x;
     clock.current = x;
     if (video.current) video.current.currentTime = x + off;
