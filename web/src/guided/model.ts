@@ -17,11 +17,12 @@ export interface PersonIds { before: number | null; after: number | null }
 export interface Moment {
   f: number;
   kind: "overlap" | "occlusion" | "gate";
-  changed: RunKey | null; // run that changed the number (null: both kept)
-  kept: RunKey | null;
+  /** which tracker(s) changed this person's number here (the moment rule: at least one did) */
+  changed: Record<RunKey, boolean>;
   people: { box: number[]; ids: Partial<Record<RunKey, PersonIds>> }[];
   focus: number[]; // x, y, w, h (video px)
-  counted_twice: boolean;
+  /** old and new number of that tracker both crossed the gate the same way */
+  counted_twice: Record<RunKey, boolean>;
   near_gate?: boolean;
   /** measured clips only: the change was checked against human labels */
   verified?: boolean;
@@ -44,6 +45,8 @@ export interface ReplayData {
   events: Record<RunKey, GEvent[]>;
   moments: Moment[];
   credit?: string;
+  /** one-line framing shown under the title */
+  caption?: string;
 }
 
 export const SHORT: Record<RunKey, string> = { baseline: "ByteTrack", ours: "ours" };
@@ -61,6 +64,7 @@ export function fromScenario(d: ScenarioData & { guide?: Guide }, videoUrl: stri
   return {
     id: m.id,
     title: m.title,
+    caption: m.caption,
     kind: m.kind,
     width: m.width,
     height: m.height,
@@ -174,7 +178,7 @@ export function countsAt(events: GEvent[], f: number | null): { in: number; out:
 
 /** Extra counts on `run` so far: moments where its new number crossed again (counted twice). */
 export function extraCountsAt(d: Pick<ReplayData, "moments" | "fps">, run: RunKey, t: number): number {
-  return d.moments.filter((m) => m.counted_twice && m.changed === run && t >= timeOfFrame(d, m.f) + ANSWER_AFTER_S).length;
+  return d.moments.filter((m) => m.counted_twice[run] && m.changed[run] && t >= timeOfFrame(d, m.f) + ANSWER_AFTER_S).length;
 }
 
 // ---- words --------------------------------------------------------------------------------
@@ -227,6 +231,7 @@ export function askText(m: Moment): string {
 export function resultText(m: Moment, kind: Kind, names: Record<RunKey, string> = NAMES): string {
   const b = answerFor(m, "baseline"), o = answerFor(m, "ours");
   if (kind === "measured" && m.verified) return `Checked against human labels: ${names.baseline} ${b}; ${names.ours} ${o}.`;
+  if (m.changed.baseline && m.changed.ours) return `Both trackers changed this person's number here: ${names.baseline} ${b}, ${names.ours} ${o}.`;
   return `The two trackers disagree here: ${names.baseline} ${b}, ${names.ours} ${o}.`;
 }
 
@@ -278,5 +283,53 @@ export function lastSeen(frames: Record<string, Box[]>, id: number, f: number, f
     const b = frames[String(k)]?.find((r) => r[0] === id);
     if (b) return { box: b, f: k };
   }
+  return null;
+}
+
+// ---- tally, moment strip, stepping ---------------------------------------------------------
+export const MOMENT_RULE = "every moment where at least one tracker changed a person's number.";
+
+export interface Tally { baseline: number; ours: number; both: number; total: number }
+/** Totals per tracker (a "both" moment counts for each) plus how many were both. */
+export function tally(moments: Pick<Moment, "changed">[]): Tally {
+  let b = 0, o = 0, n = 0;
+  for (const m of moments) {
+    if (m.changed.baseline) b++;
+    if (m.changed.ours) o++;
+    if (m.changed.baseline && m.changed.ours) n++;
+  }
+  return { baseline: b, ours: o, both: n, total: moments.length };
+}
+export function tallyText(t: Tally, names: Record<RunKey, string> = NAMES): string {
+  return `${names.baseline} changed ${t.baseline} · ${names.ours} changed ${t.ours} · both: ${t.both}`;
+}
+
+export interface Tick { index: number; x: number; top: boolean; bottom: boolean; label: string }
+/** One tick per moment at its time (0..1 of duration): top half = baseline, bottom = ours. */
+export function stripTicks(d: Pick<ReplayData, "moments" | "fps" | "duration">, names: Record<RunKey, string> = NAMES): Tick[] {
+  return d.moments.map((m, index) => {
+    const who = m.changed.baseline && m.changed.ours ? "both trackers" : m.changed.baseline ? names.baseline : names.ours;
+    return {
+      index,
+      x: d.duration > 0 ? Math.min(1, Math.max(0, timeOfFrame(d, m.f) / d.duration)) : 0,
+      top: m.changed.baseline,
+      bottom: m.changed.ours,
+      label: `Moment ${index + 1}: ${who} changed the number`,
+    };
+  });
+}
+
+export const SEEK_LEAD_S = 1.5;
+/** Moment to jump to from time t: dir +1 = next one after t, -1 = the one before the current. */
+export function stepMoment(d: Pick<ReplayData, "moments" | "fps">, t: number, dir: 1 | -1): number | null {
+  const ts = d.moments.map((m) => timeOfFrame(d, m.f));
+  if (!ts.length) return null;
+  // the moment we are "at" is the one whose lead-in we are inside
+  const eps = SEEK_LEAD_S + 0.05;
+  if (dir > 0) {
+    const i = ts.findIndex((x) => x - eps > t);
+    return i >= 0 ? i : null;
+  }
+  for (let i = ts.length - 1; i >= 0; i--) if (ts[i] - eps < t - 0.3) return i;
   return null;
 }

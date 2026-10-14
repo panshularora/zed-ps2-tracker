@@ -4,10 +4,11 @@ import { paint, paintStill } from "./draw";
 import {
   activeMoment, answerFor, askText, countsAt, eventLog, extraCountsAt, frameAtTime, recentCrossers,
   resultText, schedule, spotlightIds, STAKE_TEXT, stopCrossed, stopKey, timeOfFrame, viewRect, zoomAt,
-  rateAt, type ReplayData, type Stop,
+  rateAt, type ReplayData, type Stop, MOMENT_RULE, SEEK_LEAD_S, stepMoment, stripTicks, tally, tallyText, type Tick,
 } from "./model";
+import { Tag } from "./Tag";
 
-const AUTO_RESUME_MS = 6000;
+const AUTO_RESUME_MS = 4000;
 
 export function Legend() {
   return (
@@ -35,8 +36,10 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
   const done = useRef(new Set<string>());
   const prevT = useRef(0);
   const clock = useRef(0); // fallback clock when there is no video
+  const tl = useMemo(() => tally(data.moments), [data]);
   const names = { baseline: data.runs.baseline.short, ours: data.runs.ours.short };
   const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
+  const ticks = useMemo(() => stripTicks(data, { baseline: cap(names.baseline), ours: names.ours }), [data, names.baseline, names.ours]);
   const log = useMemo(() => eventLog(data, run), [data, run]);
   const differ = useMemo(() => {
     if (data.moments.length > 0) return true;
@@ -144,6 +147,27 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
     if (el && logRef.current) logRef.current.scrollTop = Math.max(0, el.offsetTop - logRef.current.offsetTop - 60);
   }, [f]);
 
+  function seekMoment(i: number) {
+    seek(Math.max(0, timeOfFrame(data, data.moments[i].f) - SEEK_LEAD_S));
+  }
+
+  const tRef = useRef(0);
+  tRef.current = t;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      const el = e.target as HTMLElement | null;
+      if (el && /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) return;
+      const i = stepMoment(data, tRef.current, e.key === "ArrowRight" ? 1 : -1);
+      if (i == null) return;
+      e.preventDefault();
+      seekMoment(i);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
   function resume() {
     if (paused?.kind === "answer") setStake(paused.index);
     setPaused(null);
@@ -162,6 +186,8 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
   }
 
   const mIdx = paused?.index ?? activeMoment(stops, t);
+  const passed = data.moments.reduce((k, x, i) => (timeOfFrame(data, x.f) <= t + 1e-3 ? i : k), -1);
+  const kIdx = mIdx ?? (passed >= 0 ? passed : null);
   const m = mIdx != null ? data.moments[mIdx] : null;
   let caption: string;
   if (paused?.kind === "ask" && m) caption = askText(m);
@@ -176,6 +202,11 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
 
   return (
     <div className="guided" data-testid="guided-player">
+      <div className="g-head">
+        <h3 className="g-title">{data.title}</h3>
+        <Tag kind={data.kind} />
+      </div>
+      {data.caption && <p className="g-intro" data-testid="clip-caption">{data.caption}</p>}
       <Legend />
       <div className="g-main">
         <div className="g-left">
@@ -196,21 +227,18 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
             <span className="g-caption-text">{caption}</span>
             {paused && <button type="button" className="btn g-continue" onClick={resume}>Continue ▸</button>}
           </div>
-          {data.moments.length > 0 && (
-            <div className="g-dots" aria-label="Key moments">
-              {data.moments.map((x, i) => {
-                const tm = timeOfFrame(data, x.f);
-                const state = mIdx === i ? "on" : t > tm ? "past" : "";
-                return (
-                  <button key={x.f} type="button" className={`g-dot ${state}`} onClick={() => seek(Math.max(0, tm - 2))} title={`Jump to key moment ${i + 1}`} data-testid="moment-dot">{i + 1}</button>
-                );
-              })}
-              <span className="muted">{mIdx != null ? `${mIdx + 1} of ${data.moments.length}` : `${data.moments.length} key moment${data.moments.length === 1 ? "" : "s"}`}</span>
+          <div className="g-timeline">
+            <div className="g-tally" data-testid="moment-tally">{tallyText(tl, { baseline: cap(names.baseline), ours: names.ours })}</div>
+            <div className="g-rule">{MOMENT_RULE}</div>
+            <input type="range" className="g-seek" min={0} max={data.duration} step={0.01} value={Math.min(t, data.duration)} onChange={(e) => seek(Number(e.target.value))} aria-label="Seek position" />
+            <MomentStrip ticks={ticks} current={kIdx} onPick={(i) => seekMoment(i)} />
+            <div className="g-progress muted" data-testid="moment-progress">
+              {data.moments.length === 0 ? "No number changes on this clip" : kIdx != null ? `${kIdx + 1} of ${data.moments.length}` : `0 of ${data.moments.length}`}
+              {data.moments.length > 0 && <span className="g-keys"> · ← / → step between moments</span>}
             </div>
-          )}
+          </div>
           <div className="g-controls">
             <button type="button" className="btn" onClick={() => (paused ? resume() : setUserPaused((p) => !p))} aria-label={stopped ? "Play" : "Pause"}>{stopped ? "▶ Play" : "❚❚ Pause"}</button>
-            <input type="range" className="g-seek" min={0} max={data.duration} step={0.01} value={Math.min(t, data.duration)} onChange={(e) => seek(Number(e.target.value))} aria-label="Seek position" />
             <span className="mono muted">{t.toFixed(1)} / {data.duration.toFixed(1)} s{guided && rateAt(stops, t, true) < 1 ? " · 0.25x" : ""}</span>
             <div className="toggle" role="group" aria-label="Mode">
               <button type="button" className={`btn${guided ? " on-ours" : ""}`} aria-pressed={guided} onClick={() => setGuided(true)}>Guided</button>
@@ -254,6 +282,30 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
           </ol>
         </aside>
       </div>
+    </div>
+  );
+}
+
+export function MomentStrip({ ticks, current, onPick }: { ticks: Tick[]; current: number | null; onPick: (i: number) => void }) {
+  return (
+    <div className="g-strip" role="group" aria-label="Moments where a number changed" data-testid="moment-strip">
+      {ticks.map((k) => (
+        <button
+          key={k.index}
+          type="button"
+          className={`g-tick${current === k.index ? " on" : ""}`}
+          style={{ left: `${k.x * 100}%` }}
+          onClick={() => onPick(k.index)}
+          title={k.label}
+          aria-label={k.label}
+          data-testid="moment-tick"
+          data-top={k.top}
+          data-bottom={k.bottom}
+        >
+          <span className={`g-tick-top${k.top ? " filled" : ""}`} />
+          <span className={`g-tick-bot${k.bottom ? " filled" : ""}`} />
+        </button>
+      ))}
     </div>
   );
 }

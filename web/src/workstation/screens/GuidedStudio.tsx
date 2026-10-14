@@ -2,30 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 import type { IndexedClip } from "@viewer/data";
 import { GuidedPlayer } from "../../guided/GuidedPlayer";
 import { fromScenario, type ReplayData } from "../../guided/model";
-import { BENCHMARK_CLIPS, fromViewerClips } from "../../guided/viewer";
+import { BENCHMARK_CLIPS, benchmarkPairs, benchmarkReplay } from "../../guided/viewer";
 import { fetchIndex, fetchScenario, type ScenarioMeta, videoUrl } from "../../lib/scenarios";
-import { prettyTracker } from "../lib/journey";
 
 const DEFAULT = "subway_turnstile";
+const OPENER = "bench:MOT17-09";
 
-/** Benchmark pairs (ByteTrack-like vs another tracker) available in the exported viewer clips. */
-export function benchmarkPairs(clips: IndexedClip[]): { name: string; base: IndexedClip; ours: IndexedClip }[] {
-  const out = [];
-  for (const name of BENCHMARK_CLIPS) {
-    const cs = clips.filter((c) => c.clip.startsWith(name));
-    const base = cs.find((c) => /bytetrack/i.test(c.tracker) && !/reid|vis/i.test(c.tracker));
-    const rest = cs.filter((c) => c !== base && c.tracker !== "gt");
-    const ours = rest.find((c) => /vis/i.test(c.tracker)) ?? rest[0];
-    if (base && ours) out.push({ name, base, ours });
-  }
-  return out;
-}
+export { benchmarkPairs };
 
 export function GuidedStudio({ clips, onNext }: { clips: IndexedClip[]; onNext: () => void }) {
   const [index, setIndex] = useState<ScenarioMeta[]>([]);
-  const [sel, setSel] = useState<string>(DEFAULT);
+  const [pick, setSel] = useState<string | null>(null);
   const [scen, setScen] = useState<ReplayData | null>(null);
   const pairs = useMemo(() => benchmarkPairs(clips), [clips]);
+  // opener: MOT17-09 (measured) explains the problem; Pexels turnstile if it is not exported
+  const sel = pick ?? (pairs.some((p) => `bench:${p.name}` === OPENER) ? OPENER : DEFAULT);
   useEffect(() => { fetchIndex().then(setIndex).catch(() => setIndex([])); }, []);
   const bench = pairs.find((p) => `bench:${p.name}` === sel);
   useEffect(() => {
@@ -35,7 +26,7 @@ export function GuidedStudio({ clips, onNext }: { clips: IndexedClip[]; onNext: 
     return () => { live = false; };
   }, [sel]);
   const data = useMemo(
-    () => (bench ? fromViewerClips(bench.base, bench.ours, { baseline: prettyTracker(bench.base.tracker).title, ours: prettyTracker(bench.ours.tracker).title }) : scen),
+    () => (bench ? benchmarkReplay(bench) : scen),
     [bench, scen],
   );
   return (

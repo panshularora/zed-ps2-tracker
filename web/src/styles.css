@@ -368,3 +368,24 @@ td.pending { color: var(--muted); }
 .ws .guided .g-log h3 { font-size: 14px; font-weight: 600; margin: 0 12px 8px; }
 .ws .guided .g-log li button { padding: 5px 12px; }
 .g-nomedia { position: absolute; bottom: 10px; left: 10px; color: var(--muted); font-size: 12px; background: rgba(14,16,19,.85); padding: 3px 8px; border-radius: var(--radius); }
+/* clip header, tally and moment strip */
+.g-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.g-title { margin: 0; font: 600 16px var(--sans); }
+.g-intro { margin: 0; color: var(--text); font-size: 14px; }
+.g-timeline { display: flex; flex-direction: column; gap: 4px; }
+.g-tally { font: 600 14px var(--sans); font-variant-numeric: tabular-nums; }
+.g-rule { font-size: 12px; color: var(--muted); }
+.g-strip { position: relative; height: 22px; margin: 0 8px; border-bottom: 1px solid var(--border); }
+.g-tick { position: absolute; top: 0; width: 8px; height: 22px; margin-left: -4px; padding: 0; background: none; border: 0; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.g-tick span { flex: 1; border-radius: 1px; }
+.g-tick-top { border: 1px solid #8A929C; }
+.g-tick-top.filled { background: #8A929C; }
+.g-tick-bot { border: 1px solid #56B4E9; }
+.g-tick-bot.filled { background: #56B4E9; }
+.g-tick.on { outline: 2px solid var(--text); outline-offset: 1px; }
+.g-progress { font-size: 12px; }
+.ws .guided .g-tick-top { border: 1px solid #8A929C; }
+.ws .guided .g-tick-bot { border: 1px solid #56B4E9; }
+.ws .guided .g-title { font-size: 16px; font-weight: 600; }
+.ws .guided .tag { border-width: 1px; }
+.ws .guided .tag-illustrative { border: 1px solid var(--baseline); }

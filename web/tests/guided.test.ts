@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
   activeMoment, answerFor, askText, chipText, countsAt, eventLog, extraCountsAt, rateAt, resultText, schedule,
-  SLOW_RATE, spotlightIds, stopCrossed, stopKey, timeOfFrame, trailOf, viewRect, zoomAt, type GEvent, type Moment,
+  SLOW_RATE, stepMoment, stripTicks, tally, tallyText, MOMENT_RULE, spotlightIds, stopCrossed, stopKey, timeOfFrame, trailOf, viewRect, zoomAt, type GEvent, type Moment,
 } from "../src/guided/model";
 
 const fps = 10;
 const moment = (over: Partial<Moment> = {}): Moment => ({
-  f: 41, kind: "overlap", changed: "baseline", kept: "ours", counted_twice: true, focus: [100, 100, 50, 100],
+  f: 41, kind: "overlap", changed: { baseline: true, ours: false }, counted_twice: { baseline: true, ours: false }, focus: [100, 100, 50, 100],
   people: [
     { box: [100, 100, 50, 100], ids: { baseline: { before: 4, after: 11 }, ours: { before: 4, after: 4 } } },
     { box: [120, 100, 50, 100], ids: { baseline: { before: 7, after: 7 }, ours: { before: 8, after: 8 } } },
   ],
   ...over,
 });
-const d = { fps, frames: 100, moments: [moment(), moment({ f: 81, counted_twice: false })] };
+const d = { fps, frames: 100, moments: [moment(), moment({ f: 81, counted_twice: { baseline: false, ours: false } })] };
 
 describe("key-moment scheduling", () => {
   const stops = schedule(d);
@@ -118,5 +118,32 @@ describe("plain-language text", () => {
     for (let f = 1; f <= 40; f++) frames[String(f)] = [[f < 30 ? 4 : 11, f, 0, 10, 10]];
     expect(trailOf(frames, 4, 29, fps).length).toBe(21);
     expect(trailOf(frames, 11, 32, fps).length).toBe(3); // restarts with the new number
+  });
+});
+
+describe("moment tally, strip and stepping", () => {
+  const ch = (baseline: boolean, ours: boolean) => moment({ changed: { baseline, ours } });
+  const ms = [ch(true, false), { ...ch(false, true), f: 61 }, { ...ch(true, true), f: 91 }];
+  it("tally counts each tracker (a 'both' moment counts for each) and the overlap", () => {
+    const t = tally(ms);
+    expect(t).toEqual({ baseline: 2, ours: 2, both: 1, total: 3 });
+    expect(tallyText(t)).toBe("ByteTrack changed 2 · ours changed 2 · both: 1");
+    expect(tally([])).toEqual({ baseline: 0, ours: 0, both: 0, total: 0 });
+    expect(MOMENT_RULE).toBe("every moment where at least one tracker changed a person's number.");
+  });
+  it("strip: one tick per moment, top = ByteTrack, bottom = ours, placed by time", () => {
+    const ticks = stripTicks({ fps, duration: 10, moments: ms });
+    expect(ticks.map((k) => [k.top, k.bottom])).toEqual([[true, false], [false, true], [true, true]]);
+    expect(ticks.map((k) => k.x)).toEqual([0.4, 0.6, 0.9]);
+    expect(ticks[2].label).toBe("Moment 3: both trackers changed the number");
+  });
+  it("arrow keys step to the next / previous moment", () => {
+    const d2 = { fps, moments: ms }; // moments at 4 s, 6 s, 9 s
+    expect(stepMoment(d2, 0, 1)).toBe(0);
+    expect(stepMoment(d2, 4 - 1.5, 1)).toBe(1); // at moment 1's lead-in -> next is 2
+    expect(stepMoment(d2, 6 - 1.5, -1)).toBe(0);
+    expect(stepMoment(d2, 9.5, 1)).toBeNull();
+    expect(stepMoment(d2, 0, -1)).toBeNull();
+    expect(stepMoment({ fps, moments: [] }, 0, 1)).toBeNull();
   });
 });
