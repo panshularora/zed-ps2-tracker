@@ -1,0 +1,122 @@
+import { describe, expect, it } from "vitest";
+import {
+  activeMoment, answerFor, askText, chipText, countsAt, eventLog, extraCountsAt, rateAt, resultText, schedule,
+  SLOW_RATE, spotlightIds, stopCrossed, stopKey, timeOfFrame, trailOf, viewRect, zoomAt, type GEvent, type Moment,
+} from "../src/guided/model";
+
+const fps = 10;
+const moment = (over: Partial<Moment> = {}): Moment => ({
+  f: 41, kind: "overlap", changed: "baseline", kept: "ours", counted_twice: true, focus: [100, 100, 50, 100],
+  people: [
+    { box: [100, 100, 50, 100], ids: { baseline: { before: 4, after: 11 }, ours: { before: 4, after: 4 } } },
+    { box: [120, 100, 50, 100], ids: { baseline: { before: 7, after: 7 }, ours: { before: 8, after: 8 } } },
+  ],
+  ...over,
+});
+const d = { fps, frames: 100, moments: [moment(), moment({ f: 81, counted_twice: false })] };
+
+describe("key-moment scheduling", () => {
+  const stops = schedule(d);
+  it("asks just before and answers just after each moment, in order", () => {
+    expect(stops.map((s) => s.kind)).toEqual(["ask", "answer", "ask", "answer"]);
+    expect(stops[0].t).toBeCloseTo(4 - 0.35);
+    expect(stops[1].t).toBeCloseTo(4 + 0.6);
+    expect(stops[2].index).toBe(1);
+  });
+  it("slows to 0.25x on the approach, normal speed elsewhere and in free play", () => {
+    expect(rateAt(stops, 1, true)).toBe(1);
+    expect(rateAt(stops, 3.0, true)).toBe(SLOW_RATE);
+    expect(rateAt(stops, 4.3, true)).toBe(SLOW_RATE);
+    expect(rateAt(stops, 5.5, true)).toBe(1);
+    expect(rateAt(stops, 3.0, false)).toBe(1);
+  });
+  it("pauses once per stop while playing; seeks never trigger a pause", () => {
+    const done = new Set<string>();
+    const s = stopCrossed(stops, 3.6, 3.7, done)!;
+    expect(s.kind).toBe("ask");
+    done.add(stopKey(s));
+    expect(stopCrossed(stops, 3.6, 3.7, done)).toBeNull();
+    expect(stopCrossed(stops, 0, 3.7, new Set())).toBeNull(); // jump forward = seek
+    expect(stopCrossed(stops, 5, 3.7, new Set())).toBeNull(); // backwards
+  });
+  it("zooms in over 0.6 s, holds through the pause, eases out", () => {
+    expect(zoomAt(stops, 2).k).toBe(0);
+    const mid = zoomAt(stops, 3.65 - 0.3).k;
+    expect(mid).toBeGreaterThan(0);
+    expect(mid).toBeLessThan(1);
+    expect(zoomAt(stops, 4.0)).toEqual({ k: 1, index: 0 });
+    expect(zoomAt(stops, 4.6 + 0.7).k).toBe(0);
+    expect(activeMoment(stops, 4)).toBe(0);
+    expect(activeMoment(stops, 6.3)).toBeNull();
+    expect(activeMoment(stops, 7)).toBe(1);
+  });
+  it("2x view rect stays inside the frame", () => {
+    expect(viewRect(1920, 1080, [1900, 1000, 20, 80], 1)).toEqual([960, 540, 960, 540]);
+    expect(viewRect(1920, 1080, null, 1)).toEqual([0, 0, 1920, 1080]);
+  });
+});
+
+describe("counters", () => {
+  const ev: GEvent[] = [
+    { t: "cross", f: 5, id: 1, dir: "in" }, { t: "cross", f: 9, id: 2, dir: "out" },
+    { t: "cross", f: 12, id: 3, dir: "in" }, { t: "lost", f: 6, id: 2 },
+  ];
+  it("counts crossings up to the frame on screen", () => {
+    expect(countsAt(ev, null)).toEqual({ in: 0, out: 0 });
+    expect(countsAt(ev, 4)).toEqual({ in: 0, out: 0 });
+    expect(countsAt(ev, 9)).toEqual({ in: 1, out: 1 });
+    expect(countsAt(ev, 50)).toEqual({ in: 2, out: 1 });
+  });
+  it("+1 extra only for the tracker that changed the number, after the answer", () => {
+    expect(extraCountsAt(d, "baseline", 4.0)).toBe(0);
+    expect(extraCountsAt(d, "baseline", 4.7)).toBe(1);
+    expect(extraCountsAt(d, "baseline", 99)).toBe(1); // second moment not counted twice
+    expect(extraCountsAt(d, "ours", 99)).toBe(0);
+  });
+});
+
+describe("plain-language text", () => {
+  const events: GEvent[] = [
+    { t: "cross", f: 11, id: 4, dir: "in" },
+    { t: "lost", f: 20, id: 7 },
+    { t: "back", f: 28, id: 7, gap_s: 0.8 },
+    { t: "renumber", f: 41, from: 4, to: 11 },
+  ];
+  it("event log lines, synced to time, lost folded into back", () => {
+    const log = eventLog({ fps, events: { baseline: events, ours: [] }, moments: d.moments }, "baseline");
+    expect(log.map((l) => l.text)).toEqual([
+      "Person 4 crossed the line going IN.",
+      "Person 7 was out of sight for 0.8 s and came back with the same number.",
+      "Person 4 was given a new number: Person 11.",
+    ]);
+    expect(log[0].t).toBeCloseTo(timeOfFrame({ fps }, 11));
+    expect(log[2].moment).toBe(0);
+  });
+  it("one question per moment, answers per tracker, no right/wrong without ground truth", () => {
+    const m = moment();
+    expect(askText(m)).toMatch(/keep their number\?$/);
+    expect(answerFor(m, "baseline")).toBe("#4 became #11");
+    expect(answerFor(m, "ours")).toBe("kept #4");
+    const r = resultText(m, "illustrative");
+    expect(r).toBe("The two trackers disagree here: ByteTrack #4 became #11, ours kept #4.");
+    expect(r).not.toMatch(/wrong|correct|error|right/i);
+    expect(resultText({ ...m, verified: true }, "measured")).toMatch(/^Checked against human labels/);
+    expect(resultText(m, "measured")).toMatch(/disagree/); // measured clip but unverified moment
+  });
+  it("ID chip shows the change for 1 s with a short pulse", () => {
+    const ev: GEvent[] = [{ t: "renumber", f: 41, from: 4, to: 11 }];
+    expect(chipText(11, 41, ev, fps)).toEqual({ text: "#4 → #11", pulse: 1 });
+    expect(chipText(11, 46, ev, fps).text).toBe("#4 → #11");
+    expect(chipText(11, 46, ev, fps).pulse).toBe(0);
+    expect(chipText(11, 52, ev, fps).text).toBe("Person 11");
+  });
+  it("spotlight holds both numbers of the changed person and the other person", () => {
+    expect([...spotlightIds(moment(), "baseline")].sort((a, b) => a - b)).toEqual([4, 7, 11]);
+  });
+  it("trail covers the last 2 s of one ID only", () => {
+    const frames: Record<string, [number, number, number, number, number][]> = {};
+    for (let f = 1; f <= 40; f++) frames[String(f)] = [[f < 30 ? 4 : 11, f, 0, 10, 10]];
+    expect(trailOf(frames, 4, 29, fps).length).toBe(21);
+    expect(trailOf(frames, 11, 32, fps).length).toBe(3); // restarts with the new number
+  });
+});

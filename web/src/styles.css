@@ -307,3 +307,64 @@ td.pending { color: var(--muted); }
 .method .label { font-size: 11px; color: var(--muted); }
 .method .nvalue { font-size: 36px; font-weight: 600; color: var(--text); }
 .method .nvalue.pending { font-size: 22px; color: var(--muted); font-weight: 500; }
+
+/* ---------- guided replay (src/guided) */
+.guided { display: flex; flex-direction: column; gap: 10px; }
+.g-legend { display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 8px 12px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; color: var(--text); }
+.g-legend span { display: inline-flex; align-items: center; gap: 8px; }
+.g-ic { display: inline-flex; align-items: center; justify-content: center; flex: none; font-style: normal; }
+.guided .g-ic-box { width: 14px; height: 18px; border: 2px solid var(--ours); border-radius: 2px; }
+.g-ic-chip { min-width: 20px; height: 18px; padding: 0 4px; background: var(--ours); color: var(--bg); border-radius: 4px; font: 700 12px var(--sans); }
+.guided .g-ic-line { width: 22px; height: 0; border-top: 3px dashed var(--gate); }
+.g-main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 12px; align-items: start; }
+@media (max-width: 1000px) { .g-main { grid-template-columns: 1fr; } }
+.g-left { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.g-stage { position: relative; width: 100%; max-height: 66vh; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.g-video { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+.g-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.g-counters { position: absolute; top: 10px; left: 10px; display: flex; gap: 6px; align-items: center; }
+.g-count { background: rgba(14,16,19,.85); border: 1px solid var(--gate); color: var(--text); border-radius: var(--radius); padding: 4px 10px; font: 600 16px var(--sans); }
+.g-count b { color: var(--gate); font-size: 12px; margin-right: 4px; letter-spacing: .06em; }
+.g-extra { background: rgba(14,16,19,.9); border: 1px solid var(--muted); color: var(--text); border-radius: var(--radius); padding: 4px 8px; font: 600 13px var(--sans); }
+.g-runbadge { position: absolute; top: 10px; right: 10px; background: rgba(14,16,19,.85); border-radius: var(--radius); padding: 4px 8px; font: 600 12px var(--sans); border: 1px solid var(--border); }
+.g-run-ours.g-runbadge { color: var(--ours); border-color: var(--ours); }
+.g-run-baseline.g-runbadge { color: var(--baseline); border-color: var(--baseline); }
+.g-caption { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 10px 14px; background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--ours); border-radius: var(--radius); }
+.g-caption-text { flex: 1; font: 500 18px/1.35 var(--sans); }
+.g-continue { flex: none; }
+.g-dots { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.g-dot { width: 24px; height: 24px; border-radius: 12px; border: 1px solid var(--border); background: var(--panel); color: var(--muted); font: 600 12px var(--sans); cursor: pointer; }
+.g-dot.past { color: var(--text); border-color: var(--muted); }
+.g-dot.on { background: var(--ours); color: var(--bg); border-color: var(--ours); }
+.g-stills { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 640px) { .g-stills { grid-template-columns: 1fr; } }
+.g-still { margin: 0; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.g-still canvas { width: 100%; aspect-ratio: 16 / 9; display: block; }
+.g-still figcaption { padding: 6px 10px; font-size: 15px; }
+.g-run-ours.g-still figcaption b { color: var(--ours); }
+.g-run-baseline.g-still figcaption b { color: var(--baseline); }
+.g-stills-note { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 12px; }
+.g-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.g-seek { flex: 1; min-width: 160px; accent-color: var(--ours); }
+.g-log { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 0; max-height: 72vh; display: flex; flex-direction: column; }
+.g-log h3 { margin: 0 12px 8px; font-size: 14px; }
+.g-log ol { list-style: none; margin: 0; padding: 0; overflow-y: auto; }
+.g-log li button { display: block; width: 100%; text-align: left; background: none; border: 0; color: var(--muted); padding: 5px 12px; font: 400 13px/1.4 var(--sans); cursor: pointer; opacity: .55; }
+.g-log li.past button { opacity: 1; color: var(--text); }
+.g-log li.key button { border-left: 3px solid var(--ours); }
+.g-log li[data-current="true"] button { background: var(--panel-2); }
+.g-log li button:hover { background: var(--panel-2); }
+.g-log .mono { color: var(--muted); margin-right: 4px; }
+/* inside the workstation (.ws resets borders/buttons) */
+.ws .guided .btn, .ws .ws-btn { height: 32px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); color: var(--text); font: 500 13px var(--sans); }
+.ws .guided .btn.on-ours { border-color: var(--ours); color: var(--ours); }
+.ws .guided .btn.on-baseline { border-color: var(--baseline); }
+.ws .guided .g-legend, .ws .guided .g-stage, .ws .guided .g-caption, .ws .guided .g-log, .ws .guided .g-still, .ws .guided .g-runbadge { border: 1px solid var(--border); }
+.ws .guided .g-caption { border-left: 3px solid var(--ours); }
+.ws .guided .g-count { border: 1px solid var(--gate); }
+.ws .guided .g-extra { border: 1px solid var(--muted); }
+.ws .guided .g-dot { border: 1px solid var(--border); }
+.ws .guided .g-log li.key button { border-left: 3px solid var(--ours); }
+.ws .guided .g-log h3 { font-size: 14px; font-weight: 600; margin: 0 12px 8px; }
+.ws .guided .g-log li button { padding: 5px 12px; }
+.g-nomedia { position: absolute; bottom: 10px; left: 10px; color: var(--muted); font-size: 12px; background: rgba(14,16,19,.85); padding: 3px 8px; border-radius: var(--radius); }
