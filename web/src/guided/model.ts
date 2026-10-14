@@ -38,6 +38,8 @@ export interface ReplayData {
   frames: number; // tracked frames
   duration: number; // seconds of video covered by tracking
   videoUrl: string | null;
+  /** offline demo cut (web/public/demo) tried when the full clip is not downloaded */
+  demoUrl?: string | null;
   /** video time of tracked frame 1 (benchmark val-half clips start mid-sequence) */
   videoOffsetS?: number;
   runs: Record<RunKey, { label: string; short: string; frames: Record<string, Box[]> }>;
@@ -58,7 +60,10 @@ interface Guide {
   moments: Moment[];
 }
 
-export function fromScenario(d: ScenarioData & { guide?: Guide }, videoUrl: string | null): ReplayData {
+export const demoUrlFor = (id: string) => `${import.meta.env?.BASE_URL ?? "/"}demo/${id}.mp4`;
+export const thumbUrlFor = (id: string) => `${import.meta.env?.BASE_URL ?? "/"}thumbs/${id}.jpg`;
+
+export function fromScenario(d: ScenarioData & { guide?: Guide }, videoUrl: string | null, demoUrl: string | null = demoUrlFor(d.meta.id)): ReplayData {
   const m = d.meta;
   const fps = m.src_fps / m.stride;
   return {
@@ -72,6 +77,7 @@ export function fromScenario(d: ScenarioData & { guide?: Guide }, videoUrl: stri
     frames: m.frames_tracked,
     duration: m.covered_s,
     videoUrl,
+    demoUrl,
     runs: {
       baseline: { label: d.runs.baseline.label, short: SHORT.baseline, frames: d.runs.baseline.frames },
       ours: { label: d.runs.ours.label, short: SHORT.ours, frames: d.runs.ours.frames },
@@ -209,6 +215,24 @@ export function eventLog(d: Pick<ReplayData, "events" | "fps" | "moments">, run:
     out.push({ f: e.f, t: timeOfFrame(d, e.f), text, kind: e.t, ...(mi >= 0 ? { moment: mi } : {}) });
   }
   return out.sort((a, b) => a.f - b.f);
+}
+
+/** Log lines already on screen: only events at or before the frame shown (none before frame 1). */
+export function visibleLog(log: LogLine[], f: number | null): LogLine[] {
+  return f == null ? [] : log.filter((l) => l.f <= f);
+}
+
+/** Video sources to try in order: full clip, then the committed demo cut. */
+export function videoSources(d: Pick<ReplayData, "videoUrl" | "demoUrl">): string[] {
+  return [d.videoUrl, d.demoUrl].filter((x): x is string => !!x);
+}
+
+export const MISSING_CLIP_TEXT = "Clip not downloaded on this machine. In ~/zed-ps2-tracker run: make clips blur  then reload.";
+export const NO_EXPORT_TEXT = "Video not exported yet — showing boxes only";
+/** Banner for the schematic fallback, or null when video frames are showing. */
+export function fallbackText(d: Pick<ReplayData, "kind" | "videoUrl" | "demoUrl">, failed: boolean): string | null {
+  if (videoSources(d).length === 0) return d.kind === "measured" ? NO_EXPORT_TEXT : MISSING_CLIP_TEXT;
+  return failed ? (d.kind === "measured" ? NO_EXPORT_TEXT : MISSING_CLIP_TEXT) : null;
 }
 
 function idsOf(m: Moment, run: RunKey): PersonIds | undefined {

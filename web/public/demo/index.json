@@ -1,0 +1,8 @@
+{
+ "man_entering_metro": {"src": "/demo/man_entering_metro.mp4", "offset_s": 0, "duration_s": 15.48},
+ "subway_turnstile": {"src": "/demo/subway_turnstile.mp4", "offset_s": 0, "duration_s": 11.7},
+ "milan_turnstiles": {"src": "/demo/milan_turnstiles.mp4", "offset_s": 0, "duration_s": 7.87},
+ "mexico_city_entrance": {"src": "/demo/mexico_city_entrance.mp4", "offset_s": 0, "duration_s": 20.02},
+ "shibuya_crossing": {"src": "/demo/shibuya_crossing.mp4", "offset_s": 0, "duration_s": 20.02},
+ "rabat_stadium": {"src": "/demo/rabat_stadium.mp4", "offset_s": 0, "duration_s": 6.93}
+}

@@ -4,11 +4,13 @@ import { paint, paintStill } from "./draw";
 import {
   activeMoment, answerFor, askText, countsAt, eventLog, extraCountsAt, frameAtTime, recentCrossers,
   resultText, schedule, spotlightIds, STAKE_TEXT, stopCrossed, stopKey, timeOfFrame, viewRect, zoomAt,
-  rateAt, type ReplayData, type Stop, MOMENT_RULE, SEEK_LEAD_S, stepMoment, stripTicks, tally, tallyText, type Tick,
+  rateAt, fallbackText, videoSources, visibleLog, type ReplayData, type Stop, MOMENT_RULE, SEEK_LEAD_S, stepMoment, stripTicks, tally, tallyText, type Tick,
 } from "./model";
 import { Tag } from "./Tag";
 
 const AUTO_RESUME_MS = 4000;
+/** header + title + legend + caption + tally/strip + controls: keep them on screen at ~768 px */
+const CHROME_PX = 400;
 
 export function Legend() {
   return (
@@ -40,7 +42,7 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
   const names = { baseline: data.runs.baseline.short, ours: data.runs.ours.short };
   const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
   const ticks = useMemo(() => stripTicks(data, { baseline: cap(names.baseline), ours: names.ours }), [data, names.baseline, names.ours]);
-  const log = useMemo(() => eventLog(data, run), [data, run]);
+  const fullLog = useMemo(() => eventLog(data, run), [data, run]);
   const differ = useMemo(() => {
     if (data.moments.length > 0) return true;
     const n = (r: RunKey) => Object.values(data.runs[r].frames).reduce((a, b) => a + b.length, 0);
@@ -51,7 +53,14 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
   const counts = countsAt(data.events[run], f);
   const extra = extraCountsAt(data, run, t);
   const stopped = paused != null || userPaused;
+  const log = visibleLog(fullLog, f);
   const off = data.videoOffsetS ?? 0;
+  const sources = useMemo(() => videoSources(data), [data]);
+  const [srcIdx, setSrcIdx] = useState(0);
+  const src = sources[srcIdx] ?? null;
+  const failed = sources.length > 0 && src == null;
+  const hint = fallbackText(data, failed);
+  const onVideoError = () => setSrcIdx((i) => i + 1);
 
   // main loop: read clock, apply guided rate / pauses, paint
   useEffect(() => {
@@ -62,7 +71,7 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
       const dt = (now - last) / 1000;
       last = now;
       let cur: number;
-      if (v && data.videoUrl) {
+      if (v && src) {
         if (v.currentTime - off > data.duration || v.currentTime < off - 0.05) { v.currentTime = off; done.current.clear(); }
         cur = Math.max(0, v.currentTime - off);
       } else {
@@ -98,7 +107,7 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
           const focus = z.index != null ? data.moments[z.index].focus : null;
           const spot = mi != null ? spotlightIds(data.moments[mi], run) : fr != null ? recentCrossers(data.events[run], fr, data.fps) : new Set<number>();
           const pulse = fr == null ? 0 : Math.max(0, ...data.events[run].filter((e) => e.t === "cross" && e.f <= fr).map((e) => 1 - (fr - e.f) / (0.3 * data.fps)));
-          paint(ctx, cw, ch, data, data.videoUrl ? v : null, {
+          paint(ctx, cw, ch, data, v && src && v.readyState >= 2 ? v : null, {
             run, f: fr, view: viewRect(data.width, data.height, focus, z.k), spot, dim: mi != null ? 1 : 0, gatePulse: pulse,
           });
         }
@@ -107,7 +116,7 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [data, stops, guided, run, stopped, off]);
+  }, [data, stops, guided, run, stopped, off, src]);
 
   // resume video when nothing holds it
   useEffect(() => {
@@ -137,9 +146,9 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
       const dpr = window.devicePixelRatio || 1;
       c.width = c.clientWidth * dpr; c.height = c.clientHeight * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      paintStill(ctx, c.clientWidth, c.clientHeight, data, data.videoUrl ? video.current : null, r, fr, m.focus, spotlightIds(m, r));
+      paintStill(ctx, c.clientWidth, c.clientHeight, data, src && video.current && video.current.readyState >= 2 ? video.current : null, r, fr, m.focus, spotlightIds(m, r));
     }
-  }, [paused, data]);
+  }, [paused, data, src]);
 
   // keep the current log line in view
   useEffect(() => {
@@ -216,9 +225,10 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
       <Legend />
       <div className="g-main">
         <div className="g-left">
-          <div className="g-stage" style={{ aspectRatio: `${data.width} / ${data.height}` }}>
-            {data.videoUrl && (
-              <video ref={video} src={data.videoUrl} muted playsInline autoPlay aria-label={data.title} className="g-video" />
+          <div className="g-stage" style={{ aspectRatio: `${data.width} / ${data.height}`, width: `min(100%, calc((100vh - ${CHROME_PX}px) * ${(data.width / data.height).toFixed(4)}))` }}>
+            {src && (
+              <video key={src} ref={video} src={src} muted playsInline autoPlay aria-label={data.title} className="g-video"
+                onError={onVideoError} onLoadedMetadata={(e) => { if (!(e.currentTarget.duration > 0)) onVideoError(); }} />
             )}
             <canvas ref={canvas} className="g-canvas" aria-label={`${data.title}, ${data.runs[run].label}`} />
             <div className="g-counters" data-testid="gate-counters">
@@ -226,7 +236,7 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
               <span className="g-count"><b>OUT</b> {counts.out}</span>
               {extra > 0 && <span className="g-extra" data-testid="extra-count">+{extra} extra (counted twice)</span>}
             </div>
-            {!data.videoUrl && <span className="g-nomedia">No video frames on this server: boxes only.</span>}
+            {hint && <div className="g-hint" role="status" data-testid="video-hint">{hint}</div>}
             <span className={`g-runbadge g-run-${run}`}>{data.runs[run].label}</span>
           </div>
           <div className="g-caption" data-testid="guided-caption" aria-live="polite">
