@@ -66,7 +66,7 @@ including the baselines, without re-running anything. Definitions follow
 
 ## Phase 4: deliverables
 
-These slot into `docs/integration/` (the AI demo is the `web/` Demo page):
+These slot into `docs/integration/` (the AI demo is the live run under Scenarios in `web/`):
 
 * explainer video
 * AI demo

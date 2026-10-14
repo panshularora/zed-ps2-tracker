@@ -303,7 +303,7 @@ export default function Demo() {
           <select value={clipId} onChange={(e) => setClipId(e.target.value)} aria-label="Clip" style={{ minWidth: 240 }}>
             {clips.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.title} · {c.duration_s.toFixed(1)} s{c.source === "upload" ? " · upload" : ""}
+                {c.title} · {c.duration_s.toFixed(1)} s{c.source === "upload" ? " · upload" : ""}{c.demo_cut ? " · short cut" : ""}
               </option>
             ))}
           </select>
@@ -375,7 +375,7 @@ export default function Demo() {
                 </span>
               </>
             ) : (
-              <div className="empty">{clip ? "The video is shown after its first job has blurred the faces." : "No clips: run `make clips blur` on the server."}</div>
+              <div className="empty">{clip ? "The video is shown after its first job has blurred the faces." : "No clips found. In the repo folder run make clips blur, then reload."}</div>
             )}
           </div>
           <div className="controls">
@@ -404,6 +404,11 @@ export default function Demo() {
               {fmtClock(t)} / {fmtClock(duration)}
             </span>
           </div>
+          {clips.some((c) => c.demo_cut) && (
+            <p className="muted" style={{ fontSize: 12, margin: "8px 2px" }} data-testid="demo-cut-note">
+              Playing the short demo cuts shipped with the app. Full-length clips are optional: <code>make clips blur</code>.
+            </p>
+          )}
           <div className="legend">
             <span><i style={{ background: theme.gate }} />gate line and crossings</span>
             <span><i style={{ background: theme.ours }} />ID kept after occlusion (ring on the box)</span>
@@ -453,7 +458,7 @@ export default function Demo() {
               <span className="muted mono">{events.length} events</span>
             </div>
             <div className="log" ref={logRef} data-testid="event-log">
-              {!result && <div className="muted" style={{ padding: "8px 12px" }}>Run tracking to see crossings and recoveries.</div>}
+              {!result && <div className="muted" style={{ padding: "8px 12px" }}>No events yet.</div>}
               {result && events.length === 0 && <div className="muted" style={{ padding: "8px 12px" }}>No events in the tracked range.</div>}
               {events.map((e, i) => {
                 const past = k != null && e.frame <= k;

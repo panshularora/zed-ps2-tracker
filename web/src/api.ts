@@ -20,6 +20,8 @@ export interface Clip {
   duration_s: number;
   video_url: string | null;
   poster_url: string | null;
+  /** true when the server is serving the committed short demo cut instead of the full blurred clip */
+  demo_cut?: boolean;
 }
 
 export type JobStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled";

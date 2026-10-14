@@ -7,6 +7,7 @@ import {
   fetchIndex, fetchScenario, type ScenarioData, type ScenarioMeta, videoUrl,
 } from "../lib/scenarios";
 import { useAsync } from "../lib/useAsync";
+import LiveRun from "./Demo";
 
 export { Tag };
 
@@ -73,6 +74,24 @@ export function ScenarioPlayer({ data }: { data: ScenarioData }) {
   );
 }
 
+/** The old Demo tab's live job flow, mounted only when opened (its keys would clash with the player). */
+export function LiveRunPanel() {
+  const [open, setOpen] = useState(false);
+  return (
+    <details className="live-run" data-testid="live-run" style={{ marginTop: 16 }} onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}>
+      <summary>Run the tracker yourself on a clip (CPU; needs the backend and <code>make models</code>)</summary>
+      {open && <div style={{ marginTop: 12 }}><LiveRun /></div>}
+    </details>
+  );
+}
+
+export const OPENER = "MOT17-09";
+export function pickOpener(items: ScenarioMeta[], pairs: BenchPair[] | null): string | null {
+  if (pairs === null) return null; // wait for the benchmark list before choosing
+  if (pairs.some((p) => p.name === OPENER)) return benchKey(OPENER);
+  return items.find((m) => m.id === "subway_turnstile")?.id ?? items[0]?.id ?? null;
+}
+
 export default function Scenarios() {
   const idx = useAsync(fetchIndex);
   const [pairs, setPairs] = useState<BenchPair[] | null>(null);
@@ -80,8 +99,8 @@ export default function Scenarios() {
   const [data, setData] = useState<ScenarioData | null>(null);
   useEffect(() => { loadBenchmarkPairs().then(setPairs).catch(() => setPairs([])); }, []);
   const items = idx.data ?? [];
-  // open on a clip that plays (the committed demo cut), not on a boxes-only benchmark
-  const opener = items.find((m) => m.id === "subway_turnstile")?.id ?? items[0]?.id ?? null;
+  // open on the measured problem (MOT17-09, human labels, boxes only); turnstile when it is not exported
+  const opener = pickOpener(items, pairs);
   const current = sel ?? opener;
   const pair = pairs?.find((p) => benchKey(p.name) === current);
   const bench = useMemo(() => (pair ? benchmarkReplay(pair) : null), [pair]);
@@ -101,6 +120,7 @@ export default function Scenarios() {
             <p className="credit">Measured: number changes come from human labels (MOTChallenge ground truth). Video frames are not on this server, so only boxes are drawn. {pair && `${bench.runs.baseline.label} vs ${bench.runs.ours.label}, exported by eval.export_viewer.`}</p>
           </div>
         ) : data && data.meta.id === current ? <ScenarioPlayer key={current} data={data} /> : <p className="muted">Loading scenario…</p>}
+        <LiveRunPanel />
       </div>
     </div>
   );
