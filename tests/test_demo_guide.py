@@ -7,13 +7,13 @@ from scripts.demo.guide import annotate
 
 def _data() -> dict:
     # one person walks down through y=540 (h50); baseline renumbers 1 -> 5 at frame 10, ours keeps 1
-    meta = {"width": 1920, "height": 1080, "src_fps": 10.0, "stride": 1, "kind": "illustrative"}
+    meta = {"width": 1920, "height": 1080, "src_fps": 5.0, "stride": 1, "kind": "illustrative"}
     base, ours = {}, {}
     for f in range(1, 21):
         y = 200 + 30 * f  # bottom = y + 200 crosses 540 near f=5
         bid = 1 if f < 10 else 5
         base[str(f)] = [[bid, 900, y, 100, 200]]
-        if f not in (14, 15, 16, 17, 18):  # ours loses them for 0.6 s
+        if f not in (14, 15, 16, 17, 18):  # ours loses them for 1.2 s
             ours[str(f)] = [[1, 900, y, 100, 200]]
     dis = [
         {

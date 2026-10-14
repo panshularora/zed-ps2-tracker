@@ -103,12 +103,19 @@ describe("story + routing helpers", () => {
 });
 
 describe("workstation screens (was test_journey.mjs)", () => {
-  it("watch: heading, live beat, privacy note, gate ticker", async () => {
+  it("watch: guided replay, benchmark clip selectable when exported", async () => {
     mount("/dashboard/studio");
     expect(screen.getByTestId("step-watch")).toBeTruthy();
-    await screen.findByText(/They're still in the picture/, undefined, { timeout: 5000 });
-    expect(screen.getAllByTestId("privacy-note").length).toBeGreaterThan(0);
-    expect(screen.getByTestId("gate-ticker")).toBeTruthy();
+    const sel = (await screen.findByTestId("studio-clip")) as HTMLSelectElement;
+    const opt = await waitFor(() => {
+      const o = [...sel.options].find((x) => x.value === "bench:MOT17-09");
+      expect(o?.disabled).toBe(false);
+      return o!;
+    }, { timeout: 5000 });
+    await act(async () => { fireEvent.change(sel, { target: { value: opt.value } }); });
+    expect(await screen.findByTestId("guided-player")).toBeTruthy();
+    expect(screen.getByTestId("guided-legend")).toBeTruthy();
+    expect(screen.getByTestId("gate-counters")).toBeTruthy();
     expect(document.querySelectorAll("canvas").length).toBeGreaterThanOrEqual(1);
   });
   it("compare: two canvases and the jump to the switch", async () => {

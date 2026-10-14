@@ -143,6 +143,9 @@ def annotate(data: dict[str, Any]) -> dict[str, Any]:
         f = d["frame"]
         if (f - last_f) / fps_t < 1.0:
             continue
+        # need ~1.5 s of lead-in to slow down, and a person small enough to zoom on
+        if f / fps_t < 1.5 or d["box"][3] > 0.7 * h:
+            continue
         last_f = f
         box = np.asarray(d["box"], float)
         changed = "baseline" if d["kept"] == "ours" else "ours"

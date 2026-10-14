@@ -134,14 +134,28 @@ describe("scenarios tab", () => {
     fireEvent.click(screen.getByTestId("scenario-card"));
     expect(sel).toHaveBeenCalledWith("subway_turnstile");
   });
-  it("player shows caption, honest counts, markers and a working toggle", () => {
-    render(<ScenarioPlayer data={scenario()} />);
+  it("player shows caption, honest counts, guided replay pieces and a working toggle", () => {
+    const guide = {
+      gate: { a: [0, 540], b: [1920, 540] },
+      events: { baseline: [], ours: [{ t: "cross", f: 3, id: 1, dir: "in" }] },
+      moments: [
+        { f: 40, kind: "overlap", changed: "baseline", kept: "ours", counted_twice: false, focus: [0, 0, 10, 10],
+          people: [{ box: [0, 0, 10, 10], ids: { baseline: { before: 2, after: 9 }, ours: { before: 2, after: 2 } } }] },
+        { f: 120, kind: "occlusion", changed: "ours", kept: "baseline", counted_twice: false, focus: [0, 0, 10, 10],
+          people: [{ box: [0, 0, 10, 10], ids: { ours: { before: 3, after: 5 }, baseline: { before: 3, after: 3 } } }] },
+      ],
+    };
+    render(<ScenarioPlayer data={{ ...scenario(), guide } as never} />);
+    expect(screen.getByTestId("guided-legend").textContent).toMatch(/dashed line adds 1 to IN or OUT/);
+    expect(screen.getByTestId("gate-counters").textContent).toContain("IN 0");
+    expect(screen.getByTestId("event-log").textContent).toContain("Person 1 crossed the line going IN.");
+    expect(screen.getByRole("button", { name: "Guided" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByText("Watch IDs.")).toBeTruthy();
     expect(screen.getByTestId("switch-counts").textContent).toContain("ByteTrack 8 · ours 13");
     expect(screen.getByText(/Illustrative only/)).toBeTruthy();
     expect(screen.getByText(/detector yolox_s/)).toBeTruthy();
-    expect(screen.getAllByTestId("seek-marker")).toHaveLength(2);
-    const base = screen.getByRole("button", { name: "Baseline (ByteTrack)" });
+    expect(screen.getAllByTestId("moment-dot")).toHaveLength(2);
+    const base = screen.getByRole("button", { name: "ByteTrack (baseline)" });
     fireEvent.click(base);
     expect(base.getAttribute("aria-pressed")).toBe("true");
   });
