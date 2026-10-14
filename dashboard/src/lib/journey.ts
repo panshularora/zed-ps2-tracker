@@ -7,6 +7,12 @@ export const FAILURE = {
   frame: 70,
   /** Last stretch while they are still on screen as #2 (track ends at 33). */
   lookFrom: 24,
+  /** Watch starts at the beginning so the crowd is on screen for a while. */
+  playFrom: 1,
+  /** Hold this many seconds on the first frame of gone and back. */
+  dwellSec: 2.5,
+  /** Default playback is slow enough to read the captions. */
+  playSpeed: 0.25,
   /** First frame after #2 has left. */
   goneFrom: 34,
   /** BoT-SORT puts them back as #10. */
@@ -21,25 +27,37 @@ export const FAILURE = {
 
 export type StoryPhase = "here" | "gone" | "back";
 
-export function storyBeat(frame: number): { phase: StoryPhase; now: string; why: string } {
+export function storyBeat(frame: number): {
+  phase: StoryPhase;
+  step: string;
+  title: string;
+  now: string;
+  why: string;
+} {
   if (frame < FAILURE.goneFrom) {
     return {
       phase: "here",
+      step: "1 / 3",
+      title: `This person is #${FAILURE.from}`,
       now: `They're still in the picture as number ${FAILURE.from}.`,
-      why: "The green LOOK box on the right is the person to watch.",
+      why: `LOOK is #${FAILURE.from}. When the hatched region shows two people overlapping, that number must stay #${FAILURE.from}. Overlap is not a new ID.`,
     };
   }
   if (frame < FAILURE.backFrom) {
     return {
       phase: "gone",
+      step: "2 / 3",
+      title: `#${FAILURE.from} walked away. Tracker forgot them.`,
       now: "They're gone. The tracker has no box for them.",
-      why: "This is the hard part: remember who they were while they are hidden.",
+      why: `Dashed red is the last tracker box for #${FAILURE.from}. Green keep is ground-truth ${FAILURE.gt} — same person, same ID. The tracker should have held #${FAILURE.from}.`,
     };
   }
   return {
     phase: "back",
+    step: "3 / 3",
+    title: `Same person came back as #${FAILURE.to}`,
     now: `They're back, but the tracker calls them number ${FAILURE.to}.`,
-    why: "Same person. New number. That is the failure.",
+    why: `Preserving identity means they stay #${FAILURE.from} (GT ${FAILURE.gt}). The tracker issued #${FAILURE.to}. That new number is the failure, not the overlap.`,
   };
 }
 

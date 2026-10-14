@@ -30,7 +30,7 @@ function storyJump(screen: Screen, extra?: Jump): Jump {
       clip: FAILURE.clip,
       left: FAILURE.left,
       right: FAILURE.right,
-      frame: FAILURE.lookFrom,
+      frame: FAILURE.playFrom,
       trackId: FAILURE.seedId,
       ...extra,
     };

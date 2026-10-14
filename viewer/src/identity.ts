@@ -1,32 +1,70 @@
 import type { ClipEvent, FrameBox, IndexedClip } from "./data";
 
-/** Intersection-over-union of two axis-aligned boxes. */
-export function boxIou(a: FrameBox, b: FrameBox): number {
+export interface BoxRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Shared rectangle of two axis-aligned boxes, or null if they miss. */
+export function boxIntersection(a: BoxRect, b: BoxRect): BoxRect | null {
   const x1 = Math.max(a.x, b.x);
   const y1 = Math.max(a.y, b.y);
   const x2 = Math.min(a.x + a.w, b.x + b.w);
   const y2 = Math.min(a.y + a.h, b.y + b.h);
-  const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+  const w = x2 - x1;
+  const h = y2 - y1;
+  if (w <= 0 || h <= 0) return null;
+  return { x: x1, y: y1, w, h };
+}
+
+function interArea(a: BoxRect, b: BoxRect): number {
+  const r = boxIntersection(a, b);
+  return r ? r.w * r.h : 0;
+}
+
+/** Intersection-over-union of two axis-aligned boxes. */
+export function boxIou(a: BoxRect, b: BoxRect): number {
+  const inter = interArea(a, b);
   const union = a.w * a.h + b.w * b.h - inter;
   return union > 0 ? inter / union : 0;
 }
+
+/** Intersection over the smaller box. Catches occlusion IoU understates. */
+export function boxImin(a: BoxRect, b: BoxRect): number {
+  const inter = interArea(a, b);
+  const smaller = Math.min(a.w * a.h, b.w * b.h);
+  return smaller > 0 ? inter / smaller : 0;
+}
+
+export const OVERLAP_MIN_SCORE = 0.12;
 
 export interface OverlapPair {
   a: FrameBox;
   b: FrameBox;
   iou: number;
+  imin: number;
+  score: number;
+  inter: BoxRect;
 }
 
-/** Pairs of boxes on the same frame whose IoU is at least `minIou`. */
-export function overlappingPairs(boxes: FrameBox[], minIou = 0.15): OverlapPair[] {
+/** Pairs whose overlap score (max of IoU and imin) is at least `minScore`. */
+export function overlappingPairs(boxes: FrameBox[], minScore = OVERLAP_MIN_SCORE): OverlapPair[] {
   const out: OverlapPair[] = [];
   for (let i = 0; i < boxes.length; i++) {
     for (let j = i + 1; j < boxes.length; j++) {
-      const iou = boxIou(boxes[i], boxes[j]);
-      if (iou >= minIou) out.push({ a: boxes[i], b: boxes[j], iou });
+      const a = boxes[i];
+      const b = boxes[j];
+      const inter = boxIntersection(a, b);
+      if (!inter) continue;
+      const iou = boxIou(a, b);
+      const imin = boxImin(a, b);
+      const score = Math.max(iou, imin);
+      if (score >= minScore) out.push({ a, b, iou, imin, score, inter });
     }
   }
-  return out.sort((x, y) => y.iou - x.iou);
+  return out.sort((x, y) => y.score - x.score);
 }
 
 /**
@@ -103,6 +141,64 @@ export function matchAcross(
     }
   }
   return best;
+}
+
+/** Tight crop around everyone on screen (plus optional extras like a ghost box). */
+export function crowdCrop(
+  boxes: FrameBox[],
+  extras: Array<FrameBox | null | undefined>,
+  width: number,
+  height: number,
+  pad = 72,
+): { x: number; y: number; w: number; h: number } {
+  const all = [...boxes, ...extras.filter((b): b is FrameBox => b != null)];
+  if (!all.length) return { x: 0, y: 0, w: width, h: height };
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  for (const b of all) {
+    x0 = Math.min(x0, b.x);
+    y0 = Math.min(y0, b.y);
+    x1 = Math.max(x1, b.x + b.w);
+    y1 = Math.max(y1, b.y + b.h);
+  }
+  x0 = Math.max(0, x0 - pad);
+  y0 = Math.max(0, y0 - pad);
+  x1 = Math.min(width, x1 + pad);
+  y1 = Math.min(height, y1 + pad);
+  return { x: x0, y: y0, w: Math.max(1, x1 - x0), h: Math.max(1, y1 - y0) };
+}
+
+/** One crop for the whole clip so the camera does not pan as people walk. */
+export function lockedCrowdCrop(clip: IndexedClip, pad = 72): { x: number; y: number; w: number; h: number } {
+  const boxes: FrameBox[] = [];
+  for (const list of clip.byFrame.values()) boxes.push(...list);
+  return crowdCrop(boxes, [], clip.width, clip.height, pad);
+}
+
+/** First frame this tracker ID exists. */
+export function firstTrackBox(
+  clip: IndexedClip,
+  id: number,
+): { frame: number; box: FrameBox } | null {
+  const rows = clip.tracks[String(id)];
+  if (!rows?.length) return null;
+  const [f, x, y, w, h, conf] = rows[0];
+  return { frame: f, box: { id, x, y, w, h, conf } };
+}
+
+/** Last box for any ID in `ids` at or before `frame` (where they stood when they vanished). */
+export function lastKnownBox(
+  clip: IndexedClip,
+  ids: ReadonlySet<number>,
+  frame: number,
+): FrameBox | null {
+  for (let f = frame; f >= 1; f--) {
+    const hit = (clip.byFrame.get(f) ?? []).find((b) => ids.has(b.id));
+    if (hit) return hit;
+  }
+  return null;
 }
 
 /** Centres of the followed person over the last `length` frames (for a motion trail). */

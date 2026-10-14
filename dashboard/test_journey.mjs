@@ -27,6 +27,18 @@ async function main() {
   await page.waitForSelector("text=They're still in the picture", { timeout: 8000 });
   await page.waitForSelector("[data-testid='privacy-note']", { timeout: 8000 });
   await page.waitForSelector("[data-testid='gate-ticker']", { timeout: 8000 });
+  await page.waitForSelector("text=This person is #2", { timeout: 8000 });
+  await page.waitForSelector("text=Play the full clip (slow)", { timeout: 8000 });
+  const startFrame = Number(await page.locator("span.font-mono.font-bold").first().innerText());
+  console.log("WATCH start frame", startFrame);
+  if (startFrame > 5) errors.push(`watch should start at the beginning, got ${startFrame}`);
+  await page.getByRole("button", { name: "Play the full clip (slow)" }).click();
+  await page.waitForTimeout(2800);
+  const midFrame = Number(await page.locator("span.font-mono.font-bold").first().innerText());
+  console.log("WATCH after 2.8s", midFrame);
+  if (midFrame < 8) errors.push(`playback did not advance enough (${midFrame})`);
+  if (midFrame > 70) errors.push(`playback still races through the clip (${midFrame})`);
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
   console.log("WATCH: heading + live beat + privacy ok");
   const canvasesWatch = await page.locator("canvas").count();
   console.log("WATCH canvases", canvasesWatch);
@@ -40,6 +52,7 @@ async function main() {
   await page.waitForSelector("text=LOOK is still missing", { timeout: 8000 });
   await page.getByTestId("jump-switch").click();
   await page.waitForSelector("text=They're back", { timeout: 8000 });
+  await page.waitForSelector("text=should still be", { timeout: 8000 });
   await page.waitForSelector("text=ID switch", { timeout: 8000 });
   const canvasesCompare = await page.locator("canvas").count();
   console.log("COMPARE canvases", canvasesCompare);

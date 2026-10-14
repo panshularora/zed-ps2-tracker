@@ -50,7 +50,7 @@ export function frameStory(opts: {
     return {
       kind: "overlap",
       title: `Two people overlap (#${top.a.id} and #${top.b.id})`,
-      body: `Their boxes share ${(top.iou * 100).toFixed(0)}% of the same pixels. This is when numbers often swap. Amber fill marks every overlap on this frame.`,
+      body: `The hatched region is pixels both bodies occupy. Each person must keep their own number through that overlap.`,
     };
   }
   if (!hasMedia) {

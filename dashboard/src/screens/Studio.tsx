@@ -11,12 +11,15 @@ import {
   compareVerdicts,
   defaultFollowId,
   identityChain,
+  firstTrackBox,
+  lastKnownBox,
   matchAcross,
   overlappingPairs,
+  OVERLAP_MIN_SCORE,
   switchOnFrame,
   switchesForChain,
-  trailCenters,
   type IdentityVerdict,
+  type OverlapPair,
 } from "@viewer/identity";
 import { Panel } from "@viewer/Panel";
 import { pickMedia, useMedia, type PickedMedia } from "@viewer/useMedia";
@@ -47,7 +50,8 @@ function boxesAt(clip: IndexedClip | undefined, frame: number): FrameBox[] {
 export function Studio({ clips, jump, picked, onPicked, mode, onNext }: Props) {
   const storyClips = clips.filter((c) => c.clip === FAILURE.clip);
   const pool = storyClips.length ? storyClips : clips;
-  const trackers = pool.map((c) => c.tracker);
+  const gtClip = pool.find((c) => c.tracker === "gt");
+  const trackers = pool.filter((c) => c.tracker !== "gt").map((c) => c.tracker);
   const leftName = trackers.find((t) => t === FAILURE.left) ?? trackers[0] ?? "";
   const rightName =
     trackers.find((t) => t === FAILURE.right && t !== leftName) ??
@@ -57,19 +61,22 @@ export function Studio({ clips, jump, picked, onPicked, mode, onNext }: Props) {
   const R = pool.find((c) => c.tracker === rightName) ?? pool[1] ?? pool[0];
   const compare = mode === "compare";
 
-  const [frame, setFrame] = useState(jump.frame ?? FAILURE.lookFrom);
+  const [frame, setFrame] = useState(jump.frame ?? FAILURE.playFrom);
   const [playing, setPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1);
+  const [speed, setSpeed] = useState<number>(FAILURE.playSpeed);
   const [followId, setFollowId] = useState<number | null>(jump.trackId ?? FAILURE.seedId);
   const [rightSeed, setRightSeed] = useState<number | null>(null);
+  const holdLeft = useRef(0);
 
   useEffect(() => {
     if (!L) return;
     setFollowId(jump.trackId ?? FAILURE.seedId ?? defaultFollowId(L, 1));
     setRightSeed(FAILURE.seedId);
     setFrame(
-      clampFrame(jump.frame ?? (mode === "compare" ? FAILURE.compareFrom : FAILURE.lookFrom), L.frames),
+      clampFrame(jump.frame ?? (mode === "compare" ? FAILURE.compareFrom : FAILURE.playFrom), L.frames),
     );
+    setSpeed(FAILURE.playSpeed);
+    holdLeft.current = 0;
     setPlaying(mode === "compare");
   }, [L, jump.trackId, jump.frame, mode]);
 
@@ -89,16 +96,23 @@ export function Studio({ clips, jump, picked, onPicked, mode, onNext }: Props) {
 
   useEffect(() => {
     if (!playing || !L || (videoDriven && speed === 1)) return;
+    const tickMs = 1000 / (L.fps * speed);
+    const dwellTicks = Math.max(1, Math.round((FAILURE.dwellSec * 1000) / tickMs));
     const id = window.setInterval(() => {
       setFrame((f) => {
-        const stopAt = Math.min(L.frames, FAILURE.frame + 18);
-        if (f >= stopAt) {
+        if (holdLeft.current > 0) {
+          holdLeft.current -= 1;
+          return f;
+        }
+        if (f >= L.frames) {
           setPlaying(false);
           return f;
         }
-        return f + 1;
+        const next = f + 1;
+        if (storyBeat(next).phase !== storyBeat(f).phase) holdLeft.current = dwellTicks;
+        return next;
       });
-    }, 1000 / (L.fps * speed));
+    }, tickMs);
     return () => window.clearInterval(id);
   }, [playing, L, videoDriven, speed, mode]);
 
@@ -127,11 +141,37 @@ export function Studio({ clips, jump, picked, onPicked, mode, onNext }: Props) {
   const rightFollow = rightHit?.id ?? rightSeed;
   const rightIds = rightFollow != null ? identityChain(R.events, rightFollow) : [];
   const rightFocus = new Set(rightIds);
-  const overlaps = overlappingPairs(leftBoxes, 0.15);
+  const overlaps = overlappingPairs(leftBoxes, OVERLAP_MIN_SCORE).filter(
+    (p) => focusSet.has(p.a.id) || focusSet.has(p.b.id),
+  );
   const overlapIds = new Set(overlaps.flatMap((p) => [p.a.id, p.b.id]));
+  const rightOverlaps = overlappingPairs(rightBoxes, OVERLAP_MIN_SCORE).filter(
+    (p) => rightFocus.has(p.a.id) || rightFocus.has(p.b.id),
+  );
+  const keepGtBox = gtClip?.byFrame.get(f)?.find((b) => b.id === FAILURE.gt) ?? null;
+  const showKeepBox = Boolean(keepGtBox && (currentBox == null || currentBox.id !== FAILURE.from));
   const stableColor = followId != null ? idColor(followId) : undefined;
-  const leftTrail = trailCenters(L, focusSet, f);
-  const rightTrail = trailCenters(R, rightFocus, f);
+  const beat = storyBeat(f);
+  const leftBorn = firstTrackBox(L, FAILURE.to);
+  const rightBorn = firstTrackBox(R, FAILURE.to);
+  const leftBreak = {
+    leave: lastKnownBox(L, new Set([FAILURE.from]), FAILURE.goneFrom - 1),
+    leaveFrame: FAILURE.goneFrom - 1,
+    back: currentBox ?? leftBorn?.box ?? null,
+    backFrame: leftBorn?.frame ?? FAILURE.backFrom,
+    fromId: FAILURE.from,
+    toId: FAILURE.to,
+    phase: beat.phase,
+  };
+  const rightBreak = {
+    leave: lastKnownBox(R, new Set([FAILURE.from]), FAILURE.goneFrom - 1),
+    leaveFrame: FAILURE.goneFrom - 1,
+    back: rightHit ?? rightBorn?.box ?? null,
+    backFrame: rightBorn?.frame ?? FAILURE.backFrom,
+    fromId: FAILURE.from,
+    toId: FAILURE.to,
+    phase: beat.phase,
+  };
   const leftPretty = prettyTracker(L.tracker);
   const rightPretty = prettyTracker(R.tracker);
   const leftSwitch = switchOnFrame(L.events, f, focusSet);
@@ -143,8 +183,14 @@ export function Studio({ clips, jump, picked, onPicked, mode, onNext }: Props) {
         gt: leftSwitch?.type === "id_switch" ? leftSwitch.gt : null,
       };
 
-  function playOverlap() {
-    setFrame(FAILURE.lookFrom);
+  function togglePlay() {
+    if (playing) {
+      setPlaying(false);
+      return;
+    }
+    holdLeft.current = 0;
+    setSpeed(FAILURE.playSpeed);
+    setFrame((n) => (n >= L.frames ? FAILURE.playFrom : n));
     setPlaying(true);
   }
 
@@ -161,7 +207,7 @@ export function Studio({ clips, jump, picked, onPicked, mode, onNext }: Props) {
         overlap={overlaps[0]}
         left={compared.a}
         right={compared.b}
-        onPlay={playOverlap}
+        onPlay={togglePlay}
         playing={playing}
         onNext={onNext}
       />
@@ -198,7 +244,7 @@ export function Studio({ clips, jump, picked, onPicked, mode, onNext }: Props) {
           hint={
             compare
               ? leftPretty.why
-              : "The coloured box is the person to follow. Orange means two people overlap."
+              : "Camera is locked. Only people move. Hatched orange is two bodies sharing pixels. LOOK must keep #2."
           }
           clip={L}
           frame={f}
@@ -206,17 +252,22 @@ export function Studio({ clips, jump, picked, onPicked, mode, onNext }: Props) {
           tick={media.tick}
           counts={gateCounts(L.events, f)}
           focusIds={focusSet}
-          dimOthers
+          dimOthers={false}
           missing={
-            !currentBox && storyBeat(f).phase === "gone"
-              ? "LOOK is off screen. Wait — they come back with a new number."
+            !currentBox && beat.phase === "gone"
+              ? `LEFT at frame ${FAILURE.goneFrom - 1}. Tracker dropped #${FAILURE.from}. Green keep is still this person.`
               : null
           }
           overlapIds={overlapIds}
+          overlaps={overlaps}
+          keepId={FAILURE.from}
+          gtId={FAILURE.gt}
+          keepBox={showKeepBox ? keepGtBox : null}
           stableColor={stableColor}
           personLabel="LOOK"
-          trail={leftTrail}
+          idBreak={leftBreak}
           verdict={compared.a}
+          currentId={currentBox?.id}
           onPick={(id) => {
             if (id != null) {
               setFollowId(id);
@@ -227,23 +278,30 @@ export function Studio({ clips, jump, picked, onPicked, mode, onNext }: Props) {
         {compare && (
           <Viewport
             title={rightPretty.title}
-            hint={`${rightPretty.why}. Lined up with the left panel by where the box is, not by the number.`}
+            hint="Camera is locked. Same person, lined up by where the box is."
             clip={R}
             frame={f}
             image={media.image}
             tick={media.tick}
             counts={gateCounts(R.events, f)}
             focusIds={rightFocus}
-            dimOthers
+            dimOthers={false}
             missing={
-              !rightHit && storyBeat(f).phase === "gone"
-                ? "LOOK is off screen. Wait — they come back with a new number."
+              !rightHit && beat.phase === "gone"
+                ? `LEFT at frame ${FAILURE.goneFrom - 1}. Tracker dropped #${FAILURE.from}. Green keep is still this person.`
                 : null
             }
-            overlapIds={new Set(overlappingPairs(rightBoxes, 0.15).flatMap((p) => [p.a.id, p.b.id]))}
+            overlapIds={new Set(rightOverlaps.flatMap((p) => [p.a.id, p.b.id]))}
+            overlaps={rightOverlaps}
+            keepId={FAILURE.from}
+            gtId={FAILURE.gt}
+            keepBox={
+              keepGtBox && (rightHit == null || rightHit.id !== FAILURE.from) ? keepGtBox : null
+            }
             stableColor={stableColor}
             personLabel="LOOK"
-            trail={rightTrail}
+            idBreak={rightBreak}
+            currentId={rightHit?.id}
             verdict={compared.b}
             onPick={(id) => {
               if (id != null) {
@@ -260,29 +318,33 @@ export function Studio({ clips, jump, picked, onPicked, mode, onNext }: Props) {
         )}
       </div>
 
-      <div className="bg-paper border-t border-line px-4 py-2 flex flex-wrap items-center gap-2 shrink-0 text-[12px]">
+      <div className="bg-paper border-t border-line px-4 py-1.5 flex flex-wrap items-center gap-2 shrink-0 text-[12px]">
         <span
           className="inline-block w-2.5 h-2.5 rounded-sm"
           style={{ background: stableColor ?? "#94a3b8" }}
         />
         <span className="text-ink font-medium">
-          {currentBox ? `This tracker currently calls them #${currentBox.id}` : "They are off screen"}
+          {currentBox
+            ? currentBox.id === FAILURE.from
+              ? `LOOK is #${currentBox.id} — this number must survive overlap`
+              : `LOOK is the same person. Tracker now says #${currentBox.id}. Keep #${FAILURE.from} (GT ${FAILURE.gt}).`
+            : `LOOK has no tracker box. Keep #${FAILURE.from} (GT ${FAILURE.gt}) is the ID that should still be theirs.`}
         </span>
         {compare && (
-          <span className="text-mute">The other tracker has them as #{rightFollow ?? "—"}</span>
+          <span className="text-mute">Other tracker: #{rightFollow ?? "—"}</span>
         )}
         {overlaps.length > 0 && (
           <span className="px-1.5 py-0.5 rounded bg-signal/15 text-signal">
-            overlap {(overlaps[0].iou * 100).toFixed(0)}%
+            overlap #{overlaps[0].a.id}+#{overlaps[0].b.id} · keep #{FAILURE.from}
           </span>
         )}
         <span className="ml-auto text-mute hidden md:flex items-center gap-3 text-[11px]">
           <span>
-            <span className="font-semibold text-ink">LOOK</span> = this person
+            <span className="font-semibold text-ink">LOOK</span> = one body in the crowd
           </span>
-          <span>gold line = gate</span>
-          <span className="text-fail">red = number just changed</span>
-          <span className="text-signal">orange = two people overlap</span>
+          <span className="text-signal">hatched = two people sharing pixels</span>
+          <span className="text-keep">green = keep #{FAILURE.from}</span>
+          <span className="text-fail">red = tracker issued a new number</span>
         </span>
       </div>
 
@@ -326,29 +388,27 @@ function Brief({
 }) {
   const beat = storyBeat(frame);
   return (
-    <div className="px-4 py-3 bg-paper border-b border-line shrink-0">
+    <div className="px-4 py-2 bg-paper border-b border-line shrink-0">
       {mode === "watch" ? (
-        <div className="flex flex-col lg:flex-row lg:items-end gap-3 justify-between">
-          <div className="max-w-3xl space-y-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 justify-between">
+          <div className="min-w-0">
             <div className="font-display uppercase tracking-[0.18em] text-[11px] text-signal">
               What's happening here
             </div>
-            <h1 className="font-display text-[22px] sm:text-[26px] leading-none text-ink font-semibold">
+            <h1 className="font-display text-[18px] sm:text-[20px] leading-tight text-ink font-semibold">
               They walk out of view. They come back with a new number.
             </h1>
-            <p className="text-[13px] text-mute max-w-2xl">
-              Press play and follow the green LOOK box. You will see three beats: they are here as
-              number {FAILURE.from}, they disappear, then they come back as number {FAILURE.to}.
-              The bar under the title always tells you which beat you are on.
+            <p className="text-[12px] text-mute">
+              Press play for the full clip at ¼ speed. Step 1: #{FAILURE.from} is here. Step 2: they
+              leave. Step 3: they come back as #{FAILURE.to}.
             </p>
-            <p className="text-[12px] text-mute max-w-2xl" data-testid="privacy-note">
-              The numbers are invented by the tracker. We do not store faces, and it cannot look at
-              future frames.
+            <p className="text-[11px] text-mute" data-testid="privacy-note">
+              Numbers are invented per run. We do not store faces, and it cannot look at future frames.
             </p>
             {overlap && beat.phase === "here" && (
-              <p className="text-[12px] text-signal">
-                Two boxes overlap on this frame ({(overlap.iou * 100).toFixed(0)}% of the same
-                pixels). That is when numbers usually get mixed up.
+              <p className="text-[11px] text-signal">
+                Two people share pixels (hatched). LOOK must stay #{FAILURE.from}. Overlap is not a
+                new ID.
               </p>
             )}
           </div>
@@ -356,42 +416,41 @@ function Brief({
             <button
               type="button"
               onClick={onPlay}
-              className="px-3 py-2 rounded-sm bg-signal text-paper font-semibold text-[12px]"
+              className="px-3 py-1.5 rounded-sm bg-signal text-paper font-semibold text-[12px]"
             >
-              {playing ? "Playing…" : "Play until they return"}
+              {playing ? "Pause" : "Play the full clip (slow)"}
             </button>
             <button
               type="button"
               onClick={onNext}
-              className="px-3 py-2 rounded-sm border border-line text-ink font-semibold text-[12px]"
+              className="px-3 py-1.5 rounded-sm border border-line text-ink font-semibold text-[12px]"
             >
               Compare both trackers →
             </button>
           </div>
         </div>
       ) : (
-        <div className="flex flex-col lg:flex-row lg:items-end gap-3 justify-between">
-          <div className="max-w-3xl space-y-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 justify-between">
+          <div className="min-w-0">
             <div className="font-display uppercase tracking-[0.18em] text-[11px] text-signal">
               Same person, two trackers
             </div>
-            <h1 className="font-display text-[22px] sm:text-[26px] leading-none text-ink font-semibold">
+            <h1 className="font-display text-[18px] sm:text-[20px] leading-tight text-ink font-semibold">
               Watch them come back on both sides
             </h1>
-            <p className="text-[13px] text-mute max-w-2xl">
-              Left is BoT-SORT, the tracker we run. Right is ByteTrack, a simpler overlap-only
-              version. Playback starts while LOOK is still missing, so you see the return happen.
-              A red badge means that tracker just gave them a new number. Green would mean it kept
-              the old one while the other side slipped — you will not see green here.
+            <p className="text-[12px] text-mute">
+              Left BoT-SORT, right ByteTrack. Playback starts while LOOK is still missing, so you
+              see the return. Green keep is #{FAILURE.from} (GT {FAILURE.gt}). Red is a new number.
+              Neither side keeps #{FAILURE.from}.
             </p>
-            <p className="text-[13px] text-mute max-w-2xl">
-              Right now BoT-SORT is {verdictWords(left)} and ByteTrack is {verdictWords(right)}.
+            <p className="text-[12px] text-mute">
+              BoT-SORT is {verdictWords(left)}; ByteTrack is {verdictWords(right)}.
             </p>
           </div>
           <button
             type="button"
             onClick={onNext}
-            className="px-3 py-2 rounded-sm bg-signal text-paper font-semibold text-[12px] shrink-0"
+            className="px-3 py-1.5 rounded-sm bg-signal text-paper font-semibold text-[12px] shrink-0"
           >
             See the evidence →
           </button>
@@ -410,11 +469,16 @@ function Viewport({
   tick,
   counts,
   focusIds,
-  dimOthers = true,
+  dimOthers = false,
   overlapIds,
+  overlaps,
+  keepId,
+  gtId,
+  keepBox,
   stableColor,
   personLabel,
-  trail,
+  idBreak,
+  currentId,
   verdict,
   missing,
   onPick,
@@ -429,16 +493,31 @@ function Viewport({
   focusIds: Set<number>;
   dimOthers?: boolean;
   overlapIds: Set<number>;
+  overlaps?: OverlapPair[];
+  keepId?: number;
+  gtId?: number;
+  keepBox?: FrameBox | null;
   stableColor?: string;
   personLabel?: string;
-  trail?: { x: number; y: number }[];
+  idBreak?: {
+    leave: FrameBox | null;
+    leaveFrame: number;
+    back: FrameBox | null;
+    backFrame: number;
+    fromId: number;
+    toId: number;
+    phase: "here" | "gone" | "back";
+  } | null;
+  currentId?: number;
   verdict: IdentityVerdict;
   missing?: string | null;
   onPick: (id: number | null) => void;
 }) {
+  const people = (clip.byFrame.get(frame) ?? []).map((b) => b.id);
+  const beat = storyBeat(frame);
   return (
     <div className="flex flex-col bg-raised rounded-sm border border-line overflow-hidden min-h-0">
-      <div className="px-3 py-1.5 border-b border-line shrink-0 flex items-center justify-between gap-2">
+      <div className="px-3 py-1 border-b border-line shrink-0 flex items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="font-semibold text-ink text-[12px] truncate">{title}</div>
           <div className="text-[11px] text-mute truncate">{hint}</div>
@@ -452,26 +531,60 @@ function Viewport({
           image={image}
           imageTick={tick}
           chrome={false}
-          className="w-full"
+          className="h-full w-full flex items-center justify-center"
           focusIds={focusIds}
           dimOthers={dimOthers}
           overlapIds={overlapIds}
+          overlaps={overlaps}
+          keepId={keepId}
+          gtId={gtId}
+          keepBox={keepBox}
           stableColor={stableColor}
           personLabel={personLabel}
-          trail={trail}
+          cropCrowd
+          showHeld={false}
+          idBreak={idBreak}
           verdict={verdict}
           onPick={onPick}
         />
-        {missing && (
-          <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center px-3">
-            <div className="rounded-sm bg-black/70 text-white text-[12px] px-3 py-1.5 max-w-md text-center">
-              {missing}
+        <div className="pointer-events-none absolute left-2 top-2 max-w-[min(100%-1rem,28rem)]">
+          <div
+            className={`rounded-sm px-2.5 py-1.5 text-white shadow-sm ${
+              beat.phase === "back" ? "bg-fail/95" : "bg-black/80"
+            }`}
+          >
+            <div className="font-display text-[15px] sm:text-[17px] font-semibold leading-tight">
+              {beat.step} · {beat.title}
             </div>
+            {currentId != null && beat.phase !== "gone" && (
+              <div className="text-[11px] font-mono mt-0.5">
+                {currentId === FAILURE.from
+                  ? `now #${currentId} — keep this number`
+                  : `tracker #${currentId} · should still be #${FAILURE.from} (GT ${FAILURE.gt})`}
+              </div>
+            )}
+            {missing && <div className="text-[11px] mt-0.5">{missing}</div>}
           </div>
-        )}
+        </div>
       </div>
-      <div className="px-3 py-1 text-[11px] text-mute">
-        {counts.in} walked in · {counts.out} walked out
+      <div className="px-3 py-1 text-[11px] text-mute flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span>
+          {people.length} people · {counts.in} in · {counts.out} out
+        </span>
+        <span className="font-mono text-[10px] flex flex-wrap gap-1">
+          {people.map((id) => (
+            <span
+              key={id}
+              className={
+                focusIds.has(id)
+                  ? "px-1 rounded-sm bg-fail text-white"
+                  : "px-1 rounded-sm bg-raised text-ink border border-line"
+              }
+            >
+              #{id}
+            </span>
+          ))}
+        </span>
       </div>
     </div>
   );
@@ -574,6 +687,7 @@ function PlaybackBar({
           onChange={(e) => onSpeed(Number(e.target.value))}
           className="bg-raised border border-line rounded-sm px-1.5 py-0.5 text-ink"
         >
+          <option value={0.25}>0.25x</option>
           <option value={0.5}>0.5x</option>
           <option value={1}>1.0x</option>
           <option value={2}>2.0x</option>
@@ -615,7 +729,7 @@ function PersonTimeline({
     })
     .filter((s): s is { id: number; f0: number; f1: number; color: string } => s != null);
   return (
-    <div className="h-20 bg-paper flex flex-col shrink-0 border-t border-line">
+    <div className="h-14 bg-paper flex flex-col shrink-0 border-t border-line">
       <div className="px-4 py-1 text-[10px] uppercase tracking-wider text-mute font-bold flex flex-wrap gap-x-4 gap-y-0.5">
         <span>This person over time</span>
         <span>Here as #{FAILURE.from}</span>
@@ -673,19 +787,24 @@ function NowBanner({ events, frame }: { events: ClipEvent[]; frame: number }) {
   );
   return (
     <div
-      className="px-4 py-2 bg-raised border-b border-line flex flex-wrap items-center gap-2 text-[13px]"
+      className="px-4 py-3 bg-raised border-b border-line text-[13px]"
       data-testid="gate-ticker"
     >
-      <span className={`shrink-0 px-1.5 py-0.5 rounded-sm font-semibold text-[11px] uppercase ${tone}`}>
-        {label}
-      </span>
-      <span className="text-ink font-medium">{beat.now}</span>
-      <span className="text-mute">{beat.why}</span>
-      {switchEv && switchEv.type === "id_switch" && (
-        <span className="text-fail font-semibold">
-          #{switchEv.from} became #{switchEv.to}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={`shrink-0 px-1.5 py-0.5 rounded-sm font-semibold text-[11px] uppercase ${tone}`}>
+          {beat.step} · {label}
         </span>
-      )}
+        <span className="font-display text-[20px] sm:text-[24px] font-semibold text-ink leading-none">
+          {beat.title}
+        </span>
+        {switchEv && switchEv.type === "id_switch" && (
+          <span className="text-fail font-semibold">
+            #{switchEv.from} became #{switchEv.to}
+          </span>
+        )}
+      </div>
+      <p className="text-ink mt-1">{beat.now}</p>
+      <p className="text-mute">{beat.why}</p>
     </div>
   );
 }

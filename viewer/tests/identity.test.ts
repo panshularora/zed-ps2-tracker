@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { parseClip, type Clip } from "../src/data";
 import {
+  boxImin,
+  boxIntersection,
   boxIou,
   compareVerdicts,
   defaultFollowId,
   identityChain,
+  lastKnownBox,
+  crowdCrop,
+  firstTrackBox,
+  lockedCrowdCrop,
   matchAcross,
   overlappingPairs,
   pickBoxAt,
@@ -37,6 +43,12 @@ describe("overlap", () => {
     expect(boxIou(a, { ...a, id: 2 })).toBe(1);
     expect(boxIou(a, { id: 2, x: 20, y: 20, w: 5, h: 5, conf: 1 })).toBe(0);
   });
+  it("returns the shared rectangle of two people", () => {
+    const a = { id: 1, x: 0, y: 0, w: 10, h: 10, conf: 1 };
+    const b = { id: 2, x: 6, y: 2, w: 10, h: 10, conf: 1 };
+    expect(boxIntersection(a, b)).toEqual({ x: 6, y: 2, w: 4, h: 8 });
+    expect(boxIntersection(a, { id: 3, x: 20, y: 20, w: 5, h: 5, conf: 1 })).toBeNull();
+  });
   it("flags a pair above the IoU floor", () => {
     const boxes = [
       { id: 1, x: 0, y: 0, w: 10, h: 10, conf: 1 },
@@ -48,6 +60,17 @@ describe("overlap", () => {
     expect(pairs[0].a.id).toBe(1);
     expect(pairs[0].b.id).toBe(2);
     expect(pairs[0].iou).toBeCloseTo(1 / 3, 5);
+    expect(pairs[0].inter).toEqual({ x: 5, y: 0, w: 5, h: 10 });
+  });
+  it("flags occlusion when IoU is small but one body covers the other", () => {
+    const big = { id: 2, x: 0, y: 0, w: 100, h: 100, conf: 1 };
+    const small = { id: 5, x: 0, y: 0, w: 20, h: 15, conf: 1 };
+    expect(boxIou(big, small)).toBeLessThan(0.15);
+    expect(boxImin(big, small)).toBe(1);
+    const pairs = overlappingPairs([big, small]);
+    expect(pairs).toHaveLength(1);
+    expect(pairs[0].score).toBe(1);
+    expect(pairs[0].inter).toEqual({ x: 0, y: 0, w: 20, h: 15 });
   });
 });
 
@@ -73,6 +96,32 @@ describe("identity", () => {
   it("lists the switches that retarget this person", () => {
     const ids = new Set(identityChain(clip.events, 14));
     expect(switchesForChain(clip.events, ids)).toHaveLength(2);
+  });
+  it("crops the frame to the people instead of the empty sky", () => {
+    const boxes = [
+      { id: 1, x: 900, y: 400, w: 40, h: 80, conf: 1 },
+      { id: 2, x: 980, y: 420, w: 50, h: 90, conf: 1 },
+    ];
+    const c = crowdCrop(boxes, [], 1920, 1080, 20);
+    expect(c.x).toBe(880);
+    expect(c.y).toBe(380);
+    expect(c.w).toBe(170);
+    expect(c.h).toBe(150);
+  });
+  it("locks one crop for the whole clip so the camera does not pan", () => {
+    const c = parseClip(clip);
+    const a = lockedCrowdCrop(c, 0);
+    const b = lockedCrowdCrop(c, 0);
+    expect(a).toEqual(b);
+    expect(a.x).toBe(10);
+    expect(firstTrackBox(c, 41)?.frame).toBe(50);
+  });
+  it("keeps the last box after that person leaves the frame", () => {
+    const c = parseClip(clip);
+    const gone = lastKnownBox(c, new Set([14]), 40);
+    expect(gone).toMatchObject({ id: 14, x: 12, y: 10 });
+    expect(lastKnownBox(c, new Set([14]), 1)?.id).toBe(14);
+    expect(lastKnownBox(c, new Set([99]), 10)).toBeNull();
   });
 });
 
