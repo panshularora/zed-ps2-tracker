@@ -127,6 +127,9 @@ def _manifest(index: dict[str, Any], key: str, dataset: str, split: str,
 def tune(plan: dict[str, Any], index: dict[str, Any], out: Path, jobs: int,
          force: bool) -> dict[str, Any]:  # fmt: skip
     t = plan["tune"]
+    if t.get("split") != "train_half":  # guard: tuning must never see val-half frames
+        raise ValueError(f"tune.split must be 'train_half' (got {t.get('split')!r}); "
+                         "tuning on val frames would leak into every reported row")
     if t["cache"] not in index["caches"]:
         raise FileNotFoundError(f"tuning needs {t['cache']} (ingest MOT17 first)")
     chosen: dict[str, float] = {}
