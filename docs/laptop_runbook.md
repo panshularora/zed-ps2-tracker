@@ -101,8 +101,9 @@ Detach with **Ctrl+b, then d**. The run keeps going, and you can close the termi
 with `tmux attach -t zed`.
 
 Stage order: preflight → setup → gpucheck → **MOT17** (Stage A → ingest → phase 3 → results
-tar) → **MOT20** (same) → **DanceTrack** (+ SOMPT22 if its archives are in
-`~/zed-ps2-stagea/downloads/sompt22/`) → final phase 3 → final tar.
+tar) → **MOT20** (same) → **DanceTrack** (+ SOMPT22 if `~/zed-ps2-stagea/data/SOMPT22` has
+train/test sequences, or archives are in `~/zed-ps2-stagea/downloads/sompt22/`) → final phase 3 →
+final tar. The extracted copy lives at `C:\Users\Panshul\sompt22` (do not delete it).
 
 ## 6 · Check on it
 

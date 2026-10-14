@@ -47,6 +47,26 @@ fetch() {
   fi
 }
 
+# True when SOMPT22 train/test sequences are already on disk (extracted MOT layout).
+sompt22_has_seqs() {
+  local d s
+  for d in "$DATA/SOMPT22/train" "$DATA/SOMPT22/test" \
+           "$DATA/SOMPT22/_seqs/train" "$DATA/SOMPT22/_seqs/test"; do
+    [[ -d "$d" ]] || continue
+    for s in "$d"/*/img1; do
+      [[ -d "$s" ]] && return 0
+    done
+  done
+  return 1
+}
+
+sompt22_has_archives() {
+  compgen -G "$DL/sompt22/*" >/dev/null
+}
+
+# Archives in downloads/sompt22, or an already-extracted tree at data/SOMPT22.
+sompt22_ready() { sompt22_has_seqs || sompt22_has_archives; }
+
 # unzip_once ZIP DESTDIR : extract once; a marker file makes re-runs instant
 unzip_once() {
   local zip="$1" dest="$2" marker; marker="$2/.extracted_$(basename "$1")"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import configparser
+import os
 from pathlib import Path
 
 import numpy as np
@@ -55,6 +56,7 @@ def test_convert_keeps_only_train_half_people_and_clips(tmp_path: Path) -> None:
     assert anns[1]["image_id"] == 3
 
 
+@pytest.mark.skipif(os.name == "nt", reason="prepare writes directory symlinks")
 def test_prepare_splits_by_gt_and_writes_seqinfo(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -83,3 +85,22 @@ def test_prepare_splits_by_gt_and_writes_seqinfo(
     assert (s["seqLength"], s["imWidth"], s["imHeight"], s["frameRate"]) == ("2", "64", "48", "25")
     # idempotent
     assert prepare_mot_like(root, fps=25) == out
+
+
+@pytest.mark.skipif(os.name == "nt", reason="prepare writes directory symlinks")
+def test_prepare_follows_train_test_symlinks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import models.prepare as prep
+
+    monkeypatch.setattr(prep, "_image_info", lambda img_dir: (len(list(img_dir.iterdir())), ".jpg", 64, 48))
+    real = tmp_path / "real"
+    _seq(real / "train", "SOMPT22-02", 2, np.array([[1, 1, 0, 0, 5, 5, 1, 1, 1.0]]))
+    _seq(real / "test", "SOMPT22-01", 2, None)
+    root = tmp_path / "SOMPT22"
+    root.mkdir()
+    os.symlink(real / "train", root / "train")
+    os.symlink(real / "test", root / "test")
+    out = prepare_mot_like(root, fps=30)
+    assert out == {"train": ["SOMPT22-02"], "test": ["SOMPT22-01"]}
+    assert (root / "_seqs" / "train" / "SOMPT22-02" / "img1").is_dir()

@@ -34,11 +34,25 @@ def _image_info(img_dir: Path) -> tuple[int, str, int, int]:
     return len(ids), frames[0].suffix, int(im.shape[1]), int(im.shape[0])
 
 
+def _seq_dirs(root: Path) -> list[Path]:
+    """Sequence folders that contain ``img1/``. Follows a ``train/`` / ``test/`` symlink."""
+    found: set[Path] = set()
+    for split in ("train", "test"):
+        base = root / split
+        if not base.is_dir():
+            continue
+        for child in base.iterdir():
+            if child.is_dir() and (child / "img1").is_dir() and "_seqs" not in child.parts:
+                found.add(child)
+    for p in root.rglob("img1"):
+        if p.is_dir() and "_seqs" not in p.parts:
+            found.add(p.parent)
+    return sorted(found, key=lambda p: (p.parent.name, p.name))
+
+
 def prepare_mot_like(root: Path, fps: float) -> dict[str, list[str]]:
     out: dict[str, list[str]] = {"train": [], "test": []}
-    seq_dirs = sorted(
-        {p.parent for p in root.rglob("img1") if "_seqs" not in p.parts and p.is_dir()}
-    )
+    seq_dirs = _seq_dirs(root)
     if not seq_dirs:
         raise SystemExit(f"no <seq>/img1 folders under {root}; check the extracted archives")
     for seq in seq_dirs:

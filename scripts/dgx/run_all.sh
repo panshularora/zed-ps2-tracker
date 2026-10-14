@@ -236,7 +236,9 @@ stage_preflight() {
     fi
   done
   if [[ " ${EXTRA[*]} " == *" sompt22 "* ]]; then
-    if compgen -G "$DL/sompt22/*" >/dev/null; then log "SOMPT22: archives present"; else log "SOMPT22: no archives in $DL/sompt22 -> that stage will be skipped"; fi
+    if sompt22_has_seqs; then log "SOMPT22: extracted at $DATA/SOMPT22"
+    elif sompt22_has_archives; then log "SOMPT22: archives present in $DL/sompt22"
+    else log "SOMPT22: no sequences in $DATA/SOMPT22 and no archives in $DL/sompt22 -> that stage will be skipped"; fi
   fi
   [[ -z "$GATE" ]] || log "gate clip: $GATE"
 
@@ -361,8 +363,8 @@ run_stagea_once() {   # DATASET DETECTOR -> runs run.sh, returns its exit code; 
 
 stage_stagea() {
   local d="$1" det rc out="$PIPE_STATE/stagea_$1.out" dst lbl
-  if [[ "$d" == sompt22 ]] && ! compgen -G "$DL/sompt22/*" >/dev/null; then
-    pipe_skip "no SOMPT22 archives in $DL/sompt22 (manual download, see the runbook); re-run later"
+  if [[ "$d" == sompt22 ]] && ! sompt22_ready; then
+    pipe_skip "no SOMPT22 sequences in $DATA/SOMPT22 and no archives in $DL/sompt22 (see the runbook); re-run later"
     return 0
   fi
   det="$(current_detector)"

@@ -71,8 +71,10 @@ The per-dataset flow below still works unchanged.
 and download everything into `C:\Users\Panshul\sompt22\`. Automatic download of this folder was
 refused when tested, so this has to be done by hand. If Drive hands you a
 `sompt22-<date>-001.zip` of the whole folder, **right-click → Extract All** into
-`C:\Users\Panshul\sompt22\` first, so the folder holds SOMPT22's own archives. (The DGX script
-only unpacks archives one level deep.)
+`C:\Users\Panshul\sompt22\` first. The tree is already extracted as
+`C:\Users\Panshul\sompt22\sompt22\{train,test}` (9 train + 5 test, MOT `img1`/`gt`/`seqinfo.ini`).
+Keep that folder. The pipeline accepts that extracted layout at `$ZED_ROOT/data/SOMPT22`; zip
+archives in `downloads/sompt22/` are optional.
 
 Gate clip (if filmed): keep it at `C:\Users\Panshul\gate.mp4`.
 

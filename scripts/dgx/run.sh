@@ -137,24 +137,28 @@ run_dancetrack() {
 }
 
 run_sompt22() {
-  mkdir -p "$DL/sompt22"
-  if ! compgen -G "$DL/sompt22/*" >/dev/null; then
-    log "trying gdown on the SOMPT22 Google Drive folder"
-    gdown --folder "$SOMPT22_FOLDER" -O "$DL/sompt22" --remaining-ok || {
-      warn "automatic download failed (the folder refused anonymous listing when tested)."
-      cat <<MSG
-Manual step (2 minutes):
+  mkdir -p "$DL/sompt22" "$DATA/SOMPT22"
+  if sompt22_has_seqs; then
+    log "SOMPT22 already extracted at $DATA/SOMPT22"
+  else
+    if ! sompt22_has_archives; then
+      log "trying gdown on the SOMPT22 Google Drive folder"
+      gdown --folder "$SOMPT22_FOLDER" -O "$DL/sompt22" --remaining-ok || {
+        warn "automatic download failed (the folder refused anonymous listing when tested)."
+        cat <<MSG
+Manual step:
   1. open $SOMPT22_FOLDER in a browser (sign in to Google if asked)
-  2. download every file (train and test archives) into: $DL/sompt22/
-  3. re-run: bash scripts/dgx/run.sh sompt22
+  2. extract into C:\\Users\\Panshul\\sompt22 (keep train/ and test/ with img1/)
+  3. link that tree to $DATA/SOMPT22 and re-run: bash scripts/dgx/run.sh sompt22
 MSG
-      return 2; }
+        return 2; }
+    fi
+    for z in "$DL"/sompt22/*.zip "$DL"/sompt22/**/*.zip; do [[ -f "$z" ]] && unzip_once "$z" "$DATA/SOMPT22"; done
+    for t in "$DL"/sompt22/*.tar* ; do
+      [[ -f "$t" && ! -f "$DATA/SOMPT22/.extracted_$(basename "$t")" ]] && \
+        { mkdir -p "$DATA/SOMPT22"; tar -xf "$t" -C "$DATA/SOMPT22"; touch "$DATA/SOMPT22/.extracted_$(basename "$t")"; }
+    done
   fi
-  for z in "$DL"/sompt22/*.zip "$DL"/sompt22/**/*.zip; do [[ -f "$z" ]] && unzip_once "$z" "$DATA/SOMPT22"; done
-  for t in "$DL"/sompt22/*.tar* ; do
-    [[ -f "$t" && ! -f "$DATA/SOMPT22/.extracted_$(basename "$t")" ]] && \
-      { mkdir -p "$DATA/SOMPT22"; tar -xf "$t" -C "$DATA/SOMPT22"; touch "$DATA/SOMPT22/.extracted_$(basename "$t")"; }
-  done
   python -m models.prepare sompt22 --root "$DATA/SOMPT22" --fps "${SOMPT22_FPS:-30}"
   for split in train test; do
     [[ -d "$DATA/SOMPT22/_seqs/$split" ]] || continue
