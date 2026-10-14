@@ -1,3 +1,4 @@
+import { offlinePath } from "../lib/offline";
 import { FoundChecks } from "../components/Checks";
 import { Term } from "../components/Term";
 import { loadSummary } from "../lib/summary";
@@ -260,7 +261,7 @@ export function ResultsView({ b }: { b: Benchmarks }) {
                 <figcaption className="label" style={{ marginBottom: 8 }}>
                   {k.replace(/_/g, " ")} {k.startsWith("go_no_go") && <span className="tag">sanity check</span>}
                 </figcaption>
-                <img src={url} alt={k} loading="lazy" />
+                <img src={url} alt={k} loading="lazy" onError={(e) => { const alt = offlinePath(url); if (alt && e.currentTarget.getAttribute("src") !== alt) e.currentTarget.src = alt; }} />
               </figure>
             ))}
           </div>

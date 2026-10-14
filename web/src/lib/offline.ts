@@ -15,6 +15,8 @@ export function offlinePath(path: string): string | null {
   if (video) return `${import.meta.env?.BASE_URL ?? "/"}demo/${video[1]}.mp4`;
   const poster = /^\/api\/clips\/([\w-]+)\/poster\.jpg$/.exec(p);
   if (poster) return `${import.meta.env?.BASE_URL ?? "/"}thumbs/${poster[1]}.jpg`;
+  const plot = /^\/api\/benchmarks\/plots\/([\w-]+\.png)$/.exec(p);
+  if (plot) return `${ROOT}plots/${plot[1]}`;
   if (p.startsWith("/api/jobs/")) return null; // a job only exists on a running service
   return `${ROOT}${p.slice(5).replace(/\//g, "__")}.json`;
 }

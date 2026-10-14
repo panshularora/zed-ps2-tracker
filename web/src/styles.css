@@ -402,3 +402,9 @@ td.pending { color: var(--muted); }
 .bench-line:disabled { cursor: default; opacity: .6; }
 .bench-line.active { border-color: var(--ours); }
 .scard .thumb-frame { height: auto; }
+
+.offline-banner { margin: 8px 16px 0; padding: 8px 12px; border: 1px solid #2A3038; border-radius: 4px; background: #161A1F; color: #8A929C; font-size: 13px; }
+.offline-banner code { color: #E6E8EB; }
+a.nav-group-label { text-decoration: none; cursor: pointer; }
+a.nav-group-label:hover { color: #E6E8EB; }
+a.nav-group-label.active { color: #8A929C; border: 0; background: none; }

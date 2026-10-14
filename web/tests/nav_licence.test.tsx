@@ -18,7 +18,7 @@ describe("navigation", () => {
   it("groups pages into Story / Try it / Evidence with no Demo tab", async () => {
     const { default: App } = await import("../src/App");
     render(<MemoryRouter future={R} initialEntries={["/dashboard"]}><App /></MemoryRouter>);
-    const groups = screen.getAllByRole("group").map((g) => [g.getAttribute("aria-label"), [...g.querySelectorAll("a")].map((a) => a.textContent)]);
+    const groups = screen.getAllByRole("group").map((g) => [g.getAttribute("aria-label"), [...g.querySelectorAll("a:not(.nav-group-label)")].map((a) => a.textContent)]);
     expect(groups).toEqual([
       ["Story", ["Overview"]],
       ["Try it", ["Scenarios", "Studio"]],
