@@ -30,4 +30,6 @@ def test_tune_refuses_val_half(tmp_path: Path) -> None:
 def test_train_and_val_halves_disjoint(n: int) -> None:
     tlo, thi = half_range(n, "train_half")
     vlo, vhi = half_range(n, "val_half")
-    assert tlo == 1 and thi < vlo and vhi == n
+    assert tlo == 1
+    assert thi < vlo
+    assert vhi == n

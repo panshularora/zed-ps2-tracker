@@ -21,6 +21,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
+from scripts.demo.guide import annotate  # noqa: E402
 from serve.analysis import suspected_switches  # noqa: E402
 from serve.clips import load_manifest  # noqa: E402
 from serve.detector import MODELS, YoloxDetector, model_path  # noqa: E402
@@ -149,8 +150,24 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=ROOT / "web/public/scenarios")
     ap.add_argument("--only", nargs="*")
     ap.add_argument("--threads", type=int, default=8)
+    ap.add_argument(
+        "--annotate",
+        action="store_true",
+        help="only (re)compute the guided-replay block on existing JSON (no detection)",
+    )
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
+    if a.annotate:
+        for cid, *_ in SCENARIOS:
+            dst = a.out / f"{cid}.json"
+            if not dst.exists() or (a.only and cid not in a.only):
+                continue
+            data = json.loads(dst.read_text())
+            data["guide"] = annotate(data)
+            dst.write_text(json.dumps(data, separators=(",", ":")))
+            g = data["guide"]
+            print(cid, g["gate"]["name"], "moments", [m["f"] for m in g["moments"]], flush=True)
+        return 0
     manifest = {c.id: c for c in load_manifest()}
     det = YoloxDetector(model_path(DETECTOR), MODELS[DETECTOR][0], 0.1, threads=a.threads)
     det.name = DETECTOR  # type: ignore[attr-defined]
@@ -200,7 +217,15 @@ def main(argv: list[str] | None = None) -> int:
             "disagreements": len(dis),
         }
         dst.write_text(
-            json.dumps({"meta": meta, "runs": runs, "disagreements": dis}, separators=(",", ":"))
+            json.dumps(
+                {
+                    "meta": meta,
+                    "runs": runs,
+                    "disagreements": dis,
+                    "guide": annotate({"meta": meta, "runs": runs, "disagreements": dis}),
+                },
+                separators=(",", ":"),
+            )
         )
         print(
             cid,
