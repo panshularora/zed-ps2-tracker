@@ -31,6 +31,8 @@ export function Thumb({ id }: { id: string }) {
 export function ScenarioRail({ items, bench = [], selected, onSelect }: { items: ScenarioMeta[]; bench?: string[]; selected: string | null; onSelect: (id: string) => void }) {
   return (
     <nav className="rail" aria-label="Scenarios">
+      {/* the measured opener (MOT17-09) leads the rail; the other benchmark lines sit below the clips that play */}
+      {BENCH_CARDS.slice(0, 1).map(benchLine)}
       {items.map((m) => (
         <button key={m.id} type="button" className={`scard${selected === m.id ? " active" : ""}`} onClick={() => onSelect(m.id)} data-testid="scenario-card">
           <Thumb id={m.id} />
@@ -40,19 +42,19 @@ export function ScenarioRail({ items, bench = [], selected, onSelect }: { items:
           </div>
         </button>
       ))}
-      {/* benchmark clips have no video here: one line each, below the clips that play */}
-      {BENCH_CARDS.map((b) => {
-        const has = bench.includes(b.id);
-        return (
-          <button key={b.id} type="button" disabled={!has} title={b.licence}
-            className={`bench-line${selected === benchKey(b.id) ? " active" : ""}`}
-            onClick={() => has && onSelect(benchKey(b.id))} data-testid={has ? "bench-card" : "bench-slot"}>
-            <b>{b.id}</b> · Measured · {has ? "video not exported yet (boxes only)" : "not exported yet"}
-          </button>
-        );
-      })}
+      {BENCH_CARDS.slice(1).map(benchLine)}
     </nav>
   );
+  function benchLine(b: (typeof BENCH_CARDS)[number]) {
+    const has = bench.includes(b.id);
+    return (
+      <button key={b.id} type="button" disabled={!has} title={b.licence}
+        className={`bench-line${selected === benchKey(b.id) ? " active" : ""}`}
+        onClick={() => has && onSelect(benchKey(b.id))} data-testid={has ? "bench-card" : "bench-slot"}>
+        <b>{b.id}</b> · Measured · {has ? "video not exported yet (boxes only)" : "not exported yet"}
+      </button>
+    );
+  }
 }
 
 export function ScenarioPlayer({ data }: { data: ScenarioData }) {

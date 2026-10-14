@@ -78,15 +78,16 @@ export function paint(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: 
     ctx.fillText("OUT side", Math.max(40 * px, mx - nx * off), vmy - ny * off);
   }
   if (p.f != null) {
-    // others: 1 px, 35 % opacity, no labels
-    ctx.globalAlpha = 0.35;
-    ctx.lineWidth = 1 * px;
+    // every box on the frame: 2 px in its ID colour with a 28 px ID chip on top
     for (const [id, x, y, w, h] of boxes) {
       if (p.spot.has(id)) continue;
-      ctx.strokeStyle = neutralColor(id);
+      const c = neutralColor(id);
+      ctx.strokeStyle = c;
+      ctx.lineWidth = 2 * px;
       ctx.strokeRect(x, y, w, h);
+      chipAt(ctx, String(id), c, x, y, w, px, p.view, 1);
     }
-    ctx.globalAlpha = 1;
+    // hidden / occluded: dashed box in the same ID colour, chip at 60 % opacity
     for (const [id, x, y, w, h] of ghosts) {
       const c = neutralColor(id);
       ctx.strokeStyle = c;
@@ -94,24 +95,11 @@ export function paint(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: 
       ctx.setLineDash([8 * px, 6 * px]);
       ctx.strokeRect(x, y, w, h);
       ctx.setLineDash([]);
-      const text = `Person ${id} · hidden`;
-      ctx.font = `700 ${15 * px}px Inter, sans-serif`;
-      const tw = ctx.measureText(text).width + 18 * px, chH = 28 * px;
-      const cx = Math.min(Math.max(vx, x + w / 2 - tw / 2), vx + vw - tw);
-      const cy = Math.max(vy + 2 * px, y - chH - 6 * px);
-      ctx.fillStyle = "rgba(14,16,19,.9)";
-      ctx.beginPath();
-      ctx.roundRect(cx, cy, tw, chH, 4 * px);
-      ctx.fill();
-      ctx.strokeStyle = c;
-      ctx.lineWidth = 1.5 * px;
-      ctx.stroke();
-      ctx.fillStyle = c;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(text, cx + tw / 2, cy + chH / 2 + px);
+      ctx.globalAlpha = 0.6;
+      chipAt(ctx, `${id} · hidden`, c, x, y, w, px, p.view, 1);
+      ctx.globalAlpha = 1;
     }
-    // spotlit: 2 s trail, 3 px box, 28 px chip above head
+    // spotlit: 2 s trail, 2 px box, 28 px chip above head
     for (const [id, x, y, w, h] of spotBoxes) {
       const c = neutralColor(id);
       const tr = trailOf(d.runs[p.run].frames, id, p.f, d.fps);
@@ -126,23 +114,10 @@ export function paint(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: 
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
-      ctx.lineWidth = 3 * px;
+      ctx.lineWidth = 2 * px;
       ctx.strokeRect(x, y, w, h);
       const chip = chipText(id, p.f, d.events[p.run], d.fps);
-      const k = 1 + 0.25 * chip.pulse;
-      const chH = 28 * px * k;
-      ctx.font = `700 ${15 * px * k}px Inter, sans-serif`;
-      const tw = ctx.measureText(chip.text).width + 18 * px * k;
-      const cx = Math.min(Math.max(vx, x + w / 2 - tw / 2), vx + vw - tw);
-      const cy = Math.max(vy + 2 * px, y - chH - 6 * px);
-      ctx.fillStyle = c;
-      ctx.beginPath();
-      ctx.roundRect(cx, cy, tw, chH, 4 * px);
-      ctx.fill();
-      ctx.fillStyle = "#0E1013";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(chip.text, cx + tw / 2, cy + chH / 2 + px);
+      chipAt(ctx, chip.text, c, x, y, w, px, p.view, 1 + 0.25 * chip.pulse);
     }
   }
   ctx.restore();
@@ -164,4 +139,22 @@ function overlap(a: Box, b: Box): number {
   const ih = Math.max(0, Math.min(a[2] + a[4], b[2] + b[4]) - Math.max(a[2], b[2]));
   const i = iw * ih, u = a[3] * a[4] + b[3] * b[4] - i;
   return u > 0 ? i / u : 0;
+}
+
+/** 28 px (css) ID chip in the ID colour, centred above the box, kept inside the view. */
+function chipAt(ctx: CanvasRenderingContext2D, text: string, c: string, x: number, y: number, w: number, px: number, view: [number, number, number, number], k: number) {
+  const [vx, vy, vw] = view;
+  const chH = 28 * px * k;
+  ctx.font = `700 ${15 * px * k}px Inter, sans-serif`;
+  const tw = Math.max(chH, ctx.measureText(text).width + 18 * px * k);
+  const cx = Math.min(Math.max(vx, x + w / 2 - tw / 2), vx + vw - tw);
+  const cy = Math.max(vy + 2 * px, y - chH - 4 * px);
+  ctx.fillStyle = c;
+  ctx.beginPath();
+  ctx.roundRect(cx, cy, tw, chH, 4 * px);
+  ctx.fill();
+  ctx.fillStyle = "#0E1013";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, cx + tw / 2, cy + chH / 2 + px);
 }

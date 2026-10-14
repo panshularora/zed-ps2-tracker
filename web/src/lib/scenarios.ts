@@ -101,7 +101,7 @@ export function markerLabel(kind: ScenarioMeta["kind"], d: Disagreement): string
 }
 
 // Neutral ID palette for Pexels footage: no reds/oranges (no error connotation on strangers).
-export const NEUTRAL_IDS = ["#56B4E9", "#9AD1F0", "#009E73", "#8DD3C7", "#F0E442", "#BEBADA", "#80B1D3", "#B3DE69", "#CCEBC5", "#A6CEE3", "#E6E8EB", "#CC79A7"];
+export const NEUTRAL_IDS = ["#56B4E9", "#9AD1F0", "#C9B8F0", "#8DD3C7", "#F0E442", "#BEBADA", "#80B1D3", "#B3DE69", "#CCEBC5", "#A6CEE3", "#E6E8EB", "#CC79A7"];
 export const neutralColor = (id: number) => NEUTRAL_IDS[((id % NEUTRAL_IDS.length) + NEUTRAL_IDS.length) % NEUTRAL_IDS.length];
 
 export function drawBoxes(ctx: CanvasRenderingContext2D, boxes: Box[], sx: number, sy: number, ring?: [number, number, number, number] | null) {

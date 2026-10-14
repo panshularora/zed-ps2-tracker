@@ -124,11 +124,13 @@ describe("scenarios helpers", () => {
 });
 
 describe("scenarios tab", () => {
-  it("rail: playable clips first with 16:9 stills, benchmarks collapsed to one line below", () => {
+  it("rail: measured MOT17-09 first, then playable clips with 16:9 stills, other benchmarks below", () => {
     const sel = vi.fn();
     render(<ScenarioRail items={[scenario().meta]} bench={["MOT17-09", "MOT17-04"]} selected="subway_turnstile" onSelect={sel} />);
     const nav = screen.getByRole("navigation");
-    expect(nav.firstElementChild?.getAttribute("data-testid")).toBe("scenario-card");
+    expect(nav.firstElementChild?.textContent).toMatch(/^MOT17-09 · Measured/);
+    expect(nav.children[1].getAttribute("data-testid")).toBe("scenario-card");
+    expect(screen.getByTestId("scenario-card").className).toContain("active");
     const img = nav.querySelector("img")!;
     expect(img.getAttribute("src")).toBe("/thumbs/subway_turnstile.jpg");
     fireEvent.error(img); // broken still -> plain placeholder, never a broken-image icon
