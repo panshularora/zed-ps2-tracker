@@ -50,6 +50,7 @@ from serve.catalog import (
 from serve.dashboard_api import router as workstation_router
 from serve.detector import MODELS
 from serve.events import EventParams, gate_events
+from serve.gate_sim import router as gate_sim_router
 from serve.settings import Settings
 from tracker.config import load_config
 from tracker.io import CacheFormatError, load_cache
@@ -128,6 +129,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.add_api_route("/api/track", track, methods=["POST"])
     application.include_router(router)
     application.include_router(workstation_router)
+    application.include_router(gate_sim_router)
 
     web = settings.web_dist
     viewer = (VIEWER_DIST / "index.html").exists()

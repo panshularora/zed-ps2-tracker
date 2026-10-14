@@ -10,7 +10,7 @@ describe("nav group headers", () => {
     const groups = screen.getAllByTestId("nav-group");
     expect(groups.map((g) => [g.textContent, g.getAttribute("href")])).toEqual([
       ["Story", "/dashboard"],
-      ["Try it", "/dashboard/scenarios"],
+      ["Try it", "/dashboard/live"],
       ["Evidence", "/dashboard/results"],
     ]);
     vi.unstubAllGlobals();
