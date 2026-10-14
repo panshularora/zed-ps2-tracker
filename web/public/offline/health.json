@@ -1,0 +1,1 @@
+{"status":"ok","version":"0.2.0","configs":18,"viewer":true,"web":true,"detectors":{"yolox_nano":true,"yolox_tiny":true,"yolox_s":true},"default_detector":"yolox_s","clips":6,"jobs":{"queued":0,"running":0,"succeeded":0,"failed":0,"cancelled":0},"limits":{"max_video_mb":200.0,"max_video_seconds":120.0,"max_job_frames":1800,"max_cache_mb":200.0}}
