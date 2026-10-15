@@ -4,7 +4,9 @@ import { summaryText } from "./story";
 
 export const MAX_ROWS = 12;
 
-/** One 8px bar per person: solid where seen, dashed 50 % where hidden, a 4px break + tag at an ID change. */
+/** One 8px bar per person: solid where seen, dashed 50 % where hidden, a 4px break + tag at an ID
+ * change, and a break + "swap?" tag where the kept-vs-swap check flagged a possible identity transfer
+ * (no dashed bridge there: we do not claim it was still the same person). */
 export function PersonTimeline({ people, frames, f, focus, onSeek }: { people: Person[]; frames: number; f: number; focus: number | null; onSeek: (frame: number) => void }) {
   const rows = [...people].sort((a, b) => (a.key === focus ? -1 : b.key === focus ? 1 : a.f0 - b.f0)).slice(0, MAX_ROWS);
   const pct = (x: number) => `${(((x - 1) / Math.max(1, frames - 1)) * 100).toFixed(3)}%`;
@@ -26,6 +28,12 @@ export function PersonTimeline({ people, frames, f, focus, onSeek }: { people: P
               ))}
               {p.hidden.map((s, i) => (
                 <span key={`h${i}`} className="ptl-hidden" data-testid="ptl-hidden" style={{ left: pct(s.f0), width: width(s.f0, s.f1), color: neutralColor(s.id) }} />
+              ))}
+              {p.swaps.map((c, i) => (
+                <button key={`s${i}`} type="button" className="ptl-swap" data-testid="ptl-swap" style={{ left: pct(c.f) }}
+                  onClick={(e) => { e.stopPropagation(); onSeek(c.last); }} title={`Possible swap: #${c.id} given to someone else (${c.why})`}>
+                  <span className="ptl-tag mono">swap? #{c.id}</span>
+                </button>
               ))}
               {p.changes.map((c, i) => (
                 <button key={`c${i}`} type="button" className="ptl-change" data-testid="ptl-change" style={{ left: pct(c.f) }}

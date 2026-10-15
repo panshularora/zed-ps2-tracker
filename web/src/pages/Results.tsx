@@ -3,6 +3,7 @@ import { FoundChecks } from "../components/Checks";
 import { Term } from "../components/Term";
 import { loadSummary } from "../lib/summary";
 import { DatasetTable } from "../components/DatasetTable";
+import { Mot20Status } from "../components/Mot20Status";
 import { api, type AblationRow, type Benchmarks } from "../api";
 import StressChart from "../components/StressChart";
 import { DASH, int, num, pct } from "../lib/format";
@@ -42,6 +43,11 @@ export function ResultsView({ b }: { b: Benchmarks }) {
         <h2>All datasets at a glance</h2>
         <p className="sub">ByteTrack vs BoT-SORT vs ours on every dataset, read only from summary.json. Provisional: see the reproduction check above.</p>
         <DatasetTable />
+      </section>
+      <section className="section" data-testid="mot20-section">
+        <h2>MOT20 (dense crowds): what exists</h2>
+        <p className="sub">Provisional. Only what the repo's files contain; every value below is parsed from the named file at build time.</p>
+        <Mot20Status />
       </section>
       <section className="section">
         <h2>Tracking accuracy</h2>

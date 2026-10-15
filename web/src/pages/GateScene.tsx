@@ -1,7 +1,8 @@
 // Live gate scene: synthetic people with exact ground truth, a fake detector, and the REAL Python
 // trackers (ByteTrack left, BoT-SORT + visibility right) streamed from serve/gate_sim.py.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { layoutChips } from "../compare/model";
+import { differences, paneStats, type Diff } from "../compare/gateDiff";
 import { neutralColor } from "../lib/scenarios";
 import {
   DEFAULTS, PANES, RECORDED_SECONDS, RECORDING_URL, involvedBetween, isDefault, readStream, recentEvents, streamUrl,
@@ -9,7 +10,7 @@ import {
 } from "../lib/gateSim";
 
 const GATE = "#F5A524";
-const RING_S = 0.6, TAG_S = 2, DIM_S = 1.5, TRAIL_S = 1, REPLAY_S = 5;
+const RING_S = 0.6, TAG_S = 2, DIM_S = 1.5, TRAIL_S = 1, REPLAY_S = 5, DIFF_LEAD_S = 2, DIFF_TAIL_S = 1.5;
 
 type Source = "live" | "recorded" | "none";
 
@@ -98,6 +99,7 @@ export default function GateScene() {
   const frames = useRef<SimFrame[]>([]);
   const head = useRef(0);
   const replay = useRef<{ until: number; ids: Set<number> } | null>(null);
+  const [diffAt, setDiffAt] = useState<number | null>(null);
   const cv = { bytetrack: useRef<HTMLCanvasElement>(null), ours: useRef<HTMLCanvasElement>(null) };
 
   // (re)start the stream whenever the controls change
@@ -172,6 +174,18 @@ export default function GateScene() {
     setPlaying(true);
   }, [meta]);
 
+  const bucket = Math.floor(ui.buffered / 60);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const cmp = useMemo(() => (meta ? { stats: { bytetrack: paneStats(frames.current, "bytetrack"), ours: paneStats(frames.current, "ours") }, diffs: differences(frames.current, meta.fps) } : null), [meta, end, bucket]);
+  const playDiff = useCallback((i: number) => {
+    if (!meta || !cmp || !cmp.diffs.length) return;
+    const k = ((i % cmp.diffs.length) + cmp.diffs.length) % cmp.diffs.length;
+    const d: Diff = cmp.diffs[k];
+    head.current = Math.max(0, d.idx - Math.round(DIFF_LEAD_S * meta.fps));
+    replay.current = { until: Math.min(frames.current.length - 1, d.idx + Math.round(DIFF_TAIL_S * meta.fps)), ids: new Set(d.people) };
+    setDiffAt(k);
+    setPlaying(true);
+  }, [meta, cmp]);
   const fr = frames.current[ui.idx];
   const atEnd = !!end && ui.idx >= frames.current.length - 1;
   const set = (k: keyof SimControls) => (e: React.ChangeEvent<HTMLInputElement>) => setCtl((c) => ({ ...c, [k]: Number(e.target.value) }));
@@ -188,6 +202,26 @@ export default function GateScene() {
       </div>
       {error && <div className="panel muted" role="alert" data-testid="scene-error" style={{ padding: 12 }}>{error}</div>}
       <p className="gs-caption" data-testid="gate-caption"><b className="base">Left: ByteTrack</b>, the published tracker we start from. <b className="ours">Right: ours</b> = ByteTrack + rules that keep a hidden person&apos;s number.</p>
+      {cmp && (
+        <div className="cmp-strip tabular" data-testid="compare-strip">
+          <div><div className="k">Same seed {meta?.params.seed} · {end ? "whole run" : "so far"}</div><div className="row"><b className="base">ByteTrack (left)</b><b className="ours">ours (right)</b></div></div>
+          <div title="Times one simulated person's tracker number changed (the tracker's own count)"><div className="k">ID changes</div><div className="row"><span data-testid="strip-changes-bytetrack">{cmp.stats.bytetrack.idChanges}</span><span data-testid="strip-changes-ours">{cmp.stats.ours.idChanges}</span></div></div>
+          <div title="False keeps: a tracker number that was on one simulated person later sits on a different person"><div className="k">Number given to someone else</div><div className="row"><span data-testid="strip-transfers-bytetrack">{cmp.stats.bytetrack.transfers}</span><span data-testid="strip-transfers-ours">{cmp.stats.ours.transfers}</span></div></div>
+          <div title="Gate count from the tracker vs the true number of crossings"><div className="k">Gate count / true</div><div className="row"><span data-testid="strip-count-bytetrack">{cmp.stats.bytetrack.counted} / {cmp.stats.bytetrack.truth}</span><span data-testid="strip-count-ours">{cmp.stats.ours.counted} / {cmp.stats.ours.truth}</span></div></div>
+          <div><button type="button" className="btn" data-testid="show-diffs" disabled={!cmp.diffs.length} onClick={() => playDiff(diffAt == null ? 0 : diffAt + 1)}>
+            {diffAt == null ? `Show me the ${cmp.diffs.length} moments where they differ` : `Next difference ▸ (${diffAt + 1}/${cmp.diffs.length})`}</button></div>
+        </div>
+      )}
+      {cmp && diffAt != null && cmp.diffs[diffAt] && (
+        <div className="diff-bar" data-testid="diff-bar">
+          <b>Difference {diffAt + 1} of {cmp.diffs.length}</b>
+          <span data-testid="diff-text">{cmp.diffs[diffAt].text} (frame {cmp.diffs[diffAt].f}). Both panes highlight the same simulated person{cmp.diffs[diffAt].people.length > 1 ? "s" : ""}.</span>
+          <button type="button" className="chip-btn" onClick={() => playDiff(diffAt - 1)}>◂ Prev</button>
+          <button type="button" className="chip-btn" onClick={() => playDiff(diffAt)}>⟲ Replay</button>
+          <button type="button" className="chip-btn" onClick={() => playDiff(diffAt + 1)}>Next ▸</button>
+          <button type="button" className="chip-btn" onClick={() => { setDiffAt(null); replay.current = null; }}>Done</button>
+        </div>
+      )}
       <div className="gs-panes">
         {PANES.map((p) => {
           const pf = fr?.[p];

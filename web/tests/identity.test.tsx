@@ -5,6 +5,15 @@ import { PersonTimeline } from "../src/identity/PersonTimeline";
 import { CountBar } from "../src/identity/IdentityPlayer";
 import { orderScenarios } from "../src/pages/Scenarios";
 import type { ReplayData } from "../src/guided/model";
+import type { Reappearance } from "../src/identity/verify";
+
+const rp = (id: number, last: number, back: number, verdict: Reappearance["verdict"]): Reappearance => ({
+  id, run: "ours", last, back, gap_frames: back - last - 1, gap_s: (back - last - 1) / 10, verdict,
+  app: verdict === "kept" ? 0.93 : 0.6, motion_err: 0.1, motion_tol: 1, size_ratio: 1.1, gt_before: null, gt_after: null,
+  reasons: verdict === "kept" ? [] : ["appearance differs (0.60 < 0.8)"], occluder: null,
+});
+const keptV = (id: number, back: number) => (id === 4 && back === 16 ? rp(4, 10, 16, "kept") : undefined);
+const swapV = (id: number, back: number) => (id === 4 && back === 16 ? rp(4, 10, 16, "swap") : undefined);
 
 // #4: frames 1-10, hidden 11-15, back 16-20. #7: 1-5 then renumbered to #8 at 6-20. #9: one-frame flicker.
 function replay(): ReplayData {
@@ -37,10 +46,11 @@ describe("identity story", () => {
     const d = replay();
     const p = pickFocus(people(d).people)!;
     expect(p.key).toBe(4);
-    const st = storySteps(d, p);
+    const st = storySteps(d, p, keptV);
     expect(st.map((s) => s.kind)).toEqual(["enter", "hidden", "back", "cross", "exit"]);
     expect(st[1].text).toContain("disappears for 5 frames");
-    expect(st[2].text).toContain("still #4");
+    expect(st[2].text).toContain("still #4 (appearance and path match)");
+    expect(storySteps(d, p)[2].text).toContain("Not checked");
     expect(watchLine(p, st)).toBe("Watch #4 disappear from view and come back with the same number.");
   });
   it("an ID change on the focus person is shown honestly", () => {
@@ -53,7 +63,10 @@ describe("identity story", () => {
     const mid = boxesAt(tr, 2.5, 10).find((b) => b.id === 4)!;
     expect(mid.box[0]).toBeCloseTo(25);
     expect(boxesAt(tr, 13, 10).find((b) => b.id === 4)?.state).toBe("hidden");
-    expect(boxesAt(tr, 17, 10).find((b) => b.id === 4)?.state).toBe("kept");
+    expect(boxesAt(tr, 17, 10).find((b) => b.id === 4)?.state).toBe("back"); // no verdict -> never "kept"
+    expect(boxesAt(tr, 17, 10, keptV).find((b) => b.id === 4)?.state).toBe("kept");
+    expect(boxesAt(tr, 17, 10, swapV).find((b) => b.id === 4)?.state).toBe("swap");
+    expect(boxesAt(tr, 13, 10, swapV).find((b) => b.id === 4)).toBeUndefined(); // no "still #4" ghost over a swap
     expect(boxesAt(tr, 8, 10).find((b) => b.id === 4)?.state).toBe("seen");
   });
   it("chips sit on the box top edge away from the neighbour; a collision moves the lower one below", () => {

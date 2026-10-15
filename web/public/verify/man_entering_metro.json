@@ -1,0 +1,1 @@
+{"clip":"man_entering_metro","method":"pexels","method_text":"heuristic: torso HSV histogram (Bhattacharyya) + constant-velocity path + box-height ratio; not ground truth","thresholds":{"app_min":0.8,"motion_base":0.6,"motion_per_s":0.9,"size_max":1.6,"k_frames":5,"gt_iou":0.5},"summary":{},"events":[]}
