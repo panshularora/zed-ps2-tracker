@@ -448,3 +448,18 @@ a.nav-group-label.active { color: #8A929C; border: 0; background: none; }
 .chip-btn { padding: 4px 12px; border-radius: 12px; border: 1px solid var(--border); background: #161A1F; color: #E6E8EB; cursor: pointer; font-size: 12px; }
 .chip-btn:disabled { opacity: .5; cursor: default; }
 @media (max-width: 1100px) { .gs-panes { grid-template-columns: 1fr; } }
+
+/* ---------- what we use */
+.wwu h1 { margin: 0 0 8px; font-size: 24px; }
+.wwu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.wwu-card h3 { margin: 0 0 8px; font-size: 15px; }
+.wwu-card p { margin: 0 0 8px; font-size: 13px; line-height: 20px; }
+.pipe { list-style: none; display: flex; gap: 8px; padding: 0; margin: 0; flex-wrap: wrap; }
+.pipe-step { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; margin-right: 24px; background: #161A1F; border: 1px solid var(--border); border-radius: 4px; min-width: 160px; font-size: 13px; }
+.pipe-step b { color: #56B4E9; }
+.pipe-arrow { position: absolute; right: -24px; top: 50%; transform: translateY(-50%); width: 24px; text-align: center; color: #8A929C; }
+.wwu-metrics { display: grid; gap: 8px; margin: 0; }
+.wwu-metrics div { display: grid; grid-template-columns: 64px 1fr; gap: 12px; font-size: 13px; }
+.wwu-metrics dt { font-weight: 600; color: #E6E8EB; } .wwu-metrics dd { margin: 0; color: #8A929C; }
+.nav a, .brand { white-space: nowrap; }
+@media (max-width: 1500px) { .nav a { padding: 6px 8px; } .brand small { display: none; } }

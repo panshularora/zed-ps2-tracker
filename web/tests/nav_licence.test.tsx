@@ -20,7 +20,7 @@ describe("navigation", () => {
     render(<MemoryRouter future={R} initialEntries={["/dashboard"]}><App /></MemoryRouter>);
     const groups = screen.getAllByRole("group").map((g) => [g.getAttribute("aria-label"), [...g.querySelectorAll("a:not(.nav-group-label)")].map((a) => a.textContent)]);
     expect(groups).toEqual([
-      ["Story", ["Overview"]],
+      ["Story", ["Overview", "What we use"]],
       ["Try it", ["Gate scene", "Scenarios", "Studio"]],
       ["Evidence", ["Results", "Experiments", "Analytics", "Architecture"]],
     ]);

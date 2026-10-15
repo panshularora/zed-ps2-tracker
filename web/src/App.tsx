@@ -5,6 +5,7 @@ import Overview from "./pages/Overview";
 import Results from "./pages/Results";
 import Scenarios from "./pages/Scenarios";
 import GateScene from "./pages/GateScene";
+import WhatWeUse from "./pages/WhatWeUse";
 import Workstation from "./workstation/Workstation";
 import { useEffect, useState } from "react";
 import { isOffline, onOffline } from "./lib/offline";
@@ -21,7 +22,7 @@ export function OfflineBanner() {
 }
 
 export const NAV_GROUPS: { label: string; pages: { to: string; label: string; sub?: boolean }[] }[] = [
-  { label: "Story", pages: [{ to: "/dashboard", label: "Overview" }] },
+  { label: "Story", pages: [{ to: "/dashboard", label: "Overview" }, { to: "/dashboard/what-we-use", label: "What we use" }] },
   { label: "Try it", pages: [{ to: "/dashboard/live", label: "Gate scene" }, { to: "/dashboard/scenarios", label: "Scenarios" }, { to: "/dashboard/studio", label: "Studio" }] },
   {
     label: "Evidence",
@@ -68,6 +69,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/dashboard" element={<Overview />} />
+          <Route path="/dashboard/what-we-use" element={<WhatWeUse />} />
           <Route path="/dashboard/live" element={<GateScene />} />
           <Route path="/dashboard/scenarios" element={<Scenarios />} />
           <Route path="/dashboard/studio" element={<Workstation screen="watch" />} />
