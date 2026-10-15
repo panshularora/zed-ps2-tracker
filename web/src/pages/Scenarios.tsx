@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { GuidedPlayer } from "../guided/GuidedPlayer";
+import { IdentityPlayer } from "../identity/IdentityPlayer";
+import { INTROS, SCENARIO_ORDER } from "../identity/intros";
+import { Link } from "react-router-dom";
 import { fromScenario, thumbUrlFor } from "../guided/model";
 import { Tag } from "../guided/Tag";
 import { benchmarkReplay, loadBenchmarkPairs, type BenchPair } from "../guided/viewer";
@@ -8,8 +10,7 @@ import {
 } from "../lib/scenarios";
 import { useAsync } from "../lib/useAsync";
 import LiveRun from "./Demo";
-import { ComparePlayer, type Truth } from "../compare/ComparePlayer";
-import { CompareTable } from "../compare/CompareTable";
+import type { Truth } from "../compare/ComparePlayer";
 import { fetchClip, fetchClips } from "../workstation/api";
 import type { GEvent, ReplayData } from "../guided/model";
 
@@ -35,21 +36,7 @@ export function Thumb({ id }: { id: string }) {
 export function ScenarioRail({ items, bench = [], selected, onSelect }: { items: ScenarioMeta[]; bench?: string[]; selected: string | null; onSelect: (id: string) => void }) {
   return (
     <nav className="rail" aria-label="Scenarios">
-      {/* the measured opener (MOT17-09) leads the rail; the other benchmark lines sit below the clips that play */}
-      {BENCH_CARDS.slice(0, 1).map((b) => {
-        const has = bench.includes(b.id);
-        return (
-          <button key={b.id} type="button" disabled={!has} title={b.licence} className={`scard${selected === benchKey(b.id) ? " active" : ""}`}
-            onClick={() => has && onSelect(benchKey(b.id))} data-testid={has ? "bench-card" : "bench-slot"}>
-            <Thumb id={b.id} />
-            <div className="scard-body">
-              <div className="scard-title">{b.id}: a person comes back with a new number</div>
-              <Tag kind="measured" />
-            </div>
-          </button>
-        );
-      })}
-      {items.map((m) => (
+      {orderScenarios(items).map((m) => (
         <button key={m.id} type="button" className={`scard${selected === m.id ? " active" : ""}`} onClick={() => onSelect(m.id)} data-testid="scenario-card">
           <Thumb id={m.id} />
           <div className="scard-body">
@@ -58,6 +45,19 @@ export function ScenarioRail({ items, bench = [], selected, onSelect }: { items:
           </div>
         </button>
       ))}
+      {BENCH_CARDS.slice(0, 1).map((b) => {
+        const has = bench.includes(b.id);
+        return (
+          <button key={b.id} type="button" disabled={!has} title={b.licence} className={`scard${selected === benchKey(b.id) ? " active" : ""}`}
+            onClick={() => has && onSelect(benchKey(b.id))} data-testid={has ? "bench-card" : "bench-slot"}>
+            <Thumb id={b.id} />
+            <div className="scard-body">
+              <div className="scard-title">{b.id}: real labelled street video (boxes only)</div>
+              <Tag kind="measured" />
+            </div>
+          </button>
+        );
+      })}
       {BENCH_CARDS.slice(1).map(benchLine)}
     </nav>
   );
@@ -73,21 +73,34 @@ export function ScenarioRail({ items, bench = [], selected, onSelect }: { items:
   }
 }
 
-/** Side-by-side live comparison first; the one-tracker guided walkthrough stays one click away. */
-export function ScenarioView({ replay, truth, credit }: { replay: ReplayData; truth?: Truth | null; credit: ReactNode }) {
-  const [guided, setGuided] = useState(false);
+export function orderScenarios(items: ScenarioMeta[]): ScenarioMeta[] {
+  const rank = (id: string) => { const i = SCENARIO_ORDER.indexOf(id); return i < 0 ? SCENARIO_ORDER.length : i; };
+  return [...items].sort((a, b) => rank(a.id) - rank(b.id));
+}
+
+export function ScenarioIntro({ id }: { id: string }) {
+  const it = INTROS[id] ?? INTROS[id.replace(/ .*/, "")];
+  if (!it) return null;
+  return (
+    <div className="scn-intro" data-testid="scenario-intro">
+      <div><b>What you&apos;ll see</b>{it.see}</div>
+      <div><b>What to watch for</b>{it.watch}</div>
+      <div><b>Takeaway</b>{it.takeaway}</div>
+    </div>
+  );
+}
+
+/** One tracker (ours) only, centred on each person keeping one number; the comparison lives in the gate scene. */
+export function ScenarioView({ replay, credit, introId }: { replay: ReplayData; truth?: Truth | null; credit: ReactNode; introId?: string }) {
   return (
     <div className="player" data-testid="scenario-player">
-      <div className="g-head" style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
+      <div className="g-head" style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
         <h3 className="g-title" style={{ margin: 0 }}>{replay.title}</h3>
         <Tag kind={replay.kind} />
-        <div className="toggle" role="group" aria-label="View" style={{ marginLeft: "auto" }}>
-          <button type="button" className={`btn${!guided ? " on-ours" : ""}`} aria-pressed={!guided} onClick={() => setGuided(false)}>Side by side</button>
-          <button type="button" className={`btn${guided ? " on-ours" : ""}`} aria-pressed={guided} onClick={() => setGuided(true)}>Guided walkthrough</button>
-        </div>
+        <Link to="/dashboard/live" className="muted" style={{ marginLeft: "auto", fontSize: 13 }} data-testid="compare-link">Compare with baseline in the gate scene →</Link>
       </div>
-      {guided ? <GuidedPlayer data={replay} /> : <ComparePlayer data={replay} truth={truth} />}
-      <CompareTable data={replay} truth={truth} />
+      <ScenarioIntro id={introId ?? replay.id} />
+      <IdentityPlayer key={replay.id} data={replay} />
       <p className="credit">{credit}</p>
     </div>
   );
@@ -98,7 +111,7 @@ export function ScenarioPlayer({ data }: { data: ScenarioData }) {
   const replay = useMemo(() => fromScenario(data, videoUrl(meta.id)), [data, meta.id]);
   return (
     <ScenarioView replay={replay} credit={<>
-      Illustrative only: no ground truth, so these are disagreements between the two trackers, not a benchmark result. Both trackers ran on identical detections.
+      Illustrative only: no ground truth on this clip, so this shows what our tracker did, not a measured score. Every ID change our tracker made is in the timeline.
       The counting line is a fixed-fraction line chosen by geometry (the candidate people cross most, both trackers summed).
       Source: <a href={meta.source} target="_blank" rel="noreferrer">Pexels</a> · {meta.licence} · faces blurred · detector {meta.detector} (CPU)
       {meta.stride > 1 ? `, 1 in ${meta.stride} frames tracked` : ""}.
@@ -130,8 +143,9 @@ export function LiveRunPanel() {
 export const OPENER = "MOT17-09";
 export function pickOpener(items: ScenarioMeta[], pairs: BenchPair[] | null): string | null {
   if (pairs === null) return null; // wait for the benchmark list before choosing
-  if (pairs.some((p) => p.name === OPENER)) return benchKey(OPENER);
-  return items.find((m) => m.id === "subway_turnstile")?.id ?? items[0]?.id ?? null;
+  const first = orderScenarios(items)[0]?.id;
+  if (first) return first;
+  return pairs.some((p) => p.name === OPENER) ? benchKey(OPENER) : null;
 }
 
 export default function Scenarios() {
@@ -165,8 +179,8 @@ export default function Scenarios() {
       <div>
         {bench ? (
           <div>
-            <ScenarioView key={current} replay={bench} truth={truth && truth.name === pair?.name ? truth.t : null}
-              credit={<>Measured: ID switches and the true count come from human labels (MOTChallenge ground truth). Video frames are not on this server, so only boxes are drawn. {pair && `${bench.runs.baseline.label} vs ${bench.runs.ours.label}, exported by eval.export_viewer.`} Our visibility variant was not exported for this clip, so the right pane is plain BoT-SORT.</>} />
+            <ScenarioView key={current} replay={bench} introId={pair?.name} truth={truth && truth.name === pair?.name ? truth.t : null}
+              credit={<>Measured: ID changes are checked against human labels (MOTChallenge ground truth). MOTChallenge frames are not licensed for this repo, so only boxes are drawn on an empty frame. Tracker shown: {bench.runs.ours.label} (exported by eval.export_viewer); our visibility variant was not exported for this clip.</>} />
           </div>
         ) : data && data.meta.id === current ? <ScenarioPlayer key={current} data={data} /> : <p className="muted">Loading scenario…</p>}
         <LiveRunPanel />

@@ -45,10 +45,11 @@ describe("navigation", () => {
 
 describe("opener and wording", () => {
   const items = [{ id: "subway_turnstile" }, { id: "milan_turnstiles" }] as never;
-  it("opens on MOT17-09 boxes when exported, else the turnstile; waits for the list", () => {
+  it("opens on 'What tracking is' (scenario order), MOT17-09 only when no clips; waits for the list", () => {
     expect(pickOpener(items, null)).toBeNull();
-    expect(pickOpener(items, [{ name: "MOT17-09" }] as never)).toBe("bench:MOT17-09");
+    expect(pickOpener([{ id: "milan_turnstiles" }, { id: "man_entering_metro" }] as never, [{ name: "MOT17-09" }] as never)).toBe("man_entering_metro");
     expect(pickOpener(items, [])).toBe("subway_turnstile");
+    expect(pickOpener([] as never, [{ name: "MOT17-09" }] as never)).toBe("bench:MOT17-09");
   });
   it("says 'in the repo folder', never 'on the server'", () => {
     expect(MISSING_CLIP_TEXT).toContain("In the repo folder run make clips blur");

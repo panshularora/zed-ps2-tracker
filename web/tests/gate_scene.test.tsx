@@ -44,6 +44,7 @@ describe("gate scene page", () => {
     expect(String(f.mock.calls[0][0])).toContain("/api/gate-sim/stream?seed=7");
     await waitFor(() => expect(screen.getByText("ByteTrack")).toBeTruthy());
     expect(screen.getByTestId("seed-chip").textContent).toBe("seed 7");
+    expect(screen.getByTestId("gate-caption").textContent).toBe("Left: ByteTrack, the published tracker we start from. Right: ours = ByteTrack + rules that keep a hidden person's number.");
     expect(screen.getByTestId("scene-counters-bytetrack").textContent).toContain("True count");
   });
   it("falls back to the recorded run when the backend is offline", async () => {

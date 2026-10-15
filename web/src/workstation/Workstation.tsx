@@ -104,7 +104,7 @@ export default function Workstation({ screen }: { screen: Screen }) {
         <div className="px-4 py-2 bg-fail/15 text-fail border-b border-fail/40 font-mono">{error}</div>
       )}
       <div className="flex-1 min-h-0">
-        {screen === "watch" && <GuidedStudio clips={clips} onNext={() => go("compare")} />}
+        {screen === "watch" && <GuidedStudio clips={clips} onNext={() => navigate("/dashboard/live")} />}
         {screen === "compare" && (
           <Studio
             clips={clips}

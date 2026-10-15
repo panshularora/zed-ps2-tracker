@@ -64,18 +64,6 @@ export function paint(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: 
     ctx.lineTo(b[0], b[1]);
     ctx.stroke();
     ctx.setLineDash([]);
-    // IN / OUT side labels (eval/gate_events.py: left normal = "in")
-    const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1;
-    const nx = -dy / L, ny = dx / L;
-    const mx = a[0] + dx * 0.08, my = a[1] + dy * 0.08;
-    ctx.font = `700 ${13 * px}px Inter, sans-serif`;
-    ctx.fillStyle = GATE;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    const off = (Math.abs(nx) > 0.5 ? 46 : 18) * px; // vertical line: labels sit left / right
-    const vmy = Math.max(my, vy + 40 * px);
-    ctx.fillText("IN side", Math.max(40 * px, mx + nx * off), vmy + ny * off);
-    ctx.fillText("OUT side", Math.max(40 * px, mx - nx * off), vmy - ny * off);
   }
   if (p.f != null) {
     // every box on the frame: 2 px in its ID colour with a 28 px ID chip on top
