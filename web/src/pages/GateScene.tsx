@@ -187,6 +187,7 @@ export default function GateScene() {
         </span>
       </div>
       {error && <div className="panel muted" role="alert" data-testid="scene-error" style={{ padding: 12 }}>{error}</div>}
+      <p className="gs-caption" data-testid="gate-caption"><b className="base">Left: ByteTrack</b>, the published tracker we start from. <b className="ours">Right: ours</b> = ByteTrack + rules that keep a hidden person&apos;s number.</p>
       <div className="gs-panes">
         {PANES.map((p) => {
           const pf = fr?.[p];

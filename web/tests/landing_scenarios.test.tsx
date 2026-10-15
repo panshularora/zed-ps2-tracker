@@ -124,69 +124,39 @@ describe("scenarios helpers", () => {
 });
 
 describe("scenarios tab", () => {
-  it("rail: measured MOT17-09 first, then playable clips with 16:9 stills, other benchmarks below", () => {
+  it("rail: playable clips first ('What tracking is' leads), MOT17 benchmarks after", () => {
     const sel = vi.fn();
-    render(<ScenarioRail items={[scenario().meta]} bench={["MOT17-09", "MOT17-04"]} selected="subway_turnstile" onSelect={sel} />);
+    const first = { ...scenario().meta, id: "man_entering_metro", problem: "What tracking is" };
+    render(<ScenarioRail items={[scenario().meta, first]} bench={["MOT17-09", "MOT17-04"]} selected="subway_turnstile" onSelect={sel} />);
     const nav = screen.getByRole("navigation");
-    expect(nav.firstElementChild?.textContent).toMatch(/^MOT17-09: a person comes back with a new number/);
-    expect(nav.firstElementChild?.querySelector("img")?.getAttribute("src")).toBe("/thumbs/MOT17-09.jpg");
-    expect(nav.children[1].getAttribute("data-testid")).toBe("scenario-card");
-    expect(screen.getByTestId("scenario-card").className).toContain("active");
-    const img = nav.children[1].querySelector("img")!;
+    const cards = [...nav.children];
+    expect(cards[0].textContent).toMatch(/^What tracking is/);
+    expect(cards[1].getAttribute("data-testid")).toBe("scenario-card");
+    expect(cards[1].className).toContain("active");
+    const img = cards[1].querySelector("img")!;
     expect(img.getAttribute("src")).toBe("/thumbs/subway_turnstile.jpg");
-    fireEvent.error(img); // broken still -> plain placeholder, never a broken-image icon
-    expect(nav.children[1].querySelector("img")).toBeNull();
-    expect(nav.children[1].querySelector(".thumb-ph")).toBeTruthy();
-    const cards = screen.getAllByTestId("bench-card");
-    expect(cards.map((c) => c.textContent)).toEqual([
-      "MOT17-09: a person comes back with a new numberMeasured · human labels",
-      "MOT17-04 · Measured · video not exported yet (boxes only)",
-    ]);
-    expect(screen.getByTestId("bench-slot").textContent).toBe("MOT20-02 · Measured · not exported yet");
+    fireEvent.error(img);
+    expect(cards[1].querySelector(".thumb-ph")).toBeTruthy();
+    expect(cards[2].textContent).toMatch(/^MOT17-09: real labelled street video \(boxes only\)/);
+    const bench = screen.getAllByTestId("bench-card");
+    expect(bench[1].textContent).toBe("MOT17-04 · Measured · video not exported yet (boxes only)");
     expect((screen.getByTestId("bench-slot") as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText("Illustrative · no ground truth")).toBeTruthy();
-    fireEvent.click(cards[1]);
+    fireEvent.click(bench[1]);
     expect(sel).toHaveBeenCalledWith("bench:MOT17-04");
-    fireEvent.click(screen.getByTestId("scenario-card"));
-    expect(sel).toHaveBeenCalledWith("subway_turnstile");
   });
-  it("player shows caption, honest counts, guided replay pieces and a working toggle", () => {
-    const guide = {
-      gate: { a: [0, 540], b: [1920, 540] },
-      events: { baseline: [], ours: [{ t: "cross", f: 1, id: 1, dir: "in" }] },
-      moments: [
-        { f: 100, kind: "overlap", changed: { baseline: true, ours: false }, counted_twice: { baseline: false, ours: false }, focus: [0, 0, 10, 10],
-          people: [{ box: [0, 0, 10, 10], ids: { baseline: { before: 2, after: 9 }, ours: { before: 2, after: 2 } } }] },
-        { f: 250, kind: "occlusion", changed: { baseline: true, ours: true }, counted_twice: { baseline: false, ours: false }, focus: [0, 0, 10, 10],
-          people: [{ box: [0, 0, 10, 10], ids: { ours: { before: 3, after: 5 }, baseline: { before: 3, after: 3 } } }] },
-      ],
-    };
-    render(<ScenarioPlayer data={{ ...scenario(), guide } as never} />);
-    // side-by-side comparison is the default view, with a per-clip table
-    expect(screen.getByTestId("compare-player")).toBeTruthy();
-    expect(screen.getByTestId("pane-baseline")).toBeTruthy();
-    expect(screen.getByTestId("pane-ours")).toBeTruthy();
-    expect(screen.getByTestId("compare-table").textContent).toContain("illustrative · no ground truth");
-    expect(screen.getByTestId("row-baseline").textContent).toContain("not labelled");
-    fireEvent.click(screen.getByRole("button", { name: "Guided walkthrough" }));
-    expect(screen.getByTestId("guided-legend").textContent).toMatch(/dashed line adds 1 to IN or OUT/);
-    expect(screen.getByTestId("gate-counters").textContent).toContain("IN 1");
-    expect(screen.getByTestId("event-log").textContent).toContain("Person 1 crossed the line going IN.");
-    expect(screen.getByRole("button", { name: "Guided" }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByText("Watch IDs.")).toBeTruthy();
+  it("player: ours only, intro, watch line, counters in a bar outside the frame, no comparison", () => {
+    const guide = { gate: { a: [0, 540], b: [1920, 540] }, events: { baseline: [], ours: [{ t: "cross", f: 1, id: 1, dir: "in" }] }, moments: [] };
+    render(<MemoryRouter><ScenarioPlayer data={{ ...scenario(), guide } as never} /></MemoryRouter>);
+    expect(screen.getByTestId("identity-player")).toBeTruthy();
+    expect(screen.queryByTestId("compare-player")).toBeNull();
+    expect(screen.queryByTestId("pane-baseline")).toBeNull();
+    expect(screen.getByTestId("scenario-intro").textContent).toContain("What you'll see");
+    expect(screen.getByTestId("watch-line").textContent).toMatch(/^Watch/);
+    const bar = screen.getByTestId("count-bar");
+    expect(bar.textContent).toContain("IN 1 · OUT 0");
+    expect(screen.getByTestId("identity-stage").contains(bar)).toBe(false);
+    expect(screen.getByTestId("compare-link").getAttribute("href")).toBe("/dashboard/live");
     expect(screen.getByText(/Illustrative only/)).toBeTruthy();
-    expect(screen.getByText(/detector yolox_s/)).toBeTruthy();
-    expect(screen.getByTestId("moment-tally").textContent).toBe("ByteTrack changed 2 · ours changed 1 · both: 1");
-    expect(screen.getByText("every moment where at least one tracker changed a person's number.")).toBeTruthy();
-    const ticks = screen.getAllByTestId("moment-tick");
-    expect(ticks).toHaveLength(2);
-    expect(ticks.map((k) => [k.dataset.top, k.dataset.bottom])).toEqual([["true", "false"], ["true", "true"]]);
-    expect(screen.getAllByTestId("clip-tag")[0].textContent).toBe("Illustrative · no ground truth");
-    expect(screen.getAllByTestId("clip-tag")[0].className).toContain("tag-illustrative");
-    expect(screen.getByTestId("moment-progress").textContent).toMatch(/^0 of 2/);
-    const base = screen.getByRole("button", { name: "ByteTrack (baseline)" });
-    fireEvent.click(base);
-    expect(base.getAttribute("aria-pressed")).toBe("true");
   });
   it("strip ticks and arrow keys jump between moments", async () => {
     const guide = {
