@@ -17,9 +17,9 @@ export function OfflineBanner() {
   useEffect(() => onOffline(setOff), []);
   if (!off) return null;
   return (
-    <div className="offline-banner" role="status" data-testid="offline-banner">
-      Backend offline: showing the committed snapshot (docs/results, viewer/data, web/public/demo). Live tracking runs need <code>make serve</code>.
-    </div>
+    <span className="offline-banner" role="status" data-testid="offline-banner" title="Showing the committed snapshot (docs/results, viewer/data, web/public/demo). Live tracking runs need make serve.">
+      Offline snapshot
+    </span>
   );
 }
 
@@ -75,6 +75,7 @@ export default function App() {
             Gate tracker <small>· Zed Digital PS-2</small>
           </span>
         </NavLink>
+        <OfflineBanner />
         <nav className="nav" aria-label="Pages">
           {NAV.map((p) => (
             <NavLink key={p.to} to={p.to} end className={() => (p.match.includes(path) ? "active" : "")}>
@@ -90,7 +91,6 @@ export default function App() {
           ))}
         </nav>
       )}
-      <OfflineBanner />
       <main>
         <Routes>
           <Route path="/" element={<Story />} />
@@ -108,12 +108,10 @@ export default function App() {
           <Route path="/dashboard/architecture" element={<Architecture />} />
           <Route path="*" element={<p className="muted">Page not found.</p>} />
         </Routes>
-        <Takeaway path={path} />
-        {next && (
-          <div className="next-row">
-            <NavLink to={next.to} className="btn primary next-btn" data-testid="next-btn">Next: {next.label} →</NavLink>
-          </div>
-        )}
+        <div className="page-foot" data-testid="page-foot">
+          <Takeaway path={path} />
+          {next && <NavLink to={next.to} className="btn primary next-btn" data-testid="next-btn">Next: {next.label} →</NavLink>}
+        </div>
       </main>
       <footer className="footer">
         <span>Benchmark numbers are provisional: MOT17 val-half, public detections, read from docs/results/summary.json (laptop GPU run).</span>

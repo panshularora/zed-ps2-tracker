@@ -304,7 +304,8 @@ export default function GateScene() {
         <button type="button" role="tab" aria-selected={ctl.play === "keep"} className={`chip-btn${ctl.play === "keep" ? " on" : ""}`} data-testid="play-keep" onClick={() => setPlay("keep")}>Scripted hide</button>
         <button type="button" role="tab" aria-selected={ctl.play === "crowd"} className={`chip-btn${ctl.play === "crowd" ? " on" : ""}`} data-testid="play-crowd" onClick={() => setPlay("crowd")}>Random crowd</button>
       </div>
-      <details className="about"><summary>What do the chips mean?</summary>
+      <details className="about"><summary>What am I looking at?</summary>
+<p className="gs-caption" data-testid="gate-caption"><b className="base">Left: {BASE_NAME}</b>. <b className="ours">Right: {OURS_NAME}</b>: {OURS_LINE}</p>
       <ol className="gs-steps" data-testid="how-id-kept">
         <li><b>ID #N (blue).</b> In view, first number still on them.</li>
         <li><b>HELD #N (grey).</b> Faded dashed body: hidden behind someone, the tracker still remembers N.</li>
@@ -321,7 +322,6 @@ export default function GateScene() {
         </div>
       )}
       {error && <div className="panel muted" role="alert" data-testid="scene-error" style={{ padding: 12 }}>{error}</div>}
-      <p className="gs-caption" data-testid="gate-caption"><b className="base">Left: {BASE_NAME}</b>. <b className="ours">Right: {OURS_NAME}</b>: {OURS_LINE}</p>
       {cmp && (
         <div className="cmp-strip tabular" data-testid="compare-strip">
           <div><div className="k">Same seed {meta?.params.seed} · {end ? "whole run" : "so far"}</div><div className="row"><b className="base">ByteTrack (left)</b><b className="ours">ours (right)</b></div></div>

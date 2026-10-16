@@ -31,8 +31,8 @@ export function GuidedStudio({ clips, onNext }: { clips: IndexedClip[]; onNext: 
     [bench, scen],
   );
   return (
-    <div className="h-full overflow-auto px-4 pt-2 pb-4" data-testid="guided-studio">
-      <div className="flex flex-wrap items-center gap-3 mb-2">
+    <div className="h-full overflow-auto px-4 pt-0 pb-4" data-testid="guided-studio">
+      <div className="flex flex-wrap items-center gap-3 mb-1">
         <h2 className="text-[22px] font-semibold text-ink m-0">Studio: {OURS_NAME}</h2>
         <label className="flex items-center gap-2 text-[13px] text-mute">
           Clip
