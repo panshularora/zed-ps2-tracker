@@ -6,6 +6,7 @@ import Results from "./pages/Results";
 import Scenarios from "./pages/Scenarios";
 import RealCompare from "./compare/RealCompare";
 import MomentCompare from "./compare/MomentCompare";
+import { Takeaway } from "./components/Takeaway";
 import GateScene from "./pages/GateScene";
 import WhatWeUse from "./pages/WhatWeUse";
 import Workstation from "./workstation/Workstation";
@@ -111,6 +112,7 @@ export default function App() {
           <Route path="/dashboard/architecture" element={<Architecture />} />
           <Route path="*" element={<p className="muted">Page not found.</p>} />
         </Routes>
+        <Takeaway path={path} />
         {next && (
           <div className="next-row">
             <NavLink to={next.to} className="btn primary next-btn" data-testid="next-btn">Next: {next.label} →</NavLink>

@@ -596,3 +596,8 @@ main td.num, main td.tabular, main th.num { text-align: right; font-variant-nume
 .panel, .btn, .chip-btn, .mc-pane { box-shadow: none; background-image: none; border-radius: 4px; }
 .people-tally { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; font-size: 15px; }
 .people-tally .muted { font-size: 13px; }
+.takeaway { display: flex; gap: 24px; align-items: flex-end; justify-content: space-between; margin-top: 16px; }
+.takeaway-big { font-size: 32px; font-weight: 600; color: #56B4E9; line-height: 1.1; }
+.takeaway-line { font-size: 15px; color: #8A929C; max-width: 64ch; }
+.about summary { cursor: pointer; color: #8A929C; font-size: 14px; }
+.about p { font-size: 15px; color: #8A929C; max-width: 64ch; margin: 8px 0 0; }

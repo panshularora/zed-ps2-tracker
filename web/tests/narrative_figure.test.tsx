@@ -127,3 +127,17 @@ describe("quiet timeline", () => {
     expect(quietView(ps, 30, true).shown).toHaveLength(4);
   });
 });
+
+describe("takeaway numbers come from data", () => {
+  it("MOT takeaway sums per-person verify files; gate takeaway matches the tally", async () => {
+    const { motTakeaway, gateTakeaway } = await import("../src/components/Takeaway");
+    vi.stubGlobal("fetch", vi.fn(async (u: string) => new Response(readFileSync(`public${String(u).replace(/^\//, "/")}`, "utf8"))));
+    const a = JSON.parse(readFileSync("public/verify/MOT17-04.json", "utf8")).people, b = JSON.parse(readFileSync("public/verify/MOT17-09.json", "utf8")).people;
+    const m = await motTakeaway();
+    expect(m!.big).toBe(`${a.ours.kept + b.ours.kept} of ${a.ours.labelled + b.ours.labelled}`);
+    const g = await gateTakeaway();
+    const p = pickStory(frames), t = tally(p.all);
+    expect(g!.big).toBe(`${t.ours.kept} of ${p.all.length}`);
+    vi.unstubAllGlobals();
+  });
+});
