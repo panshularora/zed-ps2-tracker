@@ -2,7 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { neutralColor } from "../lib/scenarios";
 import { fallbackText, videoSources, type ReplayData } from "../guided/model";
 import { PersonTimeline } from "./PersonTimeline";
-import { boxesAt, countsAt, people as peopleOf, pickFocus, placeChips, storySteps, tracksOf, watchLine, type Drawn, type XYWH } from "./story";
+import { boxesAt, chipText, countsAt, people as peopleOf, pickFocus, placeChips, storySteps, tracksOf, watchLine, type Drawn, type Person, type Step, type XYWH } from "./story";
+import { fetchVerify, methodTooltip, verdictOf, type VerdictOf, type VerifyDoc } from "./verify";
+import { storyMoments, type StoryMoment } from "./moments";
+
+const SWAP_FILL = "#8A929C";
 
 export const STEP_PAUSE_MS = 1800;
 const ZOOM = 1.6, ZOOM_MS = 500, TRAIL_S = 1.5, DIM = 0.35;
@@ -19,24 +23,55 @@ export function CountBar({ inN, outN, note }: { inN: number; outN: number; note?
   );
 }
 
-export function IdentityLegend() {
+export function IdentityLegend({ doc }: { doc?: VerifyDoc | null }) {
+  const tip = methodTooltip(doc ?? null);
   return (
     <div className="id-legend" data-testid="identity-legend">
       <span><i className="lg lg-box" />Box + number = one person</span>
       <span><i className="lg lg-dash" />Dashed = still that number, hidden</span>
-      <span><i className="lg lg-kept">kept</i>Came back with the same number</span>
+      <span title={tip} data-testid="kept-tooltip"><i className="lg lg-kept">kept</i>Came back and the check says same person <span className="info" aria-label={tip}>ⓘ</span></span>
+      <span title={tip}><i className="lg lg-swap">possible swap</i>Number reappeared on someone who does not match</span>
       <span><i className="lg lg-line" />Gate line: crossing it adds to IN or OUT</span>
     </div>
   );
 }
 
-export function IdentityPlayer({ data, watch }: { data: ReplayData; watch?: string }) {
+/** Steps for the confirmed story moments (hidden → back still #N), in time order. */
+export function momentSteps(ms: StoryMoment[]): Step[] {
+  return ms.flatMap((m) => [
+    { f: m.ev.last + 1, kind: "hidden" as const, text: `Person #${m.ev.id} goes out of sight${m.ev.occluder != null ? ` behind #${m.ev.occluder}` : ""}. Dashed box = "still #${m.ev.id}, hidden".` },
+    { f: m.ev.back, kind: "back" as const, text: m.caption },
+  ]).sort((a, b) => a.f - b.f);
+}
+
+export function useVerify(clip: string, given?: VerifyDoc | null): VerifyDoc | null {
+  const [doc, setDoc] = useState<VerifyDoc | null>(given ?? null);
+  useEffect(() => {
+    if (given !== undefined) { setDoc(given); return; }
+    let live = true;
+    fetchVerify(clip).then((d) => live && setDoc(d));
+    return () => { live = false; };
+  }, [clip, given]);
+  return doc;
+}
+
+export function IdentityPlayer({ data, watch, verify }: { data: ReplayData; watch?: string; verify?: VerifyDoc | null }) {
   const video = useRef<HTMLVideoElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
+  const vdoc = useVerify(data.id, verify);
+  const verdict = useMemo<VerdictOf>(() => verdictOf(vdoc), [vdoc]);
   const tracks = useMemo(() => tracksOf(data.runs.ours.frames), [data]);
-  const { people } = useMemo(() => peopleOf(data), [data]);
-  const focus = useMemo(() => pickFocus(people), [people]);
-  const steps = useMemo(() => (focus ? storySteps(data, focus) : []), [data, focus]);
+  const { people } = useMemo(() => peopleOf(data, "ours", verdict), [data, verdict]);
+  const moments = useMemo(() => storyMoments(data.id, vdoc), [data.id, vdoc]);
+  const focus = useMemo<Person | null>(() => {
+    const m = moments[0];
+    return (m && people.find((p) => p.ids.includes(m.ev.id))) || pickFocus(people);
+  }, [people, moments]);
+  const steps = useMemo(() => {
+    if (moments.length) return momentSteps(moments);
+    return focus ? storySteps(data, focus, verdict) : [];
+  }, [data, focus, verdict, moments]);
+  const swaps = useMemo(() => people.flatMap((p) => p.swaps.map((s) => ({ ...s, key: p.key }))).sort((a, b) => a.f - b.f), [people]);
   const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [story, setStory] = useState(true);
@@ -52,7 +87,7 @@ export function IdentityPlayer({ data, watch }: { data: ReplayData; watch?: stri
   const holdUntil = useRef(0);
   const zoomK = useRef({ k: 0, at: 0, target: 0 });
   const followRef = useRef(follow); followRef.current = follow;
-  const focusIds = useMemo(() => new Set(focus?.ids ?? []), [focus]);
+  const focusIds = useMemo(() => new Set([...(focus?.ids ?? []), ...moments.map((m) => m.ev.id)]), [focus, moments]);
 
   useEffect(() => {
     zoomK.current = { k: zoomK.current.k, at: performance.now(), target: follow != null ? 1 : 0 };
@@ -101,7 +136,7 @@ export function IdentityPlayer({ data, watch }: { data: ReplayData; watch?: stri
       if (c.width !== Math.round(cw * dpr)) { c.width = Math.round(cw * dpr); c.height = Math.round(ch * dpr); }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const ff = Math.min(data.frames, Math.max(1, 1 + cur * data.fps));
-      const all = boxesAt(tracks, ff, data.fps);
+      const all = boxesAt(tracks, ff, data.fps, verdict);
       const fid = followRef.current;
       const fb = fid != null ? all.find((d) => d.id === fid)?.box : null;
       const W = data.width, H = data.height;
@@ -115,7 +150,7 @@ export function IdentityPlayer({ data, watch }: { data: ReplayData; watch?: stri
     const v = () => (src && video.current && video.current.readyState >= 2 ? video.current : null);
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [data, src, off, playing, story, steps, tracks, focusIds]);
+  }, [data, src, off, playing, story, steps, tracks, focusIds, verdict]);
 
   function seekFrame(f: number) {
     const s = Math.max(0, (f - 1) / data.fps - 0.3);
@@ -128,20 +163,24 @@ export function IdentityPlayer({ data, watch }: { data: ReplayData; watch?: stri
     const r = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - r.left) / r.width) * data.width, y = ((e.clientY - r.top) / r.height) * data.height;
     const ff = Math.max(1, 1 + t * data.fps);
-    const hitBox = boxesAt(tracks, ff, data.fps).find((d) => x >= d.box[0] && x <= d.box[0] + d.box[2] && y >= d.box[1] && y <= d.box[1] + d.box[3]);
+    const hitBox = boxesAt(tracks, ff, data.fps, verdict).find((d) => x >= d.box[0] && x <= d.box[0] + d.box[2] && y >= d.box[1] && y <= d.box[1] + d.box[3]);
     setFollow((cur) => (hitBox && hitBox.id !== cur ? hitBox.id : null));
   }
 
   const f = Math.min(data.frames, Math.max(1, Math.floor(1 + t * data.fps)));
   const counts = countsAt(data.events.ours, f);
   const cur = step != null ? steps[step] : null;
+  const liveMoment = moments.filter((m) => { const dt = t - (m.ev.back - 1) / data.fps; return dt >= -0.05 && dt < 2.5; }).sort((a, b) => b.ev.back - a.ev.back)[0];
   const caption = cur && t - (cur.f - 1) / data.fps < 3 ? cur.text
+    : liveMoment ? liveMoment.caption
     : follow != null ? `Following #${follow}. Click again or press Esc to stop.`
     : story ? (steps.length ? "Story mode: the replay pauses briefly at each key moment for the highlighted person. Click any box to follow someone." : "Click any box to follow that person.")
     : "Free play. Click any box to follow that person.";
   return (
     <div className="idp" data-testid="identity-player">
-      <p className="watch-line" data-testid="watch-line">{watch ?? watchLine(focus, steps)}</p>
+      <p className="watch-line" data-testid="watch-line">{watch ?? (moments.length
+        ? `Watch ${moments.map((m) => `#${m.ev.id}`).join(" and ")}: hidden for a moment, back with the same number, and the check agrees it is the same person.`
+        : watchLine(focus, steps))}</p>
       <CountBar inN={counts.in} outN={counts.out} note={hint} />
       <div className="idp-stage" data-testid="identity-stage" style={{ aspectRatio: `${data.width} / ${data.height}` }}>
         {src && <video key={src} ref={video} src={src} muted playsInline autoPlay className="idp-video" aria-label={data.title}
@@ -159,12 +198,30 @@ export function IdentityPlayer({ data, watch }: { data: ReplayData; watch?: stri
         <span className="muted idp-run">{data.runs.ours.label}</span>
       </div>
       <PersonTimeline people={people} frames={data.frames} f={f} focus={follow ?? focus?.key ?? null} onSeek={seekFrame} />
-      <IdentityLegend />
+      {moments.length > 0 && (
+        <div className="kept-moments" data-testid="kept-moments">
+          <b>Verified moments</b>
+          {moments.map((m) => (
+            <button key={`${m.ev.id}:${m.ev.back}`} type="button" className="chip-btn" onClick={() => seekFrame(m.ev.last)} data-testid="kept-moment">{m.caption}</button>
+          ))}
+        </div>
+      )}
+      {swaps.length > 0 && (
+        <details className="swap-list" data-testid="swap-list">
+          <summary>{swaps.length} possible {swaps.length === 1 ? "swap" : "swaps"} flagged on this clip (counted as uncertain, not kept)</summary>
+          {swaps.map((s) => (
+            <button key={`${s.id}:${s.f}`} type="button" className="chip-btn mono" onClick={() => seekFrame(s.last)} data-testid="swap-item">
+              #{s.id} · frame {s.last} → {s.f} · {s.why}
+            </button>
+          ))}
+        </details>
+      )}
+      <IdentityLegend doc={vdoc} />
     </div>
   );
 }
 
-function paintFrame(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: ReplayData, src: CanvasImageSource | null, view: XYWH, all: Drawn[], follow: number | null, focus: Set<number>, ff: number, tracks: Map<number, Map<number, XYWH>>) {
+export function paintFrame(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: ReplayData, src: CanvasImageSource | null, view: XYWH, all: Drawn[], follow: number | null, focus: Set<number>, ff: number, tracks: Map<number, Map<number, XYWH>>) {
   const [vx, vy, vw, vh] = view;
   const s = cw / vw;
   ctx.save();
@@ -178,7 +235,9 @@ function paintFrame(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: Re
     ctx.beginPath(); ctx.moveTo(...d.gate.a); ctx.lineTo(...d.gate.b); ctx.stroke(); ctx.setLineDash([]);
   }
   const hasFocus = focus.size > 0;
-  const isF = (id: number) => !hasFocus || focus.has(id);
+  const swapIds = new Set(all.filter((b) => b.state === "swap").map((b) => b.id));
+  // failures are never dimmed: a possible swap is drawn at full strength even outside the focus
+  const isF = (id: number) => !hasFocus || focus.has(id) || swapIds.has(id);
   // follow: 1.5 s fading trail in ID colour
   if (follow != null) {
     const m = tracks.get(follow);
@@ -199,14 +258,14 @@ function paintFrame(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: Re
     const c = neutralColor(b.id);
     ctx.globalAlpha = isF(b.id) ? 1 : DIM;
     ctx.strokeStyle = c; ctx.lineWidth = 2 * px;
-    if (b.state === "hidden") ctx.setLineDash([8 * px, 6 * px]);
+    if (b.state === "hidden" || b.state === "swap") ctx.setLineDash([8 * px, 6 * px]);
     ctx.strokeRect(...b.box);
     ctx.setLineDash([]);
     if (b.id === follow) {
       ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = 2 * px;
       ctx.strokeRect(b.box[0] - 4 * px, b.box[1] - 4 * px, b.box[2] + 8 * px, b.box[3] + 8 * px);
     }
-    const text = b.state === "hidden" ? `still #${b.id} (hidden)` : b.state === "kept" && isF(b.id) ? `kept #${b.id}` : `#${b.id}`;
+    const text = chipText(b, isF(b.id));
     const size = b.id === follow ? 18 : 13;
     ctx.font = `600 ${size * px}px Inter, sans-serif`;
     items.push({ id: b.id, box: b.box, text, w: ctx.measureText(text).width + 10 * px, h: (size + 7) * px, d: b });
@@ -215,7 +274,7 @@ function paintFrame(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: Re
     const it = items.find((i) => i.id === c.id)!;
     const size = c.id === follow ? 18 : 13;
     ctx.globalAlpha = isF(c.id) ? (it.d.state === "hidden" ? 0.85 : 1) : DIM;
-    ctx.fillStyle = neutralColor(c.id);
+    ctx.fillStyle = it.d.state === "swap" ? SWAP_FILL : neutralColor(c.id);
     const x = Math.min(Math.max(vx, c.x), vx + vw - c.w), y = Math.max(vy, c.y);
     ctx.beginPath(); ctx.roundRect(x, y, c.w, c.h, 4 * px); ctx.fill();
     ctx.fillStyle = "#0E1013"; ctx.font = `600 ${size * px}px Inter, sans-serif`;

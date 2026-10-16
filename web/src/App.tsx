@@ -4,6 +4,7 @@ import Landing from "./pages/Landing";
 import Overview from "./pages/Overview";
 import Results from "./pages/Results";
 import Scenarios from "./pages/Scenarios";
+import RealCompare from "./compare/RealCompare";
 import GateScene from "./pages/GateScene";
 import WhatWeUse from "./pages/WhatWeUse";
 import Workstation from "./workstation/Workstation";
@@ -72,6 +73,7 @@ export default function App() {
           <Route path="/dashboard/what-we-use" element={<WhatWeUse />} />
           <Route path="/dashboard/live" element={<GateScene />} />
           <Route path="/dashboard/scenarios" element={<Scenarios />} />
+          <Route path="/dashboard/scenarios/compare" element={<RealCompare />} />
           <Route path="/dashboard/studio" element={<Workstation screen="watch" />} />
           <Route path="/dashboard/compare" element={<Workstation screen="compare" />} />
           <Route path="/dashboard/evidence" element={<Workstation screen="evidence" />} />

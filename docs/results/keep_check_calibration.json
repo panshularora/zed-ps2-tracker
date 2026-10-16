@@ -1,0 +1,25 @@
+{
+ "appearance": {
+  "same_pairs": 333,
+  "different_pairs": 437,
+  "app_min": 0.8,
+  "same_below_threshold": 0.165,
+  "different_at_or_above_threshold": 0.073,
+  "same_median": 0.898,
+  "different_median": 0.533
+ },
+ "motion_vs_gt": {
+  "kept": {
+   "n": 44,
+   "motion_ok": 44
+  },
+  "swap": {
+   "n": 9,
+   "motion_ok": 9
+  },
+  "unknown": {
+   "n": 1,
+   "motion_ok": 1
+  }
+ }
+}
