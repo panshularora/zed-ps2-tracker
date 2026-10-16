@@ -190,15 +190,15 @@ export function IdentityPlayer({ data, watch, verify }: { data: ReplayData; watc
     : "Free play. Click any box to follow that person.";
   return (
     <div className="idp" data-testid="identity-player">
-      <p className="watch-line" data-testid="watch-line">{watch ?? (moments.length
-        ? `Watch ${moments.map((m) => `#${m.ev.id}`).join(" and ")}: hidden for a moment, back with the same number, and the check agrees it is the same person.`
-        : watchLine(focus, steps))}</p>
-      <CountBar inN={counts.in} outN={counts.out} note={hint} />
       <div className="idp-stage" data-testid="identity-stage" style={{ aspectRatio: `${data.width} / ${data.height}`, maxWidth: `calc(58vh * ${data.width} / ${data.height})`, marginInline: "auto" }}>
         {src && <video key={src} ref={video} src={src} muted playsInline autoPlay className="idp-video" aria-label={data.title}
           onError={() => setSrcIdx((i) => i + 1)} onLoadedMetadata={(e) => { if (!(e.currentTarget.duration > 0)) setSrcIdx((i) => i + 1); }} />}
         <canvas ref={canvas} className="idp-canvas" onClick={onClick} aria-label={`${data.title}: ${data.runs.ours.label}. Click a person to follow.`} />
       </div>
+      <p className="watch-line" data-testid="watch-line">{watch ?? (moments.length
+        ? `Watch ${moments.map((m) => `#${m.ev.id}`).join(" and ")}: hidden for a moment, back with the same number, and the check agrees it is the same person.`
+        : watchLine(focus, steps))}</p>
+      <CountBar inN={counts.in} outN={counts.out} note={hint} />
       <div className="idp-caption" aria-live="polite" data-testid="story-caption">{caption}</div>
       <div className="idp-controls">
         <button type="button" className="btn" onClick={() => setPlaying((p) => !p)} aria-label={playing ? "Pause" : "Play"}>{playing ? "❚❚ Pause" : "▶ Play"}</button>

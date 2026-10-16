@@ -11,6 +11,7 @@ import {
 } from "../lib/gateSim";
 
 const GATE = "#F5A524";
+export const WALK_X0 = 40, WALK_W = 700; // scene units; recorded runs keep people within x 48..726
 const RING_S = 0.6, TAG_S = 2, DIM_S = 1.5, REPLAY_S = 5, DIFF_LEAD_S = 2, DIFF_TAIL_S = 1.5;
 const CHIP_FILL: Record<IdKind, string> = { ok: "#56B4E9", held: "#8A929C", fail: "#F5A524", none: "#8A929C" };
 
@@ -247,7 +248,10 @@ export default function GateScene() {
         const dpr = window.devicePixelRatio || 1, cw = c.clientWidth, ch = c.clientHeight;
         if (c.width !== Math.round(cw * dpr) || c.height !== Math.round(ch * dpr)) { c.width = Math.round(cw * dpr); c.height = Math.round(ch * dpr); }
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        paintPane(ctx, cw, ch, meta, fs, idx, p, replay.current?.ids ?? null, lookPid);
+        // crop to the walking area: people never leave x ∈ [WALK_X0, WALK_X0 + WALK_W]
+        const fw = (cw * meta.width) / WALK_W;
+        ctx.translate((-WALK_X0 * fw) / meta.width, 0);
+        paintPane(ctx, fw, ch, meta, fs, idx, p, replay.current?.ids ?? null, lookPid);
       }
       if (now - lastUi > 120) { lastUi = now; setUi({ idx, slow: rate < 1, buffered: fs.length }); }
       raf = requestAnimationFrame(tick);
@@ -300,11 +304,13 @@ export default function GateScene() {
         <button type="button" role="tab" aria-selected={ctl.play === "keep"} className={`chip-btn${ctl.play === "keep" ? " on" : ""}`} data-testid="play-keep" onClick={() => setPlay("keep")}>Scripted hide</button>
         <button type="button" role="tab" aria-selected={ctl.play === "crowd"} className={`chip-btn${ctl.play === "crowd" ? " on" : ""}`} data-testid="play-crowd" onClick={() => setPlay("crowd")}>Random crowd</button>
       </div>
+      <details className="about"><summary>What do the chips mean?</summary>
       <ol className="gs-steps" data-testid="how-id-kept">
         <li><b>ID #N (blue).</b> In view, first number still on them.</li>
         <li><b>HELD #N (grey).</b> Faded dashed body: hidden behind someone, the tracker still remembers N.</li>
         <li><b>NEW #M was #N (amber).</b> They came back and the tracker gave them a new number.</li>
       </ol>
+      </details>
       {copy && (
         <div className="gs-why" data-testid="gs-why">
           <div>
