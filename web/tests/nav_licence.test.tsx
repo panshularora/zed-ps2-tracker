@@ -25,11 +25,11 @@ describe("navigation", () => {
     expect(screen.getByRole("link", { name: "Try it" }).className).toContain("active");
     expect(screen.getByTestId("next-btn").getAttribute("href")).toBe("/dashboard/compare");
   });
-  it("Story at / merges the landing and the overview, Next goes to What we use", async () => {
+  it("Story at / is the 'What is an ID mix-up?' page, Next goes to What we use", async () => {
     const { default: App } = await import("../src/App");
     render(<MemoryRouter future={R} initialEntries={["/"]}><App /></MemoryRouter>);
-    expect(screen.getByText("landing")).toBeTruthy();
-    expect(screen.getByText("overview page")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("What is an ID mix-up?");
+    expect(screen.getByTestId("story-status").textContent).toContain("Pending GPU rerun");
     expect(screen.getByRole("link", { name: "Story" }).className).toContain("active");
     expect(screen.getByTestId("next-btn").getAttribute("href")).toBe("/dashboard/what-we-use");
   });

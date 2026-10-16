@@ -1,7 +1,6 @@
 import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import Architecture from "./pages/Architecture";
-import Landing from "./pages/Landing";
-import Overview from "./pages/Overview";
+import Story from "./pages/Story";
 import Results from "./pages/Results";
 import Scenarios from "./pages/Scenarios";
 import RealCompare from "./compare/RealCompare";
@@ -62,9 +61,6 @@ export function nextOf(path: string): { to: string; label: string } | null {
   return i >= 0 && i < PATH.length - 1 ? PATH[i + 1] : null;
 }
 
-function Story() {
-  return <><Landing /><Overview /></>;
-}
 
 export default function App() {
   const path = useLocation().pathname;

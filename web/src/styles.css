@@ -617,3 +617,5 @@ main td.num, main td.tabular, main th.num { text-align: right; font-variant-nume
 .verdict-pill { display: inline-flex; gap: 8px; align-items: center; }
 .result-tabs { margin-top: 16px; }
 .pill.fail { color: #F5A524; border-color: #F5A524; }
+.story-visual { min-height: 44vh; display: flex; align-items: center; }
+.story-visual > * { width: 100%; }
