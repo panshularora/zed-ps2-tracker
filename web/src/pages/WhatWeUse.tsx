@@ -1,3 +1,4 @@
+import { BASE_NAME, OURS_NAME } from "../lib/ours";
 // "What we use", in plain words. Every claim is checked against the repo: docs/licenses.md,
 // docs/results/GPU_RUN_2026-10.md, configs/, tracker/visibility.py, tracker/cmc.py,
 // third_party/cmc_files. Run status lines come from docs/results/summary.json via datasetRows().
@@ -78,7 +79,7 @@ const METRICS = [
 const PIPE = [
   ["Camera frames", "video from the gate"],
   ["Detector", "YOLOX: one box per person"],
-  ["Tracker", "ByteTrack / BoT-SORT (+ CMC) + our visibility"],
+  ["Tracker", `${OURS_NAME} (left of every comparison: ${BASE_NAME})`],
   ["One number per person", "kept while they are hidden"],
   ["Gate line", "counts IN / OUT once per number"],
 ];

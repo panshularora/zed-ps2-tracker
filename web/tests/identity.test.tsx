@@ -83,8 +83,8 @@ describe("identity story", () => {
   });
   it("timeline: one bar per person, dashed hidden, change tag, seek on click", () => {
     const onSeek = vi.fn();
-    render(<PersonTimeline people={people(replay()).people} frames={20} f={5} focus={4} onSeek={onSeek} />);
-    expect(screen.getByTestId("timeline-summary").textContent).toBe("2 people · 1 kept one number · 1 changed");
+    render(<PersonTimeline people={people(replay()).people} frames={20} f={5} focus={4} onSeek={onSeek} fps={1} />);
+    expect(screen.getByTestId("timeline-summary").textContent).toMatch(/^2 people · 1 kept one number · 1 changed/);
     expect(screen.getAllByTestId("ptl-row")).toHaveLength(2);
     expect(screen.getAllByTestId("ptl-hidden")).toHaveLength(1);
     const ch = screen.getByTestId("ptl-change");

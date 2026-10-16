@@ -112,7 +112,7 @@ export function ScenarioPlayer({ data }: { data: ScenarioData }) {
   const replay = useMemo(() => fromScenario(data, videoUrl(meta.id)), [data, meta.id]);
   return (
     <ScenarioView replay={replay} credit={<>
-      Illustrative only: Keep-ID on this Pexels clip (one body, one number through a hide). No ground truth, not a measured score.
+      Illustrative only: the tracker&apos;s own numbers on this Pexels clip, nothing relabelled. No ground truth here; &quot;kept&quot; comes from a heuristic check, not a measured score.
       The counting line is a fixed-fraction line chosen by geometry (the candidate people cross most, both trackers summed).
       Source: <a href={meta.source} target="_blank" rel="noreferrer">Pexels</a> · {meta.licence} · faces blurred · detector {meta.detector} (CPU)
       {meta.stride > 1 ? `, 1 in ${meta.stride} frames tracked` : ""}.

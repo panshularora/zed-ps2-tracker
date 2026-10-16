@@ -383,7 +383,10 @@ def write(clip: str, kind: str, rs: list[Reappearance]) -> dict[str, Any]:
 
 
 def main() -> None:
-    idx = json.loads((PUB / "scenarios" / "index.json").read_text())
+    import sys
+
+    gt_only = "--gt-only" in sys.argv[1:]
+    idx = [] if gt_only else json.loads((PUB / "scenarios" / "index.json").read_text())
     for m in idx:
         scn = json.loads((PUB / "scenarios" / f"{m['id']}.json").read_text())
         mp4 = PUB / "demo" / f"{m['id']}.mp4"
@@ -395,7 +398,9 @@ def main() -> None:
         clip = gtf.name.split(".")[0]
         gt = viewer_tracks(load_gz(gtf))
         rs: list[Reappearance] = []
-        for tr in ("bytetrack", "botsort"):
+        # "ours" = BoT-SORT + visibility (configs/ours/visibility_botsort.yaml) when exported
+        ours = "vis_botsort" if (vd / f"{clip}.vis_botsort.json.gz").exists() else "botsort"
+        for tr in ("bytetrack", ours):
             p = vd / f"{clip}.{tr}.json.gz"
             if p.exists():
                 c = load_gz(p)

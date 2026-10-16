@@ -1,3 +1,4 @@
+import { BASE_NAME, OURS_LINE, OURS_NAME } from "../lib/ours";
 import { Term } from "../components/Term";
 import { Link } from "react-router-dom";
 import { DatasetTable } from "../components/DatasetTable";
@@ -14,11 +15,10 @@ const DATASETS = [
   ["Synthetic gate", "Toy people with exact ground truth. Used to watch keep vs switch live."],
 ];
 const TRACKERS = [
-  ["ByteTrack", "Baseline. Links boxes by overlap from frame to frame. After a hide it often hands out a new number."],
+  [BASE_NAME, "Baseline. Links boxes by overlap from frame to frame. After a hide it often hands out a new number."],
   ["BoT-SORT", "ByteTrack plus camera-motion correction and a Kalman filter. Headline comparison tracker."],
   ["OC-SORT / Hybrid-SORT / Deep OC-SORT", "Other published baselines we re-ran on the same detections."],
-  ["Keep-ID (gate scene)", "Demo tracker: hold the same number while the box is gone, then rebind it when they step out. ByteTrack mints a new one."],
-  ["BoT-SORT + visibility", "Tried on MOT17. It is not the keep-ID contract — the gate scene uses Keep-ID vs ByteTrack."],
+  [OURS_NAME, OURS_LINE + " This one tracker is 'ours' on every page: gate scene, Studio, Scenarios and Results."],
   ["Delayed assignment", "Wait extra frames before committing an ID. Measured and left off: documented no-go."],
 ];
 

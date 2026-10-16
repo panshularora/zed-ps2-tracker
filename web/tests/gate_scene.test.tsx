@@ -1,3 +1,4 @@
+import { BASE_NAME, OURS_LINE, OURS_NAME } from "../src/lib/ours";
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { beatCopy, firstKeepId, involvedBetween, isDefault, lineSplitter, personIdLabel, readStream, recentEvents, recordingUrl, streamUrl, DEFAULTS, type SimFrame } from "../src/lib/gateSim";
@@ -22,9 +23,10 @@ describe("gate sim client", () => {
     expect(out).toHaveLength(2);
   });
   it("builds the stream url from the controls and knows the defaults", () => {
-    expect(streamUrl(DEFAULTS)).toBe("/api/gate-sim/stream?seed=7&density=0.5&occlusion=1.5&noise=0.15&seconds=12&play=keep");
+    expect(streamUrl(DEFAULTS)).toBe("/api/gate-sim/stream?seed=7&density=0.5&occlusion=1.5&noise=0.15&seconds=60&play=crowd");
     expect(isDefault({ ...DEFAULTS, seed: 8 })).toBe(false);
     expect(recordingUrl("keep")).toBe("/offline/gate-keep.ndjson");
+    expect(recordingUrl("crowd")).toBe("/offline/gate-sim.ndjson");
     expect(beatCopy("hide", 1).tag).toMatch(/person 1 walked behind/);
     expect(beatCopy("back", 1).body).toMatch(/Same body/);
   });
@@ -56,14 +58,15 @@ describe("gate scene page", () => {
     expect(screen.getByTestId("synthetic-tag").textContent).toBe("Synthetic scene · exact ground truth");
     await waitFor(() => expect(f).toHaveBeenCalled());
     expect(String(f.mock.calls[0][0])).toContain("/api/gate-sim/stream?seed=7");
-    await waitFor(() => expect(screen.getByText("ByteTrack")).toBeTruthy());
+    await waitFor(() => expect(screen.getAllByText("ByteTrack (baseline)").length).toBeGreaterThan(0));
     expect(screen.getByTestId("seed-chip").textContent).toContain("seed 7");
-    expect(screen.getByTestId("gate-caption").textContent).toBe("Left: ByteTrack, the published tracker we start from. Right: ours = ByteTrack + rules that keep a hidden person's number.");
+    expect(screen.getByTestId("gate-caption").textContent).toBe(`Left: ${BASE_NAME}. Right: ${OURS_NAME}: ${OURS_LINE}`);
     expect(screen.getByTestId("scene-counters-bytetrack").textContent).toContain("True people");
-    expect(screen.getByTestId("play-keep").textContent).toMatch(/one body, one number/i);
+    expect(screen.getByTestId("play-keep").textContent).toMatch(/scripted hide/i);
     expect(screen.getByTestId("how-id-kept").textContent).toContain("HELD #N");
     expect(screen.getByTestId("how-id-kept").textContent).toContain("NEW #M was #N");
-    expect(screen.getByText(/Ours · one body, one number/)).toBeTruthy();
+    expect(screen.getAllByText(OURS_NAME).length).toBeGreaterThan(0);
+    expect(document.body.textContent).not.toMatch(/Keep-ID|one body, one number/);
   });
   it("falls back to the recorded run when the backend is offline", async () => {
     const body = [meta, frame(1)].map((x) => JSON.stringify(x)).join("\n") + "\n";
@@ -71,7 +74,7 @@ describe("gate scene page", () => {
     vi.stubGlobal("fetch", f);
     render(<GateScene />);
     await waitFor(() => expect(screen.getByText(/replaying a recorded run/)).toBeTruthy());
-    expect(f.mock.calls.map((c) => String(c[0]))).toContain("/offline/gate-keep.ndjson");
+    expect(f.mock.calls.map((c) => String(c[0]))).toContain("/offline/gate-sim.ndjson");
   });
   it("pauses on a hide beat and Continue resumes", async () => {
     const hide: SimFrame = { ...frame(2), beat: "hide", focus: 1, people: [[1, 400, 225, 0], [2, 420, 240, 1]] };

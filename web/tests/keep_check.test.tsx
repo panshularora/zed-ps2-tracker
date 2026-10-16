@@ -34,7 +34,7 @@ describe("kept-vs-swap verdicts (regression: subway turnstile #4)", () => {
     expect(four.hidden.some((h) => h.f1 + 1 === 128)).toBe(false);
     expect(summaryText(ps)).toMatch(/uncertain \(possible swap\)/);
     render(<PersonTimeline people={[four]} frames={turn.frames} f={1} focus={4} onSeek={() => undefined} />);
-    expect(screen.getByTestId("ptl-swap").textContent).toContain("swap? #4");
+    expect(screen.getByTestId("ptl-swap").getAttribute("aria-label")).toContain("#4");
   });
   it("counts per run match the file; tooltip says heuristic, not ground truth", () => {
     expect(counts(turnDoc, "ours")).toEqual({ kept: turnDoc.summary.ours!.kept, swap: turnDoc.summary.ours!.swap, unknown: 0 });

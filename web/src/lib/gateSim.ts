@@ -34,8 +34,8 @@ export type SimLine = SimMeta | SimFrame | SimEnd;
 
 export type PlayKind = "keep" | "crowd";
 export interface SimControls { seed: number; density: number; occlusion: number; noise: number; play: PlayKind }
-export const DEFAULTS: SimControls = { seed: 7, density: 0.5, occlusion: 1.5, noise: 0.15, play: "keep" };
-export const RECORDED_SECONDS = 12;
+export const DEFAULTS: SimControls = { seed: 7, density: 0.5, occlusion: 1.5, noise: 0.15, play: "crowd" };
+export const RECORDED_SECONDS = 30;
 export const isDefault = (c: SimControls) => c.seed === DEFAULTS.seed && c.density === DEFAULTS.density && c.occlusion === DEFAULTS.occlusion && c.noise === DEFAULTS.noise && c.play === DEFAULTS.play;
 
 export function streamUrl(c: SimControls, seconds?: number): string {
@@ -53,12 +53,12 @@ export function beatCopy(beat: Beat, pid: number): { tag: string; body: string }
   if (beat === "hide") {
     return {
       tag: `Look here · person ${pid} walked behind the other`,
-      body: "The detector dropped their box. Amber HELD means the tracker still has their number. Watch both chips — they should stay the same number.",
+      body: "The detector dropped their box. Grey HELD means the tracker still has their number. Watch both chips.",
     };
   }
   return {
     tag: `Look here · person ${pid} came back`,
-    body: "Same body. Ours should still say ID with the first number. ByteTrack often says NEW with a different number.",
+    body: "Same body. A blue ID chip means the first number survived; an amber NEW chip means the tracker gave them a new number.",
   };
 }
 

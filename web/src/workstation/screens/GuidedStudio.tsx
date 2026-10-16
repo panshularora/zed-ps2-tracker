@@ -4,9 +4,10 @@ import { IdentityPlayer } from "../../identity/IdentityPlayer";
 import { ScenarioIntro, orderScenarios } from "../../pages/Scenarios";
 import { fromScenario, type ReplayData } from "../../guided/model";
 import { BENCHMARK_CLIPS, benchmarkPairs, benchmarkReplay } from "../../guided/viewer";
+import { OURS_NAME } from "../../lib/ours";
 import { fetchIndex, fetchScenario, type ScenarioMeta, videoUrl } from "../../lib/scenarios";
 
-const DEFAULT = "subway_turnstile"; // a clip where someone is hidden and comes back
+const DEFAULT = "mexico_city_entrance"; // opens on a clip where every checked return kept its number
 
 export { benchmarkPairs };
 
@@ -32,7 +33,7 @@ export function GuidedStudio({ clips, onNext }: { clips: IndexedClip[]; onNext: 
   return (
     <div className="h-full overflow-auto p-4" data-testid="guided-studio">
       <div className="flex flex-wrap items-center gap-3 mb-3">
-        <h2 className="text-[16px] font-semibold text-ink m-0">Our tracker: one person, one number</h2>
+        <h2 className="text-[22px] font-semibold text-ink m-0">Studio: {OURS_NAME}</h2>
         <label className="flex items-center gap-2 text-[13px] text-mute">
           Clip
           <select value={sel} onChange={(e) => setSel(e.target.value)} className="bg-raised border border-line rounded-sm px-2 py-1 text-ink" data-testid="studio-clip">
@@ -43,12 +44,12 @@ export function GuidedStudio({ clips, onNext }: { clips: IndexedClip[]; onNext: 
             {orderScenarios(index).map((m) => <option key={m.id} value={m.id}>{m.title} · illustrative</option>)}
           </select>
         </label>
-        <a href="/dashboard/live" className="ws-btn ml-auto" data-testid="compare-link" onClick={(e) => { e.preventDefault(); onNext(); }}>Compare with baseline in the gate scene ▸</a>
+        <a href="/dashboard/live" className="ws-btn ml-auto" data-testid="compare-link" onClick={(e) => { e.preventDefault(); onNext(); }}>Compare with ByteTrack ▸</a>
       </div>
       {data && <div className="mb-2"><ScenarioIntro id={bench ? bench.name : data.id} /></div>}
       {data ? <IdentityPlayer key={data.id} data={data} /> : <p className="text-mute">Loading clip…</p>}
       {data && data.kind === "illustrative" && (
-        <p className="credit">Illustrative only: Keep-ID on this Pexels clip (one body, one number through a hide). No ground truth, not a measured score. Goal we measure against: one body, one number, from approach to exit.</p>
+        <p className="credit">Illustrative only: the tracker&apos;s own numbers on this Pexels clip, nothing relabelled. No ground truth here; "kept" comes from a heuristic check, not a measured score.</p>
       )}
     </div>
   );

@@ -9,7 +9,7 @@
   --ours: #56b4e9;
   --baseline: #8a929c;
   --gate: #f5a524;
-  --error: #e5484d;
+  --error: #F5A524;
   --radius: 4px;
   --mono: "JetBrains Mono", ui-monospace, monospace;
   --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -450,7 +450,7 @@ a.nav-group-label.active { color: #8A929C; border: 0; background: none; }
 .gs-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
 .gs-swatch.keep { background: #1f6b45; }
 .gs-swatch.held { background: #b7811a; }
-.gs-swatch.fail { background: #E5484D; }
+.gs-swatch.fail { background: #F5A524; }
 .gs-pane-note { font-size: 12px; margin: 0; }
 .gs-steps {
   list-style: none; margin: 0; padding: 10px 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
@@ -564,3 +564,33 @@ a.nav-group-label.active { color: #8A929C; border: 0; background: none; }
 .rc-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .rc-table th, .rc-table td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--border); }
 .rc-tables { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; max-height: 260px; overflow: auto; }
+
+/* v4: sub-tabs, Next, one headline + one 16px line per page, moment compare */
+.subnav { display: flex; gap: 6px; padding: 6px 24px; border-bottom: 1px solid #232830; background: #13171C; }
+.subnav a { font-size: 13px; color: #8A929C; padding: 5px 10px; border-radius: 4px; text-decoration: none; }
+.subnav a.active { color: #E6E8EB; background: #161A1F; box-shadow: inset 0 -2px 0 #56B4E9; }
+.next-row { display: flex; justify-content: flex-end; margin: 24px 0 8px; }
+.next-btn { font-size: 14px; padding: 8px 16px; }
+.page-h { font-size: 22px; font-weight: 600; margin: 0 0 6px; }
+.page-lead { font-size: 16px; line-height: 1.45; margin: 0 0 14px; color: #E6E8EB; max-width: 1100px; }
+.mc-panes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.mc-pane { margin: 0; background: #161A1F; border: 1px solid #232830; border-radius: 6px; padding: 8px; }
+.mc-label { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.mc-label.ours { color: #56B4E9; } .mc-label.base { color: #8A929C; }
+.mc-stage { position: relative; width: 100%; border-radius: 4px; overflow: hidden; }
+.mc-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mc-verdict { font-size: 20px; font-weight: 600; margin-top: 8px; min-height: 28px; }
+.mc-foot { display: flex; gap: 12px; align-items: center; margin-top: 10px; font-size: 13px; }
+.ptl-swap { background: #8A929C !important; width: 6px !important; height: 6px !important; border-radius: 50%; border: 0; top: 50% !important; transform: translate(-50%, -50%); padding: 0; }
+.ptl-swap .ptl-tag { display: none; }
+.tally-line { font-size: 14px; margin: 4px 0 10px; }
+
+/* v4 final layout tokens: 28px headline, 15px grey body (64ch), flat panels, plain tables */
+.page-h, main h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; }
+.page-lead { font-size: 15px; color: #8A929C; max-width: 64ch; }
+main p { max-width: 64ch; }
+main table { border-collapse: collapse; }
+main table td, main table th { border: 0; border-bottom: 1px solid #262B33; background: none; }
+main table tr:nth-child(even) td { background: none; }
+main td.num, main td.tabular, main th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.panel, .btn, .chip-btn, .mc-pane { box-shadow: none; background-image: none; border-radius: 4px; }

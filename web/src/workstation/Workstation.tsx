@@ -10,7 +10,6 @@ import { Analytics } from "./screens/Analytics";
 import { Experiments } from "./screens/Experiments";
 import { GuidedStudio } from "./screens/GuidedStudio";
 import { Studio } from "./screens/Studio";
-import { Header } from "./components/Header";
 import { FAILURE } from "./lib/journey";
 import "./workstation.css";
 
@@ -99,12 +98,13 @@ export default function Workstation({ screen }: { screen: Screen }) {
 
   return (
     <div className="ws h-full flex flex-col bg-page text-ink font-sans text-xs antialiased" data-testid="workstation">
-      <Header screen={screen} onScreen={(s) => go(s)} status={status} />
+      {/* site nav (Try it / Results sub-tabs) replaces the old 4-step header */}
+      <span hidden data-testid="ws-status">{status}</span>
       {error && !(screen === "watch" && /404/.test(error)) && (
         <div className="px-4 py-2 bg-fail/15 text-fail border-b border-fail/40 font-mono">{error}</div>
       )}
       <div className="flex-1 min-h-0">
-        {screen === "watch" && <GuidedStudio clips={clips} onNext={() => navigate("/dashboard/live")} />}
+        {screen === "watch" && <GuidedStudio clips={clips} onNext={() => navigate("/dashboard/compare")} />}
         {screen === "compare" && (
           <Studio
             clips={clips}
