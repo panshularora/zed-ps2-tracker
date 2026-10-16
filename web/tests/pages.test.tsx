@@ -29,19 +29,22 @@ describe("overview", () => {
 });
 
 describe("results", () => {
-  it("marks our row blue and baselines grey, tags sanity checks, and labels GPU rows pending", () => {
+  it("pills, then the all-datasets table first; sub-sections are tabs", () => {
     render(<ResultsView b={bench()} />);
+    const pills = screen.getByTestId("verdict-pills"), table = screen.getByTestId("dataset-table"), tabs = screen.getByTestId("result-tabs");
+    expect(pills.textContent).toMatch(/Leak check.*Baseline reproduction/s);
+    expect(pills.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(table.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const tab = (n: string) => fireEvent.click(within(tabs).getByRole("tab", { name: n }));
+    tab("Tracking accuracy");
     expect(screen.getByTestId("row-ours_vis_botsort").className).toContain("bar-ours");
     expect(screen.getByTestId("row-ours_vis_botsort").className).toContain("headline");
     expect(screen.getByTestId("row-botsort").className).toContain("bar-baseline");
-    expect(screen.getAllByText("sanity check").length).toBeGreaterThanOrEqual(2); // gt-as-tracker + go/no-go
-    expect(screen.getAllByText("pending DGX run").length).toBeGreaterThanOrEqual(3);
-    const tables = document.querySelectorAll<HTMLElement>("table:not(.cmp-table)");
-    const firstFigure = document.querySelector("figure");
-    // tables come before charts
-    if (firstFigure) expect(tables[0].compareDocumentPosition(firstFigure) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(within(tables[0]).getAllByText("52.5")[0]).toBeTruthy();
+    expect(screen.getAllByText("52.5")[0]).toBeTruthy();
+    tab("Pending GPU rerun");
+    expect(screen.getAllByText("Pending GPU rerun").length).toBeGreaterThanOrEqual(2);
   });
+
 });
 
 function DiagramHarness() {

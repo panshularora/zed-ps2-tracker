@@ -1,96 +1,27 @@
-// Live gate scene: synthetic people, fake detector, ByteTrack vs Keep-ID (one body, one number).
+// Live gate scene: synthetic people, fake detector, ByteTrack vs ours (BoT-SORT + visibility).
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { layoutChips } from "../compare/model";
 import { differences, paneStats, type Diff } from "../compare/gateDiff";
 import { neutralColor } from "../lib/scenarios";
+import { drawFigure } from "../lib/figure";
+import { BASE_LINE, BASE_NAME, OURS_LINE, OURS_NAME } from "../lib/ours";
 import {
   DEFAULTS, PANES, RECORDED_SECONDS, beatCopy, firstKeepId, involvedBetween, isDefault, personIdLabel, readStream, recentEvents, recordingUrl, streamUrl,
   type Beat, type IdKind, type PaneKey, type PlayKind, type SimControls, type SimEnd, type SimFrame, type SimMeta,
 } from "../lib/gateSim";
 
 const GATE = "#F5A524";
+export const WALK_X0 = 40, WALK_W = 700; // scene units; recorded runs keep people within x 48..726
 const RING_S = 0.6, TAG_S = 2, DIM_S = 1.5, REPLAY_S = 5, DIFF_LEAD_S = 2, DIFF_TAIL_S = 1.5;
-const CHIP_FILL: Record<IdKind, string> = { ok: "#1f6b45", held: "#b7811a", fail: "#E5484D", none: "#4a525c" };
+const CHIP_FILL: Record<IdKind, string> = { ok: "#56B4E9", held: "#8A929C", fail: "#F5A524", none: "#8A929C" };
 
 type Source = "live" | "recorded" | "none";
 
-function mix(hex: string, amt: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  const r = Math.round(((n >> 16) & 255) * amt);
-  const g = Math.round(((n >> 8) & 255) * amt);
-  const b = Math.round((n & 255) * amt);
-  return `rgb(${r},${g},${b})`;
-}
 
-/** Pedestrian icon (head, shirt, swinging arms/legs). Hip is at (x, y). */
-function drawPerson(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  color: string,
-  visible: boolean,
-  walk: number,
-) {
-  const k = 1.7;
-  const headR = 6 * k;
-  const shW = 8.5 * k;
-  const torsoH = 15 * k;
-  const hipW = 6.2 * k;
-  const legH = 14 * k;
-  const armL = 12 * k;
-  const swing = Math.sin(walk) * (3.6 * k);
-  const hipY = y;
-  const torsoTop = hipY - torsoH;
-  const headY = torsoTop - headR - 0.5 * k;
-  const shirt = visible ? color : "transparent";
-  const pants = visible ? mix(color, 0.62) : "transparent";
-  ctx.save();
-  ctx.globalAlpha *= visible ? 1 : 0.7;
-  ctx.fillStyle = "rgba(0,0,0,0.32)";
-  ctx.beginPath();
-  ctx.ellipse(x, hipY + legH + 1, 9 * k, 2.6 * k, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = color;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  if (!visible) ctx.setLineDash([4, 3]);
-  ctx.lineWidth = 3.2 * k;
-  ctx.beginPath();
-  ctx.moveTo(x - hipW * 0.35, hipY);
-  ctx.lineTo(x - hipW * 0.45 - swing, hipY + legH);
-  ctx.moveTo(x + hipW * 0.35, hipY);
-  ctx.lineTo(x + hipW * 0.45 + swing, hipY + legH);
-  ctx.stroke();
-  if (visible) {
-    ctx.strokeStyle = pants;
-    ctx.lineWidth = 2.6 * k;
-    ctx.stroke();
-  }
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2.4 * k;
-  ctx.beginPath();
-  ctx.moveTo(x - shW * 0.55, torsoTop + 3 * k);
-  ctx.lineTo(x - shW * 0.7 - swing * 0.7, torsoTop + armL);
-  ctx.moveTo(x + shW * 0.55, torsoTop + 3 * k);
-  ctx.lineTo(x + shW * 0.7 + swing * 0.7, torsoTop + armL);
-  ctx.stroke();
-  ctx.fillStyle = shirt;
-  ctx.beginPath();
-  ctx.roundRect(x - shW, torsoTop, shW * 2, torsoH, 3.5 * k);
-  if (visible) ctx.fill();
-  else ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(x, headY, headR, 0, Math.PI * 2);
-  if (visible) ctx.fill();
-  else ctx.stroke();
-  if (visible) {
-    ctx.fillStyle = mix(color, 0.45);
-    ctx.beginPath();
-    ctx.ellipse(x, headY - headR * 0.25, headR * 0.95, headR * 0.55, 0, Math.PI, 0);
-    ctx.fill();
-  }
-  ctx.setLineDash([]);
-  ctx.restore();
+/** Flat figure (head + shoulders + body one shape, 2-frame walk). Hip is at (x, y). */
+function drawPerson(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, visible: boolean, walk: number) {
+  const h = 6 * 1.7 * 2 + 15 * 1.7 + 14 * 1.7;
+  drawFigure(ctx, { cx: x, footY: y + 14 * 1.7, h, color, step: Math.floor(walk / 1.4) % 2 === 0 ? 0 : 1, hidden: !visible, aspect: 0.4 });
 }
 
 function drawChestId(ctx: CanvasRenderingContext2D, x: number, y: number, text: string, fill: string) {
@@ -148,12 +79,12 @@ function paintPane(ctx: CanvasRenderingContext2D, cw: number, ch: number, meta: 
   for (const [tid, x, y] of fr[pane].held ?? []) {
     ctx.save();
     ctx.globalAlpha = 0.95;
-    ctx.strokeStyle = "#b7811a";
+    ctx.strokeStyle = "#8A929C";
     ctx.setLineDash([5, 4]);
     ctx.lineWidth = 2.5;
     ctx.strokeRect(x * s - 16, y * sy - 40, 32, 56);
     ctx.setLineDash([]);
-    ctx.fillStyle = "#b7811a";
+    ctx.fillStyle = "#8A929C";
     ctx.font = "700 11px Inter, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "bottom";
@@ -175,7 +106,7 @@ function paintPane(ctx: CanvasRenderingContext2D, cw: number, ch: number, meta: 
     }
   }
   const chips: { id: number; text: string; cx: number; top: number; w: number; kind: IdKind }[] = [];
-  ctx.font = "600 11px Inter, sans-serif";
+  ctx.font = "600 13px Inter, sans-serif";
   const tagFor = new Map(ev.map((x) => [x.e[0], x]));
   for (const [pid, x, y, vis] of people) {
     const c = neutralColor(pid);
@@ -186,7 +117,7 @@ function paintPane(ctx: CanvasRenderingContext2D, cw: number, ch: number, meta: 
     const tag = tagFor.get(pid);
     const badge = personIdLabel(!!vis, tid, keep, tag ? tag.e[2] : null);
     if (vis && (tid != null || keep != null)) {
-      drawChestId(ctx, x * s, y * sy, `#${tid ?? keep}`, badge.kind === "fail" ? "#fff" : "#0e1013");
+      void drawChestId;
     }
     if (lookPid === pid) {
       const pulse = 0.65 + 0.35 * Math.sin(idx * 0.45);
@@ -215,13 +146,13 @@ function paintPane(ctx: CanvasRenderingContext2D, cw: number, ch: number, meta: 
     const kind = chips.find((x) => x.id === c.id)?.kind ?? "none";
     ctx.fillStyle = CHIP_FILL[kind];
     ctx.beginPath(); ctx.roundRect(c.x, c.y, c.w, 20, 4); ctx.fill();
-    ctx.fillStyle = "#ffffff"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = "#0E1013"; ctx.font = "600 13px Inter, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText(c.text, c.x + c.w / 2, c.y + 11);
   }
   for (const { e, age } of ev) {
     const k = age / (RING_S * fps);
     if (k > 1) continue;
-    ctx.strokeStyle = `rgba(229,72,77,${1 - k})`; ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(245,165,36,${1 - k})`; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(e[3] * s, e[4] * sy - 18, 10 + 14 * k, 0, Math.PI * 2); ctx.stroke();
   }
 }
@@ -317,7 +248,10 @@ export default function GateScene() {
         const dpr = window.devicePixelRatio || 1, cw = c.clientWidth, ch = c.clientHeight;
         if (c.width !== Math.round(cw * dpr) || c.height !== Math.round(ch * dpr)) { c.width = Math.round(cw * dpr); c.height = Math.round(ch * dpr); }
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        paintPane(ctx, cw, ch, meta, fs, idx, p, replay.current?.ids ?? null, lookPid);
+        // crop to the walking area: people never leave x ∈ [WALK_X0, WALK_X0 + WALK_W]
+        const fw = (cw * meta.width) / WALK_W;
+        ctx.translate((-WALK_X0 * fw) / meta.width, 0);
+        paintPane(ctx, fw, ch, meta, fs, idx, p, replay.current?.ids ?? null, lookPid);
       }
       if (now - lastUi > 120) { lastUi = now; setUi({ idx, slow: rate < 1, buffered: fs.length }); }
       raf = requestAnimationFrame(tick);
@@ -359,22 +293,25 @@ export default function GateScene() {
   return (
     <div className="gate-scene" data-testid="gate-scene">
       <div className="gs-head">
-        <h1 style={{ margin: 0, fontSize: 20 }}>One body, one number</h1>
+        <h1 className="page-h" style={{ margin: 0 }}>Gate scene</h1>
         <span className="tag" data-testid="synthetic-tag">Synthetic scene · exact ground truth</span>
-        <span className="muted gs-sub">
+        <span className="page-lead gs-sub" style={{ margin: 0 }}>
           {source === "recorded" ? `Backend offline: replaying a recorded run (seed ${DEFAULTS.seed}, ${RECORDED_SECONDS} s). Live trackers need make serve.`
-            : "Two people walk to the gate. One goes behind the other. The box disappears. Ours must keep the same number; ByteTrack mints a new one."}
+            : "Synthetic people walk through a gate. When someone is hidden, a tracker should give them the same number when they reappear. Both trackers run on the same boxes."}
         </span>
       </div>
       <div className="gs-modes" role="tablist" aria-label="Scene">
-        <button type="button" role="tab" aria-selected={ctl.play === "keep"} className={`chip-btn${ctl.play === "keep" ? " on" : ""}`} data-testid="play-keep" onClick={() => setPlay("keep")}>One body, one number</button>
+        <button type="button" role="tab" aria-selected={ctl.play === "keep"} className={`chip-btn${ctl.play === "keep" ? " on" : ""}`} data-testid="play-keep" onClick={() => setPlay("keep")}>Scripted hide</button>
         <button type="button" role="tab" aria-selected={ctl.play === "crowd"} className={`chip-btn${ctl.play === "crowd" ? " on" : ""}`} data-testid="play-crowd" onClick={() => setPlay("crowd")}>Random crowd</button>
       </div>
+      <details className="about"><summary>What am I looking at?</summary>
+<p className="gs-caption" data-testid="gate-caption"><b className="base">Left: {BASE_NAME}</b>. <b className="ours">Right: {OURS_NAME}</b>: {OURS_LINE}</p>
       <ol className="gs-steps" data-testid="how-id-kept">
-        <li><b>ID #N (green).</b> In view, first number still on them. Shirt and chip match.</li>
-        <li><b>HELD #N (amber).</b> Dashed body plus an amber box: they are behind someone, the detector has no box, the tracker is still remembering N.</li>
-        <li><b>NEW #M was #N (red).</b> They came back and the tracker minted a new identity. Ours must not do this.</li>
+        <li><b>ID #N (blue).</b> In view, first number still on them.</li>
+        <li><b>HELD #N (grey).</b> Faded dashed body: hidden behind someone, the tracker still remembers N.</li>
+        <li><b>NEW #M was #N (amber).</b> They came back and the tracker gave them a new number.</li>
       </ol>
+      </details>
       {copy && (
         <div className="gs-why" data-testid="gs-why">
           <div>
@@ -385,7 +322,6 @@ export default function GateScene() {
         </div>
       )}
       {error && <div className="panel muted" role="alert" data-testid="scene-error" style={{ padding: 12 }}>{error}</div>}
-      <p className="gs-caption" data-testid="gate-caption"><b className="base">Left: ByteTrack</b>, the published tracker we start from. <b className="ours">Right: ours</b> = ByteTrack + rules that keep a hidden person&apos;s number.</p>
       {cmp && (
         <div className="cmp-strip tabular" data-testid="compare-strip">
           <div><div className="k">Same seed {meta?.params.seed} · {end ? "whole run" : "so far"}</div><div className="row"><b className="base">ByteTrack (left)</b><b className="ours">ours (right)</b></div></div>
@@ -413,8 +349,8 @@ export default function GateScene() {
           return (
             <figure key={p} className="gs-pane" data-testid={`scene-${p}`}>
               <figcaption className="cmp-head">
-                <b className={p === "ours" ? "ours" : "base"}>{meta?.trackers[p].label ?? (p === "ours" ? "Ours · one body, one number" : "ByteTrack")}</b>
-                <span className="muted">{p === "ours" ? "Keep-ID · rebind the lost box" : "baseline · 30-frame buffer"}</span>
+                <b className={p === "ours" ? "ours" : "base"}>{p === "ours" ? OURS_NAME : BASE_NAME}</b>
+                <span className="muted">{p === "ours" ? "right" : "left"}</span>
               </figcaption>
               <div className="gs-stage">
                 <canvas ref={cv[p]} aria-label={`Gate scene, ${p}`} />
@@ -426,9 +362,7 @@ export default function GateScene() {
                 <span>New numbers issued <b>{pf?.id_changes ?? 0}</b></span>
               </div>
               <p className="gs-pane-note muted">
-                {p === "ours"
-                  ? "Same body keeps the same number from approach to exit. Amber HELD while the box is gone, then the original ID when they step out."
-                  : "After the box is gone longer than 30 frames, ByteTrack drops the track and issues a new number when they reappear."}
+                {p === "ours" ? OURS_LINE : BASE_LINE}
               </p>
             </figure>
           );
@@ -436,8 +370,8 @@ export default function GateScene() {
       </div>
       <div className="gs-legend" aria-hidden>
         <span><i className="gs-swatch keep" /> ID #N — in view, same number</span>
-        <span><i className="gs-swatch held" /> HELD #N — behind someone, tracker still remembers N</span>
-        <span><i className="gs-swatch fail" /> NEW #M was #N — tracker forgot and issued a new identity</span>
+        <span><i className="gs-swatch held" /> HELD #N — hidden, tracker still remembers N</span>
+        <span><i className="gs-swatch fail" /> NEW #M was #N — came back with a new number</span>
       </div>
       <div className="gs-controls" role="group" aria-label="Scene controls">
         {ctl.play === "crowd" && (
@@ -462,7 +396,7 @@ export default function GateScene() {
               onClick={() => setCtl((c) => ({ ...c, seed: Math.floor(Math.random() * 100000) }))}>seed {ctl.seed}</button>
           </>
         )}
-        {ctl.play === "keep" && <span className="gs-hint" data-testid="seed-chip">seed {ctl.seed} · scripted hide</span>}
+        {ctl.play === "keep" && <span className="gs-hint" data-testid="seed-chip">seed {ctl.seed} · scripted hide{end?.summary?.bytetrack && end.summary.ours ? ` · ByteTrack ${end.summary.bytetrack.id_changes} ID change${end.summary.bytetrack.id_changes === 1 ? "" : "s"}, ours ${end.summary.ours.id_changes}` : ""}</span>}
         {!isDefault(ctl) && <button type="button" className="btn" onClick={() => setCtl(DEFAULTS)}>Reset</button>}
         <button type="button" className="btn" onClick={doReplay} disabled={!meta} title="Rewind 5 s, only the people involved highlighted">⟲ Replay 5 s</button>
         <button type="button" className="btn" onClick={() => (atEnd ? (head.current = 0, setPlaying(true)) : setPlaying((x) => !x))} aria-label={playing && !atEnd ? "Pause" : "Play"}>

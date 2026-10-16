@@ -11,7 +11,7 @@ export const STORY_MOMENTS: StoryRef[] = [
   { clip: "subway_turnstile", id: 13, back: 118 },
   { clip: "mexico_city_entrance", id: 1, back: 424 },
   { clip: "rabat_stadium", id: 9, back: 100 },
-  { clip: "MOT17-09", id: 14, back: 235 },
+  { clip: "MOT17-09", id: 13, back: 235 },
 ];
 
 export interface StoryMoment { ref: StoryRef; ev: Reappearance; caption: string }

@@ -74,7 +74,8 @@ export function fromScenario(
 ): ReplayData {
   const m = d.meta;
   const fps = m.src_fps / m.stride;
-  const applyKeep = opts?.keepId ?? m.kind === "illustrative";
+  // Never relabel in the display: replays show the tracker's own numbers (Keep-ID collapse is opt-in only).
+  const applyKeep = opts?.keepId ?? false;
   const rawOurs = d.guide?.events?.ours ?? [];
   let oursFrames = d.runs.ours.frames;
   let oursEv = rawOurs;

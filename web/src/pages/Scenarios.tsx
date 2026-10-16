@@ -33,9 +33,9 @@ export function Thumb({ id }: { id: string }) {
   );
 }
 
-export function ScenarioRail({ items, bench = [], selected, onSelect }: { items: ScenarioMeta[]; bench?: string[]; selected: string | null; onSelect: (id: string) => void }) {
+export function ScenarioRail({ items, bench = [], selected, onSelect, grid = false }: { items: ScenarioMeta[]; bench?: string[]; selected: string | null; onSelect: (id: string) => void; grid?: boolean }) {
   return (
-    <nav className="rail" aria-label="Scenarios">
+    <nav className={grid ? "scn-grid" : "rail"} aria-label="Scenarios" data-testid={grid ? "scenario-grid" : undefined}>
       {orderScenarios(items).map((m) => (
         <button key={m.id} type="button" className={`scard${selected === m.id ? " active" : ""}`} onClick={() => onSelect(m.id)} data-testid="scenario-card">
           <Thumb id={m.id} />
@@ -45,7 +45,7 @@ export function ScenarioRail({ items, bench = [], selected, onSelect }: { items:
           </div>
         </button>
       ))}
-      {BENCH_CARDS.slice(0, 1).map((b) => {
+      {BENCH_CARDS.slice(0, grid ? 2 : 1).map((b) => {
         const has = bench.includes(b.id);
         return (
           <button key={b.id} type="button" disabled={!has} title={b.licence} className={`scard${selected === benchKey(b.id) ? " active" : ""}`}
@@ -58,7 +58,7 @@ export function ScenarioRail({ items, bench = [], selected, onSelect }: { items:
           </button>
         );
       })}
-      {BENCH_CARDS.slice(1).map(benchLine)}
+      {BENCH_CARDS.slice(grid ? 2 : 1).map(benchLine)}
     </nav>
   );
   function benchLine(b: (typeof BENCH_CARDS)[number]) {
@@ -112,7 +112,7 @@ export function ScenarioPlayer({ data }: { data: ScenarioData }) {
   const replay = useMemo(() => fromScenario(data, videoUrl(meta.id)), [data, meta.id]);
   return (
     <ScenarioView replay={replay} credit={<>
-      Illustrative only: Keep-ID on this Pexels clip (one body, one number through a hide). No ground truth, not a measured score.
+      Illustrative only: the tracker&apos;s own numbers on this Pexels clip, nothing relabelled. No ground truth here; &quot;kept&quot; comes from a heuristic check, not a measured score.
       The counting line is a fixed-fraction line chosen by geometry (the candidate people cross most, both trackers summed).
       Source: <a href={meta.source} target="_blank" rel="noreferrer">Pexels</a> · {meta.licence} · faces blurred · detector {meta.detector} (CPU)
       {meta.stride > 1 ? `, 1 in ${meta.stride} frames tracked` : ""}.
@@ -153,6 +153,7 @@ export default function Scenarios() {
   const idx = useAsync(fetchIndex);
   const [pairs, setPairs] = useState<BenchPair[] | null>(null);
   const [sel, setSel] = useState<string | null>(null);
+  const [grid, setGrid] = useState(true);
   const [data, setData] = useState<ScenarioData | null>(null);
   useEffect(() => { loadBenchmarkPairs().then(setPairs).catch(() => setPairs([])); }, []);
   const items = idx.data ?? [];
@@ -174,14 +175,23 @@ export default function Scenarios() {
     fetchScenario(current).then((d) => live && setData(d)).catch(() => live && setData(null));
     return () => { live = false; };
   }, [current]);
+  if (grid) {
+    return (
+      <div className="scenarios-grid-page">
+        <h1 className="page-h">Scenarios</h1>
+        <p className="page-lead">Pick a clip to open it in the large player.</p>
+        <ScenarioRail grid items={items} bench={(pairs ?? []).map((p) => p.name)} selected={null} onSelect={(id) => { setSel(id); setGrid(false); }} />
+      </div>
+    );
+  }
   return (
-    <div className="scenarios">
-      <ScenarioRail items={items} bench={(pairs ?? []).map((p) => p.name)} selected={current} onSelect={setSel} />
+    <div className="scenarios scenarios-open">
       <div>
+        <button type="button" className="btn" data-testid="back-to-grid" onClick={() => setGrid(true)} style={{ marginBottom: 8 }}>← All scenarios</button>
         {bench ? (
           <div>
             <ScenarioView key={current} replay={bench} introId={pair?.name} truth={truth && truth.name === pair?.name ? truth.t : null}
-              credit={<>Measured: ID changes are checked against human labels (MOTChallenge ground truth). MOTChallenge frames are not licensed for this repo, so only boxes are drawn on an empty frame. Tracker shown: {bench.runs.ours.label} (exported by eval.export_viewer); our visibility variant was not exported for this clip.</>} />
+              credit={<>Measured: ID changes are checked against human labels (MOTChallenge ground truth). MOTChallenge frames are not licensed for this repo, so only boxes are drawn on an empty frame. Tracker shown: {bench.runs.ours.label} (exported by eval.export_viewer).</>} />
           </div>
         ) : data && data.meta.id === current ? <ScenarioPlayer key={current} data={data} /> : <p className="muted">Loading scenario…</p>}
         <LiveRunPanel />

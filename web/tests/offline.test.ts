@@ -11,7 +11,7 @@ describe("offline fallback", () => {
     expect(offlinePath("/api/jobs/abc")).toBeNull();
     expect(offlinePath("/other")).toBeNull();
   });
-  it("falls back on network error and 5xx, not on 4xx or POST", async () => {
+  it("falls back on network error, 5xx and 404, not on POST", async () => {
     const base = vi.fn(async (u: RequestInfo | URL) => {
       const url = String(u);
       if (url.startsWith("/offline/")) return new Response('{"ok":1}', { headers: { "content-type": "application/json" } });
@@ -23,8 +23,19 @@ describe("offline fallback", () => {
     expect(await (await f("/api/a")).json()).toEqual({ ok: 1 });
     expect(isOffline()).toBe(true);
     expect(await (await f("/api/b")).json()).toEqual({ ok: 1 });
-    expect((await f("/api/c")).status).toBe(404);
+    expect(await (await f("/api/c")).json()).toEqual({ ok: 1 });
     await expect(f("/api/a", { method: "POST" })).rejects.toThrow();
+  });
+  it("falls back when a 200 is not valid JSON (static host answers with index.html)", async () => {
+    const base = vi.fn(async (u: RequestInfo | URL) => {
+      const url = String(u);
+      if (url.startsWith("/offline/")) return new Response('{"snap":1}', { headers: { "content-type": "application/json" } });
+      if (url === "/api/html") return new Response("<!doctype html>", { headers: { "content-type": "text/html" } });
+      return new Response("not json {", { headers: { "content-type": "application/json" } });
+    }) as unknown as typeof fetch;
+    const f = withOfflineFallback(base);
+    expect(await (await f("/api/html")).json()).toEqual({ snap: 1 });
+    expect(await (await f("/api/broken")).json()).toEqual({ snap: 1 });
   });
   it("reports a clear 503 when there is no snapshot (SPA html)", async () => {
     const base = (async (u: RequestInfo | URL) =>

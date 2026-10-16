@@ -128,3 +128,15 @@ def test_turnstile_4_recomputed_from_video() -> None:
     app_ok = appearance(video, tracks_of(scn["runs"]["ours"]["frames"])[10], 62, 86, 1, scale)
     assert app_ok is not None
     assert app_ok >= APP_MIN
+
+
+def test_per_person_same_denominator_for_every_tracker():
+    from scripts.demo.verify_keeps import per_person
+
+    gt = {1: {f: (0.0, 0.0, 10.0, 20.0) for f in range(1, 31)}, 2: {f: (100.0, 0.0, 10.0, 20.0) for f in range(1, 31)}, 3: {1: (0.0, 0.0, 1.0, 1.0)}}
+    keep = {7: {f: (0.0, 0.0, 10.0, 20.0) for f in range(1, 31) if not 10 <= f <= 15}, 8: {f: (100.0, 0.0, 10.0, 20.0) for f in range(1, 31)}}
+    change = {7: {f: (0.0, 0.0, 10.0, 20.0) for f in range(1, 10)}, 9: {f: (0.0, 0.0, 10.0, 20.0) for f in range(16, 31)}}
+    a, b = per_person(keep, gt, 30), per_person(change, gt, 30)
+    assert a == {"labelled": 2, "kept": 2, "changed": 0, "missed": 0}  # gap allowed; short gt id 3 excluded
+    assert b == {"labelled": 2, "kept": 0, "changed": 1, "missed": 1}
+    assert a["labelled"] == b["labelled"]

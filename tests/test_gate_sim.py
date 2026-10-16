@@ -110,13 +110,16 @@ def test_committed_recording_matches_backend():
     assert rec[-1] == list(simulate(p))[-1]
 
 
-def test_keep_play_ours_holds_id_bytetrack_switches():
+def test_keep_play_runs_the_one_ours_and_reports_both_results():
+    # "ours" is the MOT17-validated BoT-SORT + visibility everywhere (no unvalidated Keep-ID in the
+    # demo). On the scripted hide both trackers currently change the number; the scene shows that.
     xs = frames(SimParams(play="keep", seed=7, occlusion_s=1.5, noise=0.15, speed=1.0))
     meta, end = xs[0], xs[-1]
     assert meta["play"] == "keep"
-    assert meta["trackers"]["ours"]["config"] == "keep_id"
-    assert end["summary"]["ours"]["id_changes"] == 0
-    assert end["summary"]["bytetrack"]["id_changes"] >= 1
+    assert meta["trackers"]["ours"]["config"] == "configs/ours/visibility_botsort.yaml"
+    assert meta["trackers"]["bytetrack"]["config"] == "configs/baselines/bytetrack.yaml"
+    assert end["summary"]["ours"]["id_changes"] == 1
+    assert end["summary"]["bytetrack"]["id_changes"] == 1
     hides = [x for x in xs if x.get("beat") == "hide"]
     backs = [x for x in xs if x.get("beat") == "back"]
     assert len(hides) == 1 and hides[0]["focus"] == 1
@@ -129,8 +132,7 @@ def test_keep_play_ours_holds_id_bytetrack_switches():
     post = next(x for x in xs if x.get("f") == min(back_f + 3, xs[-2]["f"]))
     ours_id = dict(pre["ours"]["ids"]).get(1)
     after = dict(post["ours"]["ids"]).get(1)
-    assert ours_id is not None and after == ours_id
-    assert any(h[0] == ours_id for h in mid["ours"]["held"])
+    assert ours_id is not None and after is not None and after != ours_id
     bt_before = dict(pre["bytetrack"]["ids"]).get(1)
     bt_after = dict(post["bytetrack"]["ids"]).get(1)
     assert bt_before is not None and bt_after is not None and bt_after != bt_before

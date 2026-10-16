@@ -24,7 +24,6 @@ from fastapi.responses import StreamingResponse
 from scipy.optimize import linear_sum_assignment
 
 from tracker.config import load_config
-from tracker.keep_id import KeepIdTracker
 from tracker.runner import build_tracker
 from tracker.types import Detections
 
@@ -36,9 +35,9 @@ MAX_PEOPLE = 40
 TRACKERS = {
     "bytetrack": ("ByteTrack", "configs/baselines/bytetrack.yaml"),
     "botsort": ("BoT-SORT", "configs/baselines/botsort.yaml"),
-    "ours": ("Ours · one body, one number", "keep_id"),
+    "ours": ("Ours: BoT-SORT + visibility", "configs/ours/visibility_botsort.yaml"),
 }
-OURS_CROWD = ("BoT-SORT + vis-gating", "configs/ours/visibility_botsort.yaml")
+OURS_CROWD = ("Ours: BoT-SORT + visibility", "configs/ours/visibility_botsort.yaml")
 
 
 @dataclass(frozen=True)
@@ -286,8 +285,8 @@ def _tracker_card(key: str, play: str) -> dict[str, str]:
 
 
 def _make_tracker(key: str, fps: float, play: str = "keep"):
-    if key == "ours" and play == "keep":
-        return KeepIdTracker(fps=fps, buffer=max(90, int(fps * 4)))
+    # One "ours" everywhere: the MOT17-validated BoT-SORT + visibility config. The Keep-ID tracker
+    # (tracker/keep_id.py) is not used in the demo: it has no MOT17 check.
     if key == "ours":
         return build_tracker(load_config(ROOT / OURS_CROWD[1]), fps)[0]
     return build_tracker(load_config(ROOT / TRACKERS[key][1]), fps)[0]

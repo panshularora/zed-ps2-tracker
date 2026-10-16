@@ -1,7 +1,8 @@
+import { Children, isValidElement, useState } from "react";
 import { offlinePath } from "../lib/offline";
-import { FoundChecks } from "../components/Checks";
+import { FoundChecks, VerdictPill } from "../components/Checks";
 import { Term } from "../components/Term";
-import { loadSummary } from "../lib/summary";
+import { checks, loadSummary } from "../lib/summary";
 import { DatasetTable } from "../components/DatasetTable";
 import { Mot20Status } from "../components/Mot20Status";
 import { api, type AblationRow, type Benchmarks } from "../api";
@@ -16,9 +17,25 @@ function rowClass(r: AblationRow): string {
 
 const PENDING = (
   <td className="pending">
-    {DASH} <span className="tag">pending DGX run</span>
+    {DASH} <span className="tag">Pending GPU rerun</span>
   </td>
 );
+
+function ResultTabs({ children }: { children: React.ReactNode }) {
+  const kids = Children.toArray(children).filter(isValidElement) as React.ReactElement<{ "data-tab"?: string }>[];
+  const [on, setOn] = useState(0);
+  const cur = Math.min(on, kids.length - 1);
+  return (
+    <div className="result-tabs" data-testid="result-tabs">
+      <div role="tablist" className="subnav" style={{ padding: "0 0 0 0", background: "none", borderBottom: "1px solid #262B33" }}>
+        {kids.map((k, i) => (
+          <button key={i} type="button" role="tab" aria-selected={i === cur} className={`chip-btn${i === cur ? " on" : ""}`} onClick={() => setOn(i)}>{k.props["data-tab"] ?? `Part ${i + 1}`}</button>
+        ))}
+      </div>
+      {kids[cur]}
+    </div>
+  );
+}
 
 export function ResultsView({ b }: { b: Benchmarks }) {
   const abl = b.ablation;
@@ -27,29 +44,28 @@ export function ResultsView({ b }: { b: Benchmarks }) {
   const minIdsw = Math.min(...rows.map((r) => r.IDSW));
   return (
     <div>
-      <h1>Results</h1>
-      <p className="muted" style={{ marginTop: 6, maxWidth: 820 }}>
-        Every number on this page is read from the repo's own output files (named under each table). Tables first, charts after.
-        Nothing here uses the demo clips: they have no ground truth.
-      </p>
-
-      <section className="section" data-testid="gpu-run-checks">
-        <h2>Latest GPU run: checks</h2>
-        <p className="sub">From docs/results/summary.json. Runs whose detector saw the evaluation half are marked “leaked, excluded” and appear in no table.</p>
-        <FoundChecks summary={loadSummary()} />
-      </section>
+      <h1 className="page-h">Results</h1>
+      <p className="page-lead">Every tracker on every dataset, read from docs/results/summary.json. Provisional.</p>
+      <div className="verdict-pills" data-testid="verdict-pills">
+        {checks(loadSummary()).filter((c) => c.id === "leak" || c.id === "reproduction").map((c) => (
+          <span key={c.id} className="verdict-pill" title={c.sentence}>{c.title}: <VerdictPill pill={c.pill} /></span>
+        ))}
+      </div>
 
       <section className="section" data-testid="overall-comparison">
-        <h2>All datasets at a glance</h2>
-        <p className="sub">ByteTrack vs BoT-SORT vs ours on every dataset, read only from summary.json. Provisional: see the reproduction check above.</p>
         <DatasetTable />
       </section>
-      <section className="section" data-testid="mot20-section">
+      <ResultTabs>
+      <section data-tab="Checks" className="section" data-testid="gpu-run-checks">
+        <p className="sub">Runs whose detector saw the evaluation half are marked “leaked, excluded” and appear in no table.</p>
+        <FoundChecks summary={loadSummary()} />
+      </section>
+      <section data-tab="MOT20" className="section" data-testid="mot20-section">
         <h2>MOT20 (dense crowds): what exists</h2>
         <p className="sub">Provisional. Only what the repo's files contain; every value below is parsed from the named file at build time.</p>
         <Mot20Status />
       </section>
-      <section className="section">
+      <section data-tab="Tracking accuracy" className="section">
         <h2>Tracking accuracy</h2>
         <p className="sub">{abl ? abl.setting : "docs/results/ablation/ablation.json not found."}</p>
         {abl && (
@@ -107,7 +123,7 @@ export function ResultsView({ b }: { b: Benchmarks }) {
       </section>
 
       {b.gate_events && (
-        <section className="section">
+        <section data-tab="Gate events" className="section">
           <h2>Gate events</h2>
           <p className="sub">{b.gate_events.note}</p>
           <div className="table-wrap">
@@ -158,7 +174,7 @@ export function ResultsView({ b }: { b: Benchmarks }) {
       )}
 
       {b.visibility && (
-        <section className="section">
+        <section data-tab="Visibility estimate" className="section">
           <h2>Visibility estimate</h2>
           <p className="sub">How well the box-geometry visibility estimate predicts ground-truth visibility (MOT17 val-half, detector boxes).</p>
           <div className="table-wrap">
@@ -194,7 +210,7 @@ export function ResultsView({ b }: { b: Benchmarks }) {
       )}
 
       {b.go_no_go && (
-        <section className="section">
+        <section data-tab="Delayed decision" className="section">
           <h2>
             Delayed decision <span className="tag">sanity check</span>
           </h2>
@@ -234,8 +250,8 @@ export function ResultsView({ b }: { b: Benchmarks }) {
         </section>
       )}
 
-      <section className="section">
-        <h2>Pending the DGX run</h2>
+      <section data-tab="Pending GPU rerun" className="section">
+        <h2>Pending GPU rerun</h2>
         <p className="sub">These need YOLOX-X detections and re-ID embeddings from the GPU session; they come back through make ingest and make phase3.</p>
         <div className="table-wrap">
           <table>
@@ -262,7 +278,7 @@ export function ResultsView({ b }: { b: Benchmarks }) {
       </section>
 
       {abl && (
-        <section className="section">
+        <section data-tab="Stress curves" className="section">
           <h2>Stress curves</h2>
           <p className="sub">The same runs, broken down by how visible each ground-truth person was. Below 50 % visibility the public detector finds almost nobody, so every tracker's ID recall collapses there.</p>
           <div className="charts">
@@ -279,6 +295,7 @@ export function ResultsView({ b }: { b: Benchmarks }) {
           </div>
         </section>
       )}
+      </ResultTabs>
     </div>
   );
 }

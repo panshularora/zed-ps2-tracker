@@ -112,7 +112,7 @@ describe("story + routing helpers", () => {
 describe("workstation screens (was test_journey.mjs)", () => {
   it("watch: our tracker only (identity player), benchmark clip selectable when exported", async () => {
     mount("/dashboard/studio");
-    expect(screen.getByTestId("step-watch")).toBeTruthy();
+    expect(screen.queryByTestId("step-watch")).toBeNull(); // site sub-tabs replace the 4-step header
     const sel = (await screen.findByTestId("studio-clip")) as HTMLSelectElement;
     const opt = await waitFor(() => {
       const o = [...sel.options].find((x) => x.value === "bench:MOT17-09");
@@ -144,11 +144,10 @@ describe("workstation screens (was test_journey.mjs)", () => {
     mount("/dashboard/experiments");
     await screen.findByText(/Drop your video/, undefined, { timeout: 5000 });
   });
-  it("step header navigates between screens (was test_sidebar.mjs)", async () => {
+  it("no second step header inside Studio (site nav carries Try it / Results)", async () => {
     mount("/dashboard/studio");
-    await act(async () => { fireEvent.click(screen.getByTestId("step-evidence")); });
-    expect(await screen.findByTestId("gate-flows")).toBeTruthy();
-    await act(async () => { fireEvent.click(screen.getByTestId("step-try")); });
-    await screen.findByText(/Drop your video/);
+    expect(screen.queryByTestId("step-evidence")).toBeNull();
+    expect(screen.queryByText("Watch the failure")).toBeNull();
   });
+
 });

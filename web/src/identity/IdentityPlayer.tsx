@@ -3,9 +3,10 @@ import { neutralColor } from "../lib/scenarios";
 import { fallbackText, videoSources, type ReplayData } from "../guided/model";
 import { PersonTimeline } from "./PersonTimeline";
 import { boxesAt, chipText, countsAt, people as peopleOf, pickFocus, placeChips, storySteps, tracksOf, watchLine, type Drawn, type Person, type Step, type XYWH } from "./story";
-import { fetchVerify, methodTooltip, verdictOf, type VerdictOf, type VerifyDoc } from "./verify";
+import { fetchVerify, methodTooltip, peopleLine, returnsLine, verdictOf, type VerdictOf, type VerifyDoc } from "./verify";
 import { keepIdVerdict } from "./keepId";
 import { storyMoments, type StoryMoment } from "./moments";
+import { drawChip, drawFigure, figureGeom, walkStep } from "../lib/figure";
 
 const SWAP_FILL = "#8A929C";
 
@@ -189,15 +190,15 @@ export function IdentityPlayer({ data, watch, verify }: { data: ReplayData; watc
     : "Free play. Click any box to follow that person.";
   return (
     <div className="idp" data-testid="identity-player">
-      <p className="watch-line" data-testid="watch-line">{watch ?? (moments.length
-        ? `Watch ${moments.map((m) => `#${m.ev.id}`).join(" and ")}: hidden for a moment, back with the same number, and the check agrees it is the same person.`
-        : watchLine(focus, steps))}</p>
-      <CountBar inN={counts.in} outN={counts.out} note={hint} />
-      <div className="idp-stage" data-testid="identity-stage" style={{ aspectRatio: `${data.width} / ${data.height}` }}>
+      <div className="idp-stage" data-testid="identity-stage" style={{ aspectRatio: `${data.width} / ${data.height}`, maxWidth: `calc(58vh * ${data.width} / ${data.height})`, marginInline: "auto" }}>
         {src && <video key={src} ref={video} src={src} muted playsInline autoPlay className="idp-video" aria-label={data.title}
           onError={() => setSrcIdx((i) => i + 1)} onLoadedMetadata={(e) => { if (!(e.currentTarget.duration > 0)) setSrcIdx((i) => i + 1); }} />}
         <canvas ref={canvas} className="idp-canvas" onClick={onClick} aria-label={`${data.title}: ${data.runs.ours.label}. Click a person to follow.`} />
       </div>
+      <p className="watch-line" data-testid="watch-line">{watch ?? (moments.length
+        ? `Watch ${moments.map((m) => `#${m.ev.id}`).join(" and ")}: hidden for a moment, back with the same number, and the check agrees it is the same person.`
+        : watchLine(focus, steps))}</p>
+      <CountBar inN={counts.in} outN={counts.out} note={hint} />
       <div className="idp-caption" aria-live="polite" data-testid="story-caption">{caption}</div>
       <div className="idp-controls">
         <button type="button" className="btn" onClick={() => setPlaying((p) => !p)} aria-label={playing ? "Pause" : "Play"}>{playing ? "❚❚ Pause" : "▶ Play"}</button>
@@ -208,7 +209,13 @@ export function IdentityPlayer({ data, watch, verify }: { data: ReplayData; watc
         </div>
         <span className="muted idp-run">{data.runs.ours.label}</span>
       </div>
-      <PersonTimeline people={people} frames={data.frames} f={f} focus={follow ?? focus?.key ?? null} onSeek={seekFrame} />
+      {peopleLine(vdoc) && (
+        <div className="people-tally" data-testid="people-tally">
+          <b className="tabular">{peopleLine(vdoc)}</b>
+          <span className="muted">{returnsLine(vdoc)}</span>
+        </div>
+      )}
+      <PersonTimeline people={people} frames={data.frames} fps={data.fps} f={f} focus={follow ?? focus?.key ?? null} onSeek={seekFrame} />
       {moments.length > 0 && (
         <div className="kept-moments" data-testid="kept-moments">
           <b>Verified moments</b>
@@ -265,6 +272,28 @@ export function paintFrame(ctx: CanvasRenderingContext2D, cw: number, ch: number
     }
   }
   const items: { id: number; box: XYWH; text: string; w: number; h: number; d: Drawn }[] = [];
+  if (!src) {
+    // boxes-only clip: a flat figure scaled to each box, filled in the ID colour, chip above the head
+    const t = ff / d.fps;
+    for (const b of [...all].sort((a, c) => a.box[1] + a.box[3] - (c.box[1] + c.box[3]))) {
+      const [x, y, w, h] = b.box;
+      ctx.save();
+      ctx.globalAlpha = isF(b.id) ? 1 : 0.6;
+      drawFigure(ctx, { cx: x + w / 2, footY: y + h, h, color: neutralColor(b.id), step: walkStep(t + b.id * 0.31), hidden: b.state === "hidden", aspect: Math.min(0.6, Math.max(0.28, w / h)) });
+      ctx.restore();
+    }
+    ctx.restore();
+    ctx.save();
+    for (const b of all) {
+      const [x, y, w, h] = b.box;
+      const g = figureGeom({ cx: x + w / 2, footY: y + h, h });
+      const sx = (x + w / 2 - vx) * s, sy = (g.top - vy) * (ch / vh) - 3;
+      if (b.state === "hidden" && !isF(b.id)) continue;
+      drawChip(ctx, sx, sy, chipText(b, isF(b.id)), b.state === "swap" ? SWAP_FILL : neutralColor(b.id), b.id === follow ? 16 : 13);
+    }
+    ctx.restore();
+    return;
+  }
   for (const b of all) {
     const c = neutralColor(b.id);
     ctx.globalAlpha = isF(b.id) ? 1 : DIM;
@@ -284,7 +313,7 @@ export function paintFrame(ctx: CanvasRenderingContext2D, cw: number, ch: number
   for (const c of placeChips(items.filter((i) => i.d.state !== "hidden" || isF(i.id)))) {
     const it = items.find((i) => i.id === c.id)!;
     const size = c.id === follow ? 18 : 13;
-    ctx.globalAlpha = isF(c.id) ? (it.d.state === "hidden" ? 0.85 : 1) : DIM;
+    ctx.globalAlpha = 1; // chips are always solid and readable
     ctx.fillStyle = it.d.state === "swap" ? SWAP_FILL : neutralColor(c.id);
     const x = Math.min(Math.max(vx, c.x), vx + vw - c.w), y = Math.max(vy, c.y);
     ctx.beginPath(); ctx.roundRect(x, y, c.w, c.h, 4 * px); ctx.fill();

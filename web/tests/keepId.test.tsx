@@ -3,7 +3,6 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { fromScenario } from "../src/guided/model";
 import { IdentityPlayer } from "../src/identity/IdentityPlayer";
-import { boxesAt, chipText, people, tracksOf } from "../src/identity/story";
 import { collapseRenumbers, keepIdAssociate, keepIdVerdict } from "../src/identity/keepId";
 import type { Box } from "../src/lib/scenarios";
 
@@ -46,44 +45,23 @@ describe("collapseRenumbers (Studio / Scenarios)", () => {
   });
 });
 
-describe("subway turnstile Studio Keep-ID", () => {
+describe("subway turnstile Studio: never relabelled (team decision A)", () => {
   const raw = JSON.parse(readFileSync("public/scenarios/subway_turnstile.json", "utf8"));
-  const d = fromScenario(raw, null, null); // illustrative default: keepId on
-  const v = keepIdVerdict();
+  const d = fromScenario(raw, null, null); // default: the tracker's own numbers
+  void keepIdVerdict;
 
-  it("is labelled Keep-ID and does not claim vis-botsort kept the number", () => {
-    expect(d.keepId).toBe(true);
-    expect(d.runs.ours.label).toBe("Keep-ID");
-    expect(d.events.ours.some((e) => e.t === "renumber")).toBe(false);
+  it("is not Keep-ID and keeps the run's own label", () => {
+    expect(d.keepId).toBe(false);
+    expect(d.runs.ours.label).toBe(raw.runs.ours.label);
+    expect(d.runs.ours.frames).toBe(raw.runs.ours.frames);
   });
-  it("#4 is the same number at both returns (75 and 128), shown as kept not a swap", () => {
-    const tr = tracksOf(d.runs.ours.frames);
-    const idAt = (f: number) => (d.runs.ours.frames[String(f)] ?? []).some((b) => b[0] === 4);
-    expect(idAt(1)).toBe(true);
-    expect(idAt(75)).toBe(true);
-    expect(idAt(95)).toBe(true);
-    expect(idAt(128)).toBe(true);
-    expect(boxesAt(tr, 76, d.fps, v).find((b) => b.id === 4)?.state).toBe("kept");
-    expect(boxesAt(tr, 129, d.fps, v).find((b) => b.id === 4)?.state).toBe("kept");
-    expect(chipText(boxesAt(tr, 129, d.fps, v).find((b) => b.id === 4)!, true)).toBe("kept #4");
-    const four = people(d, "ours", v).people.find((p) => p.ids.includes(4))!;
-    expect(four.ids).toEqual([4]);
-    expect(four.changes).toEqual([]);
-    expect(four.swaps).toEqual([]);
+  it("the real 7 → 21 renumber stays visible (no collapse)", () => {
+    expect((d.runs.ours.frames["65"] ?? []).some((b) => b[0] === 21)).toBe(true);
+    expect((d.runs.ours.frames["65"] ?? []).some((b) => b[0] === 7)).toBe(false);
   });
-  it("vis-botsort mint 7→21 is collapsed to #7", () => {
-    expect((d.runs.ours.frames["52"] ?? []).some((b) => b[0] === 7)).toBe(true);
-    expect((d.runs.ours.frames["65"] ?? []).some((b) => b[0] === 7)).toBe(true);
-    expect((d.runs.ours.frames["65"] ?? []).some((b) => b[0] === 21)).toBe(false);
-    expect((d.runs.ours.frames["173"] ?? []).some((b) => b[0] === 10)).toBe(true);
-    expect((d.runs.ours.frames["173"] ?? []).some((b) => b[0] === 38)).toBe(false);
-  });
-  it("IdentityPlayer shows Keep-ID, no swap list, and #4 as the person to watch", () => {
-    render(<IdentityPlayer data={{ ...d, videoUrl: null, demoUrl: null }} />);
-    expect(screen.getByTestId("identity-player").textContent).toContain("Keep-ID");
-    expect(screen.queryByTestId("swap-list")).toBeNull();
-    expect(screen.getByTestId("watch-line").textContent).toMatch(/come back with the same number/);
-    expect(screen.getByTestId("watch-line").textContent).not.toMatch(/possible swap/i);
-    expect(screen.getByTestId("kept-tooltip").textContent).toMatch(/Came back with the same number/);
+  it("IdentityPlayer lists #4's flagged swap honestly", () => {
+    render(<IdentityPlayer data={{ ...d, videoUrl: null, demoUrl: null }} verify={JSON.parse(readFileSync("public/verify/subway_turnstile.json", "utf8"))} />);
+    expect(screen.queryByText(/Keep-ID/)).toBeNull();
+    expect(screen.getByTestId("swap-list").textContent).toMatch(/#4/);
   });
 });

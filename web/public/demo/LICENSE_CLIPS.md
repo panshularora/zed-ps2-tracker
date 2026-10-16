@@ -16,5 +16,5 @@ repository; if you want the footage, get it from the original Pexels page below,
 | `man_entering_metro.mp4` | https://www.pexels.com/video/man-entering-a-metro-station-7251031/ |
 | `shibuya_crossing.mp4` | https://www.pexels.com/video/a-crowded-city-street-with-many-people-walking-25947490/ |
 
-Changes made here: cut to a short segment, scaled to 720p, faces blurred
+Changes made here: cut to a short segment, scaled to 720p, faces blurred (soft ellipse about 1.2x each detected face, YuNet + the top of each person box; bodies left sharp; `python -m serve.blur --mode face`)
 (`scripts/demo/make_demo_pack.sh`). The overlays drawn on top are the project's own output.

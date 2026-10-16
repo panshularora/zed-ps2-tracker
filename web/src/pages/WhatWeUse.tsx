@@ -1,8 +1,8 @@
+import { BASE_NAME, OURS_NAME } from "../lib/ours";
 // "What we use", in plain words. Every claim is checked against the repo: docs/licenses.md,
 // docs/results/GPU_RUN_2026-10.md, configs/, tracker/visibility.py, tracker/cmc.py,
 // third_party/cmc_files. Run status lines come from docs/results/summary.json via datasetRows().
 import { Link } from "react-router-dom";
-import { DatasetTable } from "../components/DatasetTable";
 import { datasetRows, loadSummary } from "../lib/summary";
 
 const DATASETS = [
@@ -78,74 +78,67 @@ const METRICS = [
 const PIPE = [
   ["Camera frames", "video from the gate"],
   ["Detector", "YOLOX: one box per person"],
-  ["Tracker", "ByteTrack / BoT-SORT (+ CMC) + our visibility"],
+  ["Tracker", `${OURS_NAME} (left of every comparison: ${BASE_NAME})`],
   ["One number per person", "kept while they are hidden"],
   ["Gate line", "counts IN / OUT once per number"],
 ];
+
+const STILL: Record<string, string | null> = { mot17: "MOT17-09", mot20: null, dancetrack: null, pexels: "subway_turnstile" };
+const MODEL_STATUS: Record<string, string> = {
+  "Detector: YOLOX-X": "in use", "ByteTrack (baseline)": "baseline", "BoT-SORT": "base of ours",
+  "Our visibility extension": "ours", "Re-identification (appearance)": "off",
+};
+const REASON: Record<string, string> = {
+  "Detector: YOLOX-X": "Finds every person in each frame and gives each a box.",
+  "ByteTrack (baseline)": "The published tracker we compare against; left of every comparison.",
+  "BoT-SORT": "ByteTrack plus camera-motion correction; the base of ours.",
+  "Our visibility extension": "Remembers a half-hidden person 3x longer before dropping their number.",
+  "Re-identification (appearance)": "Supported but switched off in every result shown here.",
+};
+
+function Still({ id, label }: { id: string | null; label: string }) {
+  return id
+    ? <img className="wwu-still" src={`${import.meta.env?.BASE_URL ?? "/"}thumbs/${id}.jpg`} alt="" width={48} height={48} />
+    : <span className="wwu-still wwu-still-empty" aria-hidden>{label.slice(0, 2)}</span>;
+}
 
 export default function WhatWeUse() {
   const rows = Object.fromEntries(datasetRows(loadSummary()).map((r) => [r.id, r]));
   return (
     <div className="wwu" data-testid="what-we-use">
-      <h1>What we use</h1>
-      <p className="muted" style={{ maxWidth: 820 }}>
-        The data, the models and the scores behind this demo, in plain words. Results are provisional: they come from one laptop GPU run whose ByteTrack baseline did not reproduce the published numbers.
-      </p>
-
-      <section className="section" data-testid="wwu-pipeline">
-        <h2>How it fits together</h2>
-        <ol className="pipe" aria-label="Pipeline">
-          {PIPE.map(([t, s], i) => (
-            <li key={t} className="pipe-step">
-              <b>{t}</b>
-              <span className="muted">{s}</span>
-              {i < PIPE.length - 1 && <span className="pipe-arrow" aria-hidden>→</span>}
-            </li>
-          ))}
+      <h1 className="page-h">What we use</h1>
+      <p className="page-lead">Four datasets, one detector and two trackers; the tag says whether each one has run.</p>
+      <div className="wwu-rows" data-testid="wwu-datasets">
+        {DATASETS.map((d) => (
+          <div key={d.id} className="wwu-row" data-testid={`wwu-ds-${d.id}`}>
+            <Still id={STILL[d.id]} label={d.name} />
+            <span className="wwu-name">{d.name}</span>
+            <span className="wwu-why">{d.why}</span>
+            <span className="tag wwu-tag">{rows[d.id]?.status ?? "not run yet"}</span>
+            <span hidden>{d.licence}</span>
+          </div>
+        ))}
+      </div>
+      <div className="wwu-rows" data-testid="wwu-models">
+        {MODELS.map((m) => (
+          <div key={m.name} className="wwu-row">
+            <span className="wwu-still wwu-still-empty" aria-hidden>{m.name.slice(0, 2)}</span>
+            <span className="wwu-name">{m.name}</span>
+            <span className="wwu-why">{REASON[m.name] ?? m.text}</span>
+            <span className="tag wwu-tag">{MODEL_STATUS[m.name] ?? "—"}</span>
+            <span hidden>{m.text}</span>
+          </div>
+        ))}
+      </div>
+      <details className="about">
+        <summary>Licences, scores and the pipeline</summary>
+        <div data-testid="wwu-licences">{DATASETS.map((d) => <p key={d.id}>{d.name}: {d.licence}</p>)}</div>
+        <dl className="wwu-metrics" data-testid="wwu-metrics">{METRICS.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+        <ol className="pipe" aria-label="Pipeline" data-testid="wwu-pipeline">
+          {PIPE.map(([t, x]) => <li key={t} className="pipe-step"><span>{t}</span> <span className="muted">{x}</span></li>)}
         </ol>
-      </section>
-
-      <section className="section" data-testid="wwu-datasets">
-        <h2>Datasets</h2>
-        <div className="wwu-grid">
-          {DATASETS.map((d) => (
-            <article key={d.id} className="panel wwu-card" data-testid={`wwu-ds-${d.id}`}>
-              <h3>{d.name} <small className="muted">· {d.cite}</small></h3>
-              <p><b>What it is.</b> {d.what}</p>
-              <p><b>Why we chose it.</b> {d.why}</p>
-              <p className="muted"><b>Licence.</b> {d.licence}</p>
-              <p className="wwu-status"><b>Our run so far:</b> <span className="tag">{rows[d.id]?.status ?? "not run yet"}</span></p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="section" data-testid="wwu-models">
-        <h2>Models</h2>
-        <div className="wwu-grid">
-          {MODELS.map((m) => (
-            <article key={m.name} className="panel wwu-card">
-              <h3>{m.name} <small className="muted">· {m.cite}</small></h3>
-              <p>{m.text}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="section" data-testid="wwu-metrics">
-        <h2>Scores, one line each</h2>
-        <dl className="wwu-metrics">
-          {METRICS.map(([k, v]) => (
-            <div key={k}><dt>{k}</dt><dd>{v}</dd></div>
-          ))}
-        </dl>
-      </section>
-
-      <section className="section" data-testid="wwu-compare">
-        <h2>How the trackers compare so far</h2>
-        <p className="sub">Every cell is read from docs/results/summary.json or a recorded seeded run of the <Link to="/dashboard/live">live gate scene</Link>; an empty cell says why.</p>
-        <DatasetTable />
-      </section>
+        <p className="muted">Comparison table: <Link to="/dashboard/results">Results</Link>.</p>
+      </details>
     </div>
   );
 }

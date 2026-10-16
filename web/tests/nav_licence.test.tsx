@@ -15,30 +15,30 @@ vi.mock("../src/pages/Landing", () => ({ default: () => <p>landing</p> }));
 const R = { v7_startTransition: true, v7_relativeSplatPath: true };
 
 describe("navigation", () => {
-  it("flat Dashboard nav, no Story / Try it / Evidence groups, no Demo tab", async () => {
+  it("four items: Story, What we use, Try it, Results; Try it has Gate scene first", async () => {
     const { default: App } = await import("../src/App");
-    render(<MemoryRouter future={R} initialEntries={["/dashboard"]}><App /></MemoryRouter>);
+    render(<MemoryRouter future={R} initialEntries={["/dashboard/live"]}><App /></MemoryRouter>);
     const labels = [...document.querySelectorAll("nav[aria-label='Pages'] a")].map((a) => a.textContent);
-    expect(labels).toEqual(["Dashboard", "Overview", "What we use", "Gate scene", "Scenarios", "Studio", "Results", "Experiments", "Analytics", "Architecture"]);
-    expect(screen.getByText("overview page")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Overview" }).className).toContain("active");
-    expect(screen.getByRole("link", { name: "Dashboard" }).className).not.toContain("active");
-    expect(screen.queryByRole("link", { name: "Demo" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Try it" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Evidence" })).toBeNull();
+    expect(labels).toEqual(["Story", "What we use", "Try it", "Results"]);
+    const subs = [...document.querySelectorAll("nav[aria-label='Sections'] a")].map((a) => a.textContent);
+    expect(subs).toEqual(["Gate scene", "Same person, two trackers", "Studio", "Scenarios"]);
+    expect(screen.getByRole("link", { name: "Try it" }).className).toContain("active");
+    expect(screen.getByTestId("next-btn").getAttribute("href")).toBe("/dashboard/compare");
   });
-  it("keeps / as the Dashboard landing and names the inner page Overview", async () => {
+  it("Story at / is the 'What is an ID mix-up?' page, Next goes to What we use", async () => {
     const { default: App } = await import("../src/App");
     render(<MemoryRouter future={R} initialEntries={["/"]}><App /></MemoryRouter>);
-    expect(screen.getByText("landing")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Dashboard" }).className).toContain("active");
-    expect(screen.getByRole("link", { name: "Overview" }).getAttribute("href")).toBe("/dashboard");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("What is an ID mix-up?");
+    expect(screen.getByTestId("story-status").textContent).toContain("Pending GPU rerun");
+    expect(screen.getByRole("link", { name: "Story" }).className).toContain("active");
+    expect(screen.getByTestId("next-btn").getAttribute("href")).toBe("/dashboard/what-we-use");
   });
   it("redirects the old Demo route to Scenarios", async () => {
     const { default: App } = await import("../src/App");
     render(<MemoryRouter future={R} initialEntries={["/dashboard/demo"]}><App /></MemoryRouter>);
     expect(screen.getByText("scenarios page")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Scenarios" }).className).toContain("active");
+    expect(screen.getByRole("link", { name: "Try it" }).className).toContain("active");
   });
   it("footer: provisional laptop-GPU summary, Pexels clips not Apache-2.0, nothing pending on a DGX", async () => {
     const { default: App } = await import("../src/App");

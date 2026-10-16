@@ -37,7 +37,7 @@ function setOffline(v: boolean) {
 
 const urlOf = (input: RequestInfo | URL) => (typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
 
-/** Wrap fetch so failed (network error, 5xx, 502 proxy) GET /api calls fall back to snapshots. */
+/** Wrap fetch so failed (network error, any non-2xx, invalid JSON) GET /api calls fall back to snapshots. */
 export function withOfflineFallback(base: typeof fetch): typeof fetch {
   return async (input, init) => {
     const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
@@ -47,9 +47,15 @@ export function withOfflineFallback(base: typeof fetch): typeof fetch {
     if (!alt) return base(input, init);
     try {
       const res = await base(input, init);
-      if (res.status < 500) {
-        if (res.ok) setOffline(false);
-        return res;
+      // any non-2xx, or a 2xx that is not JSON where JSON is expected (SPA index.html, proxy page)
+      // falls back to the committed snapshot, so a static preview with no backend still works
+      if (res.ok) {
+        const type = res.headers.get("content-type") ?? "";
+        let good = !alt.endsWith(".json") || !type.includes("text/html");
+        if (good && alt.endsWith(".json")) {
+          try { JSON.parse(await res.clone().text()); } catch { good = false; }
+        }
+        if (good) { setOffline(false); return res; }
       }
     } catch {
       /* unreachable: fall through */

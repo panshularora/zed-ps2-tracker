@@ -14,6 +14,7 @@ describe("What we use", () => {
     expect(screen.getByTestId("wwu-models").textContent).toContain("switched off in every result");
     expect(screen.getByTestId("wwu-metrics").textContent).toMatch(/HOTA.*IDF1.*IDSW.*MOTA/s);
     expect(screen.getAllByRole("listitem").length).toBeGreaterThanOrEqual(5);
-    expect(screen.getByTestId("dataset-table")).toBeTruthy();
+    expect(document.querySelectorAll(".wwu-row").length).toBe(9);
+    expect(document.querySelectorAll(".wwu-row .wwu-tag").length).toBe(9);
   });
 });
