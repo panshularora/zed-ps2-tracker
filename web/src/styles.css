@@ -613,3 +613,7 @@ main td.num, main td.tabular, main th.num { text-align: right; font-variant-nume
 .scn-grid .scard:hover { border-color: #56B4E9; }
 .scn-grid .bench-line { grid-column: span 2; }
 .scenarios-open { display: block; }
+.verdict-pills { display: flex; gap: 16px; margin: 0 0 8px; font-size: 14px; color: #8A929C; }
+.verdict-pill { display: inline-flex; gap: 8px; align-items: center; }
+.result-tabs { margin-top: 16px; }
+.pill.fail { color: #F5A524; border-color: #F5A524; }
