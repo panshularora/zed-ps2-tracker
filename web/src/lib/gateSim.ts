@@ -8,13 +8,15 @@ export interface SimMeta {
   height: number;
   gate: [[number, number], [number, number]];
   fps: number;
-  params: { seed: number; density: number; occlusion_s: number; noise: number; speed: number; seconds: number; fps: number };
+  params: { seed: number; density: number; occlusion_s: number; noise: number; speed: number; seconds: number; fps: number; play?: string };
   trackers: Record<PaneKey, { label: string; config: string }>;
   max_people: number;
+  play?: string;
 }
 /** [person id, from tracker id, to tracker id, x, y] */
 export type IdEvent = [number, number, number, number, number];
-export interface PaneFrame { ids: [number, number][]; extra: [number, number, number][]; events: IdEvent[]; counted: number; id_changes: number }
+export interface PaneFrame { ids: [number, number][]; extra: [number, number, number][]; held?: [number, number, number][]; events: IdEvent[]; counted: number; id_changes: number }
+export type Beat = "hide" | "back";
 export interface SimFrame {
   type: "frame";
   f: number;
@@ -22,22 +24,43 @@ export interface SimFrame {
   people: [number, number, number, number][];
   dets: number[][];
   true_count: number;
+  beat?: Beat | null;
+  focus?: number | null;
   bytetrack: PaneFrame;
   ours: PaneFrame;
 }
 export interface SimEnd { type: "end"; frames: number; true_count: number; summary: Record<PaneKey, { id_changes: number; counted: number; truth: number }> }
 export type SimLine = SimMeta | SimFrame | SimEnd;
 
-export interface SimControls { seed: number; density: number; occlusion: number; noise: number }
-export const DEFAULTS: SimControls = { seed: 7, density: 0.5, occlusion: 1.0, noise: 0.3 };
-export const RECORDED_SECONDS = 30;
-export const isDefault = (c: SimControls) => c.seed === DEFAULTS.seed && c.density === DEFAULTS.density && c.occlusion === DEFAULTS.occlusion && c.noise === DEFAULTS.noise;
+export type PlayKind = "keep" | "crowd";
+export interface SimControls { seed: number; density: number; occlusion: number; noise: number; play: PlayKind }
+export const DEFAULTS: SimControls = { seed: 7, density: 0.5, occlusion: 1.5, noise: 0.15, play: "keep" };
+export const RECORDED_SECONDS = 12;
+export const isDefault = (c: SimControls) => c.seed === DEFAULTS.seed && c.density === DEFAULTS.density && c.occlusion === DEFAULTS.occlusion && c.noise === DEFAULTS.noise && c.play === DEFAULTS.play;
 
-export function streamUrl(c: SimControls, seconds = 60): string {
-  const q = new URLSearchParams({ seed: String(c.seed), density: String(c.density), occlusion: String(c.occlusion), noise: String(c.noise), seconds: String(seconds) });
+export function streamUrl(c: SimControls, seconds?: number): string {
+  const sec = seconds ?? (c.play === "keep" ? 12 : 60);
+  const q = new URLSearchParams({ seed: String(c.seed), density: String(c.density), occlusion: String(c.occlusion), noise: String(c.noise), seconds: String(sec), play: c.play });
   return `/api/gate-sim/stream?${q}`;
 }
-export const RECORDING_URL = `${import.meta.env?.BASE_URL ?? "/"}offline/gate-sim.ndjson`;
+export function recordingUrl(play: PlayKind = "keep"): string {
+  const file = play === "keep" ? "gate-keep.ndjson" : "gate-sim.ndjson";
+  return `${import.meta.env?.BASE_URL ?? "/"}offline/${file}`;
+}
+export const RECORDING_URL = recordingUrl("keep");
+
+export function beatCopy(beat: Beat, pid: number): { tag: string; body: string } {
+  if (beat === "hide") {
+    return {
+      tag: `Look here · person ${pid} walked behind the other`,
+      body: "The detector dropped their box. Amber HELD means the tracker still has their number. Watch both chips — they should stay the same number.",
+    };
+  }
+  return {
+    tag: `Look here · person ${pid} came back`,
+    body: "Same body. Ours should still say ID with the first number. ByteTrack often says NEW with a different number.",
+  };
+}
 
 /** Feed text chunks; returns complete parsed lines, keeps the partial tail. */
 export function lineSplitter(): (chunk: string, flush?: boolean) => SimLine[] {
@@ -81,4 +104,24 @@ export function recentEvents(frames: SimFrame[], idx: number, pane: PaneKey, win
   const out: { e: IdEvent; age: number }[] = [];
   for (let i = Math.max(0, idx - windowF); i <= idx && i < frames.length; i++) for (const e of frames[i][pane].events) out.push({ e, age: idx - i });
   return out;
+}
+
+/** First tracker number this person was given in `pane` — the ID that should be kept. */
+export function firstKeepId(frames: SimFrame[], idx: number, pane: PaneKey, pid: number): number | null {
+  for (let i = 0; i <= idx && i < frames.length; i++) {
+    const tid = new Map(frames[i][pane].ids).get(pid);
+    if (tid != null) return tid;
+  }
+  return null;
+}
+
+export type IdKind = "ok" | "held" | "fail" | "none";
+
+/** On-canvas badge: ID #N (visible, same number), HELD #N (hidden, remembering), NEW #M was #N (forgot). */
+export function personIdLabel(vis: boolean, tid: number | null | undefined, keep: number | null, switchedTo?: number | null): { text: string; kind: IdKind } {
+  const now = switchedTo ?? tid ?? null;
+  if (now != null && keep != null && now !== keep) return { text: `NEW #${now}  was #${keep}`, kind: "fail" };
+  if (!vis) return keep != null ? { text: `HELD #${keep}`, kind: "held" } : { text: "hidden · no ID", kind: "held" };
+  if (now != null) return { text: `ID #${now}`, kind: "ok" };
+  return { text: "no ID", kind: "none" };
 }

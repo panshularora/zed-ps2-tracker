@@ -92,7 +92,7 @@ describe("what we found (docs/results/summary.json)", () => {
     expect(screen.getByText("What is an ID mix-up?")).toBeTruthy();
     // neutral explainer: no tracker is named as winning or losing in step 1
     expect(screen.getByTestId("id-mixup").textContent).not.toMatch(/ByteTrack|ours kept|BoT-SORT/i);
-    expect(screen.getByRole("link", { name: "Open the dashboard" })).toHaveProperty("href", expect.stringContaining("/dashboard"));
+    expect(screen.getByRole("link", { name: "Open the overview" })).toHaveProperty("href", expect.stringContaining("/dashboard"));
   });
 });
 

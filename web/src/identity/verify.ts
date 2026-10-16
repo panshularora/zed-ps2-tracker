@@ -60,6 +60,10 @@ export function methodTooltip(doc: VerifyDoc | null): string {
 }
 
 export function reasonText(e: Reappearance): string {
-  if (e.verdict === "kept") return e.gt_before != null ? `same labelled person (${e.gt_before})` : "appearance and path match";
+  if (e.verdict === "kept") {
+    if (e.gt_before != null) return `same labelled person (${e.gt_before})`;
+    if (e.reasons.length) return e.reasons.join("; ");
+    return "appearance and path match";
+  }
   return e.reasons.join("; ") || "not checked";
 }

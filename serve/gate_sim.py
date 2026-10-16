@@ -24,6 +24,7 @@ from fastapi.responses import StreamingResponse
 from scipy.optimize import linear_sum_assignment
 
 from tracker.config import load_config
+from tracker.keep_id import KeepIdTracker
 from tracker.runner import build_tracker
 from tracker.types import Detections
 
@@ -35,32 +36,37 @@ MAX_PEOPLE = 40
 TRACKERS = {
     "bytetrack": ("ByteTrack", "configs/baselines/bytetrack.yaml"),
     "botsort": ("BoT-SORT", "configs/baselines/botsort.yaml"),
-    "ours": ("BoT-SORT + visibility (ours)", "configs/ours/visibility_botsort.yaml"),
+    "ours": ("Ours · one body, one number", "keep_id"),
 }
+OURS_CROWD = ("BoT-SORT + vis-gating", "configs/ours/visibility_botsort.yaml")
 
 
 @dataclass(frozen=True)
 class SimParams:
     seed: int = 7
     density: float = 0.5  # 0..1 -> arrivals per second (0.3 .. 2.3), capped at MAX_PEOPLE alive
-    occlusion_s: float = 1.0  # how long one occlusion lasts
-    noise: float = 0.3  # 0..1 detector noise (jitter, misses, false positives, merges)
+    occlusion_s: float = 1.5  # how long one occlusion lasts
+    noise: float = 0.15  # 0..1 detector noise (jitter, misses, false positives, merges)
     speed: float = 1.0  # walking speed multiplier
-    seconds: float = 60.0
+    seconds: float = 12.0
     fps: float = 30.0
+    play: str = "keep"  # keep = two-person hide; crowd = random arrivals
 
     def clamped(self) -> SimParams:
         def c(v: float, lo: float, hi: float) -> float:
             return float(min(hi, max(lo, v)))
 
+        play = self.play if self.play in ("keep", "crowd") else "keep"
+        seconds = 12.0 if play == "keep" else c(self.seconds, 1, 180)
         return SimParams(
             seed=self.seed & 0x7FFFFFFF,
             density=c(self.density, 0, 1),
             occlusion_s=c(self.occlusion_s, 0, 4),
             noise=c(self.noise, 0, 1),
             speed=c(self.speed, 0.25, 2),
-            seconds=c(self.seconds, 1, 180),
+            seconds=seconds,
             fps=c(self.fps, 10, 30),
+            play=play,
         )
 
 
@@ -87,6 +93,15 @@ class World:
     t: float = 0.0
     spawn_acc: float = 0.0
 
+    def seed_play(self) -> None:
+        """Two people: #1 slides behind #2 at the gate, box dropped, then #1 peels out."""
+        v = 52.0 * self.p.speed
+        self.people = [
+            Person(1, 358.0, 28.0, 0.0, v, 0.0, 0.0, GATE_Y),
+            Person(2, 424.0, 46.0, 0.0, v, 0.0, 0.0, None),
+        ]
+        self.next_pid = 3
+
     def spawn(self) -> None:
         down = bool(self.rng.random() < 0.5)
         v = (45 + 30 * self.rng.random()) * self.p.speed
@@ -110,11 +125,12 @@ class World:
 
     def step(self, dt: float) -> None:
         self.t += dt
-        self.spawn_acc += dt * (0.3 + 2.0 * self.p.density)
-        while self.spawn_acc >= 1:
-            self.spawn_acc -= 1
-            if len(self.people) < MAX_PEOPLE:
-                self.spawn()
+        if self.p.play != "keep":
+            self.spawn_acc += dt * (0.3 + 2.0 * self.p.density)
+            while self.spawn_acc >= 1:
+                self.spawn_acc -= 1
+                if len(self.people) < MAX_PEOPLE:
+                    self.spawn()
         for q in self.people:
             q.phase += dt * 1.7
             q.x += (q.vx + q.wobble * math.cos(q.phase)) * dt
@@ -129,6 +145,16 @@ class World:
                 and (prev_y - q.occl_at) * (q.y - q.occl_at) <= 0
             ):
                 q.occl_left, q.occl_done = self.p.occlusion_s, True
+        if self.p.play == "keep":
+            by_id = {q.pid: q for q in self.people}
+            a, b = by_id.get(1), by_id.get(2)
+            if a is not None and b is not None:
+                if a.occl_left > 0:
+                    a.x = b.x - 5.0
+                elif not a.occl_done and a.y >= GATE_Y - 55:
+                    a.x += (b.x - 5.0 - a.x) * min(1.0, dt * 3.5)
+                elif a.occl_done and a.occl_left == 0:
+                    a.x += (318.0 - a.x) * min(1.0, dt * 3.2)
         self.people = [q for q in self.people if -20 <= q.y <= H + 20]
 
 
@@ -140,12 +166,20 @@ def detect(
     boxes: list[list[float]] = []
     scores: list[float] = []
     vis = [q for q in people if 0 <= q.y <= H]
+    if p.play == "keep":
+        for a in vis:
+            if a.occl_left > 0:
+                continue
+            boxes.append([a.x - BOX / 2, a.y - BOX / 2, BOX, BOX])
+            scores.append(0.92)
+        return np.asarray(boxes, np.float64).reshape(-1, 4), np.asarray(scores, np.float64)
     used: set[int] = set()
+    drop_hidden = 0.75
     for i, a in enumerate(vis):
         if i in used:
             continue
         if a.occl_left > 0:  # occluded: usually dropped, sometimes a weak partial box
-            if rng.random() < 0.25:
+            if rng.random() > drop_hidden:
                 boxes.append([a.x - BOX / 2, a.y - BOX / 2 + BOX * 0.3, BOX, BOX * 0.7])
                 scores.append(0.15 + 0.25 * rng.random())
             continue
@@ -245,16 +279,34 @@ class Scoring:
         return match, events
 
 
+def _tracker_card(key: str, play: str) -> dict[str, str]:
+    if key == "ours" and play != "keep":
+        return {"label": OURS_CROWD[0], "config": OURS_CROWD[1]}
+    return {"label": TRACKERS[key][0], "config": TRACKERS[key][1]}
+
+
+def _make_tracker(key: str, fps: float, play: str = "keep"):
+    if key == "ours" and play == "keep":
+        return KeepIdTracker(fps=fps, buffer=max(90, int(fps * 4)))
+    if key == "ours":
+        return build_tracker(load_config(ROOT / OURS_CROWD[1]), fps)[0]
+    return build_tracker(load_config(ROOT / TRACKERS[key][1]), fps)[0]
+
+
 def simulate(
     params: SimParams, trackers: tuple[str, ...] = ("bytetrack", "ours")
 ) -> Iterator[dict[str, Any]]:
     p = params.clamped()
     world = World(p, np.random.default_rng([p.seed, 1]))
+    if p.play == "keep":
+        world.seed_play()
     det_rng = np.random.default_rng([p.seed, 2])
-    trk = {k: build_tracker(load_config(ROOT / TRACKERS[k][1]), p.fps)[0] for k in trackers}
+    trk = {k: _make_tracker(k, p.fps, p.play) for k in trackers}
     score = {k: Scoring() for k in trackers}
     true_side: dict[int, float] = {}
     true_count = 0
+    prev_hid: set[int] = set()
+    back_sent = False
     yield {
         "type": "meta",
         "width": W,
@@ -262,8 +314,9 @@ def simulate(
         "gate": [[0, GATE_Y], [W, GATE_Y]],
         "fps": p.fps,
         "params": asdict(p),
-        "trackers": {k: {"label": TRACKERS[k][0], "config": TRACKERS[k][1]} for k in trackers},
+        "trackers": {k: _tracker_card(k, p.play) for k in trackers},
         "max_people": MAX_PEOPLE,
+        "play": p.play,
     }
     n = round(p.seconds * p.fps)
     for f in range(1, n + 1):
@@ -271,6 +324,24 @@ def simulate(
         tlwh, sc = detect(world.people, p, det_rng)
         dets = Detections(tlwh, sc)
         on = [q for q in world.people if 0 <= q.y <= H]
+        hid = {q.pid for q in on if q.occl_left > 0}
+        started = hid - prev_hid
+        prev_hid = hid
+        beat, focus = None, None
+        if started:
+            beat, focus = "hide", next(iter(started))
+        elif p.play == "keep" and not back_sent:
+            by_id = {q.pid: q for q in on}
+            a, b = by_id.get(1), by_id.get(2)
+            if (
+                a is not None
+                and b is not None
+                and a.occl_done
+                and a.occl_left == 0
+                and abs(a.x - b.x) > 40
+            ):
+                beat, focus = "back", 1
+                back_sent = True
         for q in on:
             s = true_side.get(q.pid)
             if s is not None and (s - GATE_Y) * (q.y - GATE_Y) < 0:
@@ -287,18 +358,30 @@ def simulate(
                 for b, s in zip(tlwh, sc, strict=True)
             ],
             "true_count": true_count,
+            "beat": beat,
+            "focus": focus,
         }
         for k, t in trk.items():
             res = t.update(dets)
-            tracks = [(o.track_id, np.asarray(o.tlwh)) for o in (res.tracks if res else ())]
+            outs = list(res.tracks) if res else []
+            tracks = [(o.track_id, np.asarray(o.tlwh)) for o in outs]
             match, ev = score[k].update(on, tracks)
             matched = set(match.values())
             frame[k] = {
                 "ids": [[pid, tid] for pid, tid in match.items()],
                 "extra": [
-                    [tid, round(b[0] + b[2] / 2, 1), round(b[1] + b[3] / 2, 1)]
+                    [tid, round(float(b[0] + b[2] / 2), 1), round(float(b[1] + b[3] / 2), 1)]
                     for tid, b in tracks
                     if tid not in matched
+                ],
+                "held": [
+                    [
+                        o.track_id,
+                        round(float(o.tlwh[0] + o.tlwh[2] / 2), 1),
+                        round(float(o.tlwh[1] + o.tlwh[3] / 2), 1),
+                    ]
+                    for o in outs
+                    if o.state == "lost"
                 ],
                 "events": ev,
                 "counted": score[k].counted,
@@ -323,13 +406,20 @@ router = APIRouter()
 def gate_sim_stream(
     seed: int = Query(7),
     density: float = Query(0.5),
-    occlusion: float = Query(1.0),
-    noise: float = Query(0.3),
+    occlusion: float = Query(1.5),
+    noise: float = Query(0.15),
     speed: float = Query(1.0),
-    seconds: float = Query(60.0),
+    seconds: float = Query(12.0),
+    play: str = Query("keep"),
 ) -> StreamingResponse:
     params = SimParams(
-        seed=seed, density=density, occlusion_s=occlusion, noise=noise, speed=speed, seconds=seconds
+        seed=seed,
+        density=density,
+        occlusion_s=occlusion,
+        noise=noise,
+        speed=speed,
+        seconds=seconds,
+        play=play,
     )
     lines = (json.dumps(x, separators=(",", ":")) + "\n" for x in simulate(params))
     return StreamingResponse(

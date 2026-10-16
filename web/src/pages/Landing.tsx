@@ -87,7 +87,7 @@ export function LandingView({ summary }: { summary: SummaryFile | null }) {
         <p className="muted small">Source: <a href={`${GH}docs/results`} target="_blank" rel="noreferrer">docs/results</a></p>
       </Step>
       <Step n={6} title="Try it" visual={
-        <div className="try"><Link to="/dashboard" className="btn primary big">Open the dashboard</Link><Link to="/dashboard/scenarios" className="btn">See the six scenarios</Link></div>
+        <div className="try"><Link to="/dashboard" className="btn primary big">Open the overview</Link><Link to="/dashboard/scenarios" className="btn">See the six scenarios</Link></div>
       }>
         <p>Play the clips, switch between the baseline and our tracker, and see the benchmark tables.</p>
       </Step>

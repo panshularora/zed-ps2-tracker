@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  activeMoment, answerFor, askText, chipText, countsAt, eventLog, extraCountsAt, rateAt, resultText, schedule,
+  activeMoment, answerFor, askText, chipText, countsAt, eventLog, extraCountsAt, lookBox, pauseWhy, rateAt, resultText, schedule,
   SLOW_RATE, visibleLog, fallbackText, videoSources, MISSING_CLIP_TEXT, NO_EXPORT_TEXT, stepMoment, stripTicks, tally, tallyText, MOMENT_RULE, spotlightIds, stopCrossed, stopKey, timeOfFrame, trailOf, viewRect, zoomAt, type GEvent, type Moment,
 } from "../src/guided/model";
 
@@ -102,6 +102,24 @@ describe("plain-language text", () => {
     expect(r).not.toMatch(/wrong|correct|error|right/i);
     expect(resultText({ ...m, verified: true }, "measured")).toMatch(/^Checked against human labels/);
     expect(resultText(m, "measured")).toMatch(/disagree/); // measured clip but unverified moment
+  });
+  it("pause copy names the person and says where to look", () => {
+    const m = moment();
+    const ask = pauseWhy(m, "ours", "ask", "illustrative");
+    expect(ask.title).toMatch(/person #4/);
+    expect(ask.body).toMatch(/overlap/i);
+    expect(ask.tag).toMatch(/#4/);
+    const ans = pauseWhy(m, "baseline", "answer", "illustrative");
+    expect(ans.body).toMatch(/#4 became #11/);
+  });
+  it("look box is the spotlight person, not the whole frame", () => {
+    const frames = { "41": [[4, 100, 100, 200, 400], [7, 400, 200, 40, 80]] as [number, number, number, number, number][] };
+    expect(lookBox(frames, 41, new Set([4]), [100, 100, 200, 400], 1920, 1080)).toEqual([100, 100, 200, 400]);
+  });
+  it("pads a right-edge sliver so the look ring stays on screen", () => {
+    const r = lookBox({ "1": [[4, 1845, 203, 74, 450]] }, 1, new Set([4]), [1845, 203, 74, 450], 1920, 1080)!;
+    expect(r[2]).toBeGreaterThanOrEqual(120);
+    expect(r[0] + r[2]).toBeLessThanOrEqual(1920);
   });
   it("ID chip shows the change for 1 s with a short pulse", () => {
     const ev: GEvent[] = [{ t: "renumber", f: 41, from: 4, to: 11 }];

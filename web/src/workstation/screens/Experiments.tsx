@@ -162,8 +162,8 @@ export function Experiments({ refs, picked, onPicked, onOpenStudio, onClip }: Pr
             Play under the demo boxes
           </button>
         </div>
-        <details className="text-[12px] text-mute">
-          <summary className="cursor-pointer text-ink font-semibold">Optional: run tracker on a detection cache</summary>
+        <section className="text-[12px] text-mute">
+          <h3 className="text-ink font-semibold">Optional: run tracker on a detection cache</h3>
           <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
             <label className="flex flex-col gap-1">
               Stage A detection cache
@@ -200,7 +200,7 @@ export function Experiments({ refs, picked, onPicked, onOpenStudio, onClip }: Pr
             {busy ? "Running…" : "Run tracker on this cache"}
           </button>
           {file && <div className="mt-1 font-mono text-[11px]">{file.name}</div>}
-        </details>
+        </section>
         {error && <div className="text-fail text-[12px]">{error}</div>}
         {result && (
           <div className="flex flex-wrap items-center gap-3 bg-paper border border-line rounded-sm px-3 py-2 text-[12px]">
@@ -227,8 +227,8 @@ export function Experiments({ refs, picked, onPicked, onOpenStudio, onClip }: Pr
         )}
       </section>
 
-      <details className="text-[12px] text-mute">
-        <summary className="cursor-pointer text-ink font-semibold">Lab notes (config, delayed no-go, local outputs)</summary>
+      <section className="text-[12px] text-mute">
+        <h3 className="text-ink font-semibold">Lab notes (config, delayed no-go, local outputs)</h3>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mt-3">
         <section className="bg-paper rounded border border-slate-200 p-3.5">
           <h3 className="font-bold text-slate-900 text-[13px] mb-2">Active config</h3>
@@ -382,7 +382,7 @@ export function Experiments({ refs, picked, onPicked, onOpenStudio, onClip }: Pr
           </table>
         </div>
       </section>
-      </details>
+      </section>
     </div>
   );
 }

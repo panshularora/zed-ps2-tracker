@@ -13,7 +13,7 @@ import type { SimFrame } from "../src/lib/gateSim";
 
 const json = (p: string) => JSON.parse(readFileSync(p, "utf8"));
 const turnDoc = json("public/verify/subway_turnstile.json") as VerifyDoc;
-const turn = fromScenario(json("public/scenarios/subway_turnstile.json"), null, null);
+const turn = fromScenario(json("public/scenarios/subway_turnstile.json"), null, null, { keepId: false });
 
 describe("kept-vs-swap verdicts (regression: subway turnstile #4)", () => {
   it("#4 reappearing at frame 128 (last seen 95) on a different person is a possible swap, never 'kept'", () => {

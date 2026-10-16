@@ -4,6 +4,7 @@ import { fallbackText, videoSources, type ReplayData } from "../guided/model";
 import { PersonTimeline } from "./PersonTimeline";
 import { boxesAt, chipText, countsAt, people as peopleOf, pickFocus, placeChips, storySteps, tracksOf, watchLine, type Drawn, type Person, type Step, type XYWH } from "./story";
 import { fetchVerify, methodTooltip, verdictOf, type VerdictOf, type VerifyDoc } from "./verify";
+import { keepIdVerdict } from "./keepId";
 import { storyMoments, type StoryMoment } from "./moments";
 
 const SWAP_FILL = "#8A929C";
@@ -23,7 +24,17 @@ export function CountBar({ inN, outN, note }: { inN: number; outN: number; note?
   );
 }
 
-export function IdentityLegend({ doc }: { doc?: VerifyDoc | null }) {
+export function IdentityLegend({ doc, keepId }: { doc?: VerifyDoc | null; keepId?: boolean }) {
+  if (keepId) {
+    return (
+      <div className="id-legend" data-testid="identity-legend">
+        <span><i className="lg lg-box" />Box + number = one person</span>
+        <span><i className="lg lg-dash" />Dashed = still that number, hidden</span>
+        <span data-testid="kept-tooltip"><i className="lg lg-kept">kept</i>Came back with the same number</span>
+        <span><i className="lg lg-line" />Gate line: crossing it adds to IN or OUT</span>
+      </div>
+    );
+  }
   const tip = methodTooltip(doc ?? null);
   return (
     <div className="id-legend" data-testid="identity-legend">
@@ -58,11 +69,11 @@ export function useVerify(clip: string, given?: VerifyDoc | null): VerifyDoc | n
 export function IdentityPlayer({ data, watch, verify }: { data: ReplayData; watch?: string; verify?: VerifyDoc | null }) {
   const video = useRef<HTMLVideoElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const vdoc = useVerify(data.id, verify);
-  const verdict = useMemo<VerdictOf>(() => verdictOf(vdoc), [vdoc]);
+  const vdoc = useVerify(data.id, data.keepId ? null : verify);
+  const verdict = useMemo<VerdictOf>(() => (data.keepId ? keepIdVerdict() : verdictOf(vdoc)), [data.keepId, vdoc]);
   const tracks = useMemo(() => tracksOf(data.runs.ours.frames), [data]);
   const { people } = useMemo(() => peopleOf(data, "ours", verdict), [data, verdict]);
-  const moments = useMemo(() => storyMoments(data.id, vdoc), [data.id, vdoc]);
+  const moments = useMemo(() => (data.keepId ? [] : storyMoments(data.id, vdoc)), [data.keepId, data.id, vdoc]);
   const focus = useMemo<Person | null>(() => {
     const m = moments[0];
     return (m && people.find((p) => p.ids.includes(m.ev.id))) || pickFocus(people);
@@ -216,7 +227,7 @@ export function IdentityPlayer({ data, watch, verify }: { data: ReplayData; watc
           ))}
         </details>
       )}
-      <IdentityLegend doc={vdoc} />
+      <IdentityLegend doc={vdoc} keepId={data.keepId} />
     </div>
   );
 }

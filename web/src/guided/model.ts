@@ -4,6 +4,7 @@
 // tracker did and that they disagree; only "measured" moments (human labels) may say a number
 // changed wrongly, and a tracker comparison only when the data shows the other one kept it.
 import type { Box, RunKey, ScenarioData } from "../lib/scenarios";
+import { collapseRenumbers, oursEvents } from "../identity/keepId";
 
 export type Kind = "illustrative" | "measured";
 
@@ -49,6 +50,8 @@ export interface ReplayData {
   credit?: string;
   /** one-line framing shown under the title */
   caption?: string;
+  /** Studio / Scenarios: ours IDs collapsed so a minted number keeps the first one. */
+  keepId?: boolean;
 }
 
 export const SHORT: Record<RunKey, string> = { baseline: "ByteTrack", ours: "ours" };
@@ -63,9 +66,27 @@ interface Guide {
 export const demoUrlFor = (id: string) => `${import.meta.env?.BASE_URL ?? "/"}demo/${id}.mp4`;
 export const thumbUrlFor = (id: string) => `${import.meta.env?.BASE_URL ?? "/"}thumbs/${id}.jpg`;
 
-export function fromScenario(d: ScenarioData & { guide?: Guide }, videoUrl: string | null, demoUrl: string | null = demoUrlFor(d.meta.id)): ReplayData {
+export function fromScenario(
+  d: ScenarioData & { guide?: Guide },
+  videoUrl: string | null,
+  demoUrl: string | null = demoUrlFor(d.meta.id),
+  opts?: { keepId?: boolean },
+): ReplayData {
   const m = d.meta;
   const fps = m.src_fps / m.stride;
+  const applyKeep = opts?.keepId ?? m.kind === "illustrative";
+  const rawOurs = d.guide?.events?.ours ?? [];
+  let oursFrames = d.runs.ours.frames;
+  let oursEv = rawOurs;
+  let oursLabel = d.runs.ours.label;
+  let oursShort = SHORT.ours;
+  if (applyKeep) {
+    const { frames, remap, idOf } = collapseRenumbers(oursFrames, rawOurs);
+    oursFrames = frames;
+    oursEv = oursEvents(rawOurs, remap, frames, fps, idOf);
+    oursLabel = "Keep-ID";
+    oursShort = "Keep-ID";
+  }
   return {
     id: m.id,
     title: m.title,
@@ -78,12 +99,13 @@ export function fromScenario(d: ScenarioData & { guide?: Guide }, videoUrl: stri
     duration: m.covered_s,
     videoUrl,
     demoUrl,
+    keepId: applyKeep,
     runs: {
       baseline: { label: d.runs.baseline.label, short: SHORT.baseline, frames: d.runs.baseline.frames },
-      ours: { label: d.runs.ours.label, short: SHORT.ours, frames: d.runs.ours.frames },
+      ours: { label: oursLabel, short: oursShort, frames: oursFrames },
     },
     gate: d.guide?.gate ?? null,
-    events: d.guide?.events ?? { baseline: [], ours: [] },
+    events: { baseline: d.guide?.events?.baseline ?? [], ours: oursEv },
     moments: d.guide?.moments ?? [],
   };
 }
@@ -261,6 +283,60 @@ export function resultText(m: Moment, kind: Kind, names: Record<RunKey, string> 
 }
 
 export const STAKE_TEXT = "A new number means this person can be counted twice at the gate.";
+
+/** Why the guided player paused, and which person to look at on the full frame. */
+export function pauseWhy(
+  m: Moment, run: RunKey, phase: "ask" | "answer", kind: Kind, names: Record<RunKey, string> = NAMES,
+): { title: string; body: string; tag: string } {
+  const ids = idsOf(m, run);
+  const n = ids?.before ?? ids?.after;
+  const who = n != null ? `person #${n}` : "the person in the bright box";
+  const tag = n != null ? `Look here · #${n}` : "Look here";
+  if (phase === "ask") {
+    if (m.kind === "overlap") {
+      return { title: `Paused · look at ${who}`, body: `Two people overlap here. Watch ${who} (gold box) — does that number stay the same when they separate?`, tag: n != null ? `Look here · #${n} overlapping` : "Look here · overlap" };
+    }
+    if (m.kind === "gate") {
+      return { title: `Paused · look at ${who}`, body: `${who} is at the gold gate. Watch whether they keep that number as they cross.`, tag };
+    }
+    return { title: `Paused · look at ${who}`, body: `${who} is blocked or partly hidden. Watch whether they come back with the same number.`, tag };
+  }
+  return { title: `Look at ${who} · what happened`, body: resultText(m, kind, names), tag };
+}
+
+/** Video-px box to ring on the full frame: union of spotlight boxes, else the moment focus. */
+export function lookBox(
+  frames: Record<string, Box[]>, f: number | null, spot: Set<number>, focus: number[] | null, W: number, H: number,
+): [number, number, number, number] | null {
+  const boxes = f != null ? (frames[String(f)] ?? []).filter((b) => spot.has(b[0])) : [];
+  let rect: [number, number, number, number] | null = null;
+  if (boxes.length) {
+    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    for (const [, x, y, w, h] of boxes) {
+      x1 = Math.min(x1, x); y1 = Math.min(y1, y); x2 = Math.max(x2, x + w); y2 = Math.max(y2, y + h);
+    }
+    rect = [x1, y1, x2 - x1, y2 - y1];
+  } else if (focus && focus.length >= 4) {
+    rect = [focus[0], focus[1], focus[2], focus[3]];
+  }
+  if (!rect) return null;
+  if (rect[2] * rect[3] > 0.4 * W * H && focus && focus.length >= 4) {
+    rect = [focus[0], focus[1], focus[2], focus[3]];
+  }
+  const minW = 0.07 * W, minH = 0.16 * H;
+  let [x, y, w, h] = rect;
+  if (w < minW) {
+    x = Math.max(0, x - (minW - w)); // grow toward the centre when the person is on the right edge
+    if (x + minW > W) x = Math.max(0, W - minW);
+    w = Math.min(minW, W);
+  }
+  if (h < minH) {
+    y = Math.max(0, y - (minH - h) / 2);
+    if (y + minH > H) y = Math.max(0, H - minH);
+    h = Math.min(minH, H);
+  }
+  return [x, y, w, h];
+}
 
 /** Chip text for an ID that just changed: "#2 → #10" for 1 s after the change, else "Person 10". */
 export function chipText(id: number, f: number, events: GEvent[], fps: number): { text: string; pulse: number } {

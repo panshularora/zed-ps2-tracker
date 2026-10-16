@@ -225,6 +225,7 @@ export function datasetRows(s: SummaryFile | null, synthetic?: { seed: number; r
     mot17,
     row("mot20", "MOT20 val-half", "mot20"),
     row("dancetrack", "DanceTrack val", "dancetrack"),
+    row("sompt22", "SOMPT22", "sompt22"),
     { id: "pexels", dataset: "Pexels demo clips", status: "illustrative only", cells: all({ tag: "no ground truth" }) },
     syn,
   ];

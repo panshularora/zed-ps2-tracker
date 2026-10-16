@@ -22,47 +22,41 @@ export function OfflineBanner() {
   );
 }
 
-export const NAV_GROUPS: { label: string; pages: { to: string; label: string; sub?: boolean }[] }[] = [
-  { label: "Story", pages: [{ to: "/dashboard", label: "Overview" }, { to: "/dashboard/what-we-use", label: "What we use" }] },
-  { label: "Try it", pages: [{ to: "/dashboard/live", label: "Gate scene" }, { to: "/dashboard/scenarios", label: "Scenarios" }, { to: "/dashboard/studio", label: "Studio" }] },
-  {
-    label: "Evidence",
-    pages: [
-      { to: "/dashboard/results", label: "Results" },
-      { to: "/dashboard/experiments", label: "Experiments" },
-      { to: "/dashboard/evidence", label: "Analytics" },
-      { to: "/dashboard/architecture", label: "Architecture" },
-    ],
-  },
+export const NAV_PAGES: { to: string; label: string }[] = [
+  { to: "/", label: "Dashboard" },
+  { to: "/dashboard", label: "Overview" },
+  { to: "/dashboard/what-we-use", label: "What we use" },
+  { to: "/dashboard/live", label: "Gate scene" },
+  { to: "/dashboard/scenarios", label: "Scenarios" },
+  { to: "/dashboard/studio", label: "Studio" },
+  { to: "/dashboard/results", label: "Results" },
+  { to: "/dashboard/experiments", label: "Experiments" },
+  { to: "/dashboard/evidence", label: "Analytics" },
+  { to: "/dashboard/architecture", label: "Architecture" },
 ];
 
 export default function App() {
   const path = useLocation().pathname;
-  const landing = path === "/";
   return (
     <div className="shell">
       <header className="topbar">
-        <NavLink to="/" className="brand" style={{ color: "inherit", textDecoration: "none" }}>
+        <NavLink to="/" className="brand" style={{ color: "inherit", textDecoration: "none" }} end>
           <span className="brand-mark" aria-hidden />
           <span>
             Gate tracker <small>· Zed Digital PS-2</small>
           </span>
         </NavLink>
         <nav className="nav" aria-label="Pages">
-          {landing ? (
-            <NavLink to="/dashboard">Dashboard</NavLink>
-          ) : (
-            NAV_GROUPS.map((g) => (
-              <div key={g.label} className="nav-group" role="group" aria-label={g.label}>
-                <NavLink to={g.pages[0].to} end className="nav-group-label" data-testid="nav-group" title={`${g.label}: open ${g.pages[0].label}`}>{g.label}</NavLink>
-                {g.pages.map((p) => (
-                  <NavLink key={p.to} to={p.to} end={p.to === "/dashboard"} className={({ isActive }) => `${p.sub ? "sub " : ""}${isActive || (p.to === "/dashboard/studio" && path === "/dashboard/compare") ? "active" : ""}`}>
-                    {p.label}
-                  </NavLink>
-                ))}
-              </div>
-            ))
-          )}
+          {NAV_PAGES.map((p) => (
+            <NavLink
+              key={p.to}
+              to={p.to}
+              end={p.to === "/" || p.to === "/dashboard"}
+              className={({ isActive }) => (isActive || (p.to === "/dashboard/studio" && path === "/dashboard/compare") ? "active" : "")}
+            >
+              {p.label}
+            </NavLink>
+          ))}
         </nav>
       </header>
       <OfflineBanner />

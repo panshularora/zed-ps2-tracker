@@ -1,12 +1,10 @@
 """Record one seeded run of the synthetic gate scene with the real trackers.
 
-    python scripts/web/export_gate_sim.py [--seed 7] [--seconds 30]
+    python scripts/web/export_gate_sim.py [--seed 7] [--seconds 30] [--play crowd|keep]
 
 Writes
-* web/public/offline/gate-sim.ndjson: the exact stream of /api/gate-sim/stream for the default
-  sliders, so the page can replay it when the backend is offline (sliders need the backend);
-* docs/results/synthetic_gate/seed<seed>.json: the run's end summary (ByteTrack, BoT-SORT, ours),
-  read by the web app's all-datasets table.
+* web/public/offline/gate-sim.ndjson (crowd) or gate-keep.ndjson (keep play);
+* docs/results/synthetic_gate/seed<seed>.json for crowd runs.
 """
 
 from __future__ import annotations
@@ -26,13 +24,20 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--seconds", type=float, default=30.0)
+    ap.add_argument("--play", choices=("crowd", "keep"), default="crowd")
     a = ap.parse_args()
-    p = SimParams(seed=a.seed, seconds=a.seconds)
-    stream = ROOT / "web" / "public" / "offline" / "gate-sim.ndjson"
+    p = SimParams(seed=a.seed, seconds=12.0 if a.play == "keep" else a.seconds, play=a.play)
+    name = "gate-keep.ndjson" if a.play == "keep" else "gate-sim.ndjson"
+    stream = ROOT / "web" / "public" / "offline" / name
     stream.parent.mkdir(parents=True, exist_ok=True)
+    end = None
     with stream.open("w") as fh:
         for x in simulate(p):
             fh.write(json.dumps(x, separators=(",", ":")) + "\n")
+            end = x
+    if a.play == "keep":
+        print(f"wrote {stream.relative_to(ROOT)}: {end['summary']}")
+        return 0
     full = list(simulate(p, ("bytetrack", "botsort", "ours")))
     end = full[-1]
     out = ROOT / "docs" / "results" / "synthetic_gate" / f"seed{a.seed}.json"

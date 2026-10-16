@@ -13,7 +13,11 @@ describe("overview", () => {
     expect(tiles[0]).toContain("59.8");
     expect(tiles[1]).toContain("180");
     expect(tiles[2]).toContain("2.27");
-    expect(screen.getByRole("link", { name: "Open the demo" })).toHaveProperty("href", expect.stringContaining("/scenarios"));
+    expect(screen.getByRole("link", { name: "Open the gate scene" })).toHaveProperty("href", expect.stringContaining("/live"));
+    expect(screen.getByTestId("what-we-use").textContent).toContain("ByteTrack");
+    expect(screen.getByTestId("what-we-use").textContent).toContain("DanceTrack");
+    expect(screen.getByTestId("what-we-use").textContent).toContain("SOMPT22");
+    expect(screen.getByTestId("overall-comparison")).toBeTruthy();
   });
   it("shows an em dash when nothing is measured", () => {
     render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><OverviewView data={{ bench: null, still: null }} /></MemoryRouter>);

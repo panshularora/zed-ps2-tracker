@@ -1,8 +1,26 @@
 import { Term } from "../components/Term";
 import { Link } from "react-router-dom";
+import { DatasetTable } from "../components/DatasetTable";
 import { api, type Benchmarks, type Clip } from "../api";
 import { DASH, int, num } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
+
+const DATASETS = [
+  ["MOT17", "Standard street-camera pedestrians. Our headline numbers use the val-half split."],
+  ["MOT20", "Very crowded scenes. Harder counting and more overlap."],
+  ["DanceTrack", "People in similar clothes, so appearance matching is weak. A negative control for “just look at the clothes”."],
+  ["SOMPT22", "Static elevated cameras on poles — the closest public set to a gate camera. Extracted locally; detector caches not run yet."],
+  ["Pexels clips", "Demo videos with faces blurred. No human labels, so they are not a score."],
+  ["Synthetic gate", "Toy people with exact ground truth. Used to watch keep vs switch live."],
+];
+const TRACKERS = [
+  ["ByteTrack", "Baseline. Links boxes by overlap from frame to frame. After a hide it often hands out a new number."],
+  ["BoT-SORT", "ByteTrack plus camera-motion correction and a Kalman filter. Headline comparison tracker."],
+  ["OC-SORT / Hybrid-SORT / Deep OC-SORT", "Other published baselines we re-ran on the same detections."],
+  ["Keep-ID (gate scene)", "Demo tracker: hold the same number while the box is gone, then rebind it when they step out. ByteTrack mints a new one."],
+  ["BoT-SORT + visibility", "Tried on MOT17. It is not the keep-ID contract — the gate scene uses Keep-ID vs ByteTrack."],
+  ["Delayed assignment", "Wait extra frames before committing an ID. Measured and left off: documented no-go."],
+];
 
 const STILL_CLIP = "subway_turnstile";
 
@@ -32,7 +50,7 @@ export function OverviewView({ data }: { data: OverviewData | null }) {
       <section className="hero" style={still ? { backgroundImage: `url(${still})` } : undefined} aria-label="Turnstile still, faces blurred">
         {still && <span className="hero-credit">Pexels · faces blurred</span>}
         <div className="hero-text">
-          <span className="label">Zed Digital PS-2</span>
+          <span className="label">Overview · Zed Digital PS-2</span>
           <h1 style={{ marginTop: 8 }}>
             Every person crossing a crowded gate keeps one ID from approach to exit, even while hidden behind someone else.
           </h1>
@@ -58,8 +76,11 @@ export function OverviewView({ data }: { data: OverviewData | null }) {
       </p>
 
       <div className="cta">
-        <Link to="/dashboard/scenarios" className="btn primary">
-          Open the demo
+        <Link to="/dashboard/live" className="btn primary">
+          Open the gate scene
+        </Link>
+        <Link to="/dashboard/scenarios" className="btn">
+          Scenarios
         </Link>
       </div>
 
@@ -81,10 +102,35 @@ export function OverviewView({ data }: { data: OverviewData | null }) {
         <div className="panel">
           <h3>Status</h3>
           <p>
-            CPU phase done on MOT17 with public detections. YOLOX detections and re-ID run on a DGX next; the delayed-decision idea
+            CPU phase done on MOT17 with public detections. YOLOX detections and re-ID are pending a GPU run; the delayed-decision idea
             was tested and is a documented no-go.
           </p>
         </div>
+      </section>
+
+      <section className="section" data-testid="what-we-use">
+        <h2>Datasets and trackers</h2>
+        <p className="sub">What each name on this dashboard is. Scores live in the table below; empty cells mean the run is not in summary.json yet.</p>
+        <div className="glossary">
+          <div>
+            <h3>Datasets</h3>
+            {DATASETS.map(([h, p]) => (
+              <p key={h}><strong>{h}.</strong> {p}</p>
+            ))}
+          </div>
+          <div>
+            <h3>Trackers</h3>
+            {TRACKERS.map(([h, p]) => (
+              <p key={h}><strong>{h}.</strong> {p}</p>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section" data-testid="overall-comparison">
+        <h2>All datasets</h2>
+        <p className="sub">ByteTrack vs BoT-SORT vs ours, read only from summary.json.</p>
+        <DatasetTable />
       </section>
     </div>
   );

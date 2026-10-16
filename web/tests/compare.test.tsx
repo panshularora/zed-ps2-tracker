@@ -67,7 +67,8 @@ describe("overall dataset table (summary.json only)", () => {
   it("uses the committed summary: ByteTrack MOT17 reproduction provisional, DanceTrack not run, Pexels no ground truth", () => {
     const rows = datasetRows(loadSummary());
     const by = Object.fromEntries(rows.map((r) => [r.id, r]));
-    expect(rows.map((r) => r.id)).toEqual(["mot17", "mot20", "dancetrack", "pexels", "synthetic"]);
+    expect(rows.map((r) => r.id)).toEqual(["mot17", "mot20", "dancetrack", "sompt22", "pexels", "synthetic"]);
+    expect(by.sompt22.cells.ours.tag).toBe("not run yet");
     expect(by.mot17.cells.bytetrack.tag).toBe("provisional");
     expect(by.mot17.cells.bytetrack.values).toEqual([{ label: "MOTA", value: "66.4" }, { label: "IDF1", value: "73.8" }, { label: "IDSW", value: "165" }]);
     expect(by.mot17.cells.ours.tag).toBe("ran, no metric in summary.json");

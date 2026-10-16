@@ -15,16 +15,24 @@ vi.mock("../src/pages/Landing", () => ({ default: () => <p>landing</p> }));
 const R = { v7_startTransition: true, v7_relativeSplatPath: true };
 
 describe("navigation", () => {
-  it("groups pages into Story / Try it / Evidence with no Demo tab", async () => {
+  it("flat Dashboard nav, no Story / Try it / Evidence groups, no Demo tab", async () => {
     const { default: App } = await import("../src/App");
     render(<MemoryRouter future={R} initialEntries={["/dashboard"]}><App /></MemoryRouter>);
-    const groups = screen.getAllByRole("group").map((g) => [g.getAttribute("aria-label"), [...g.querySelectorAll("a:not(.nav-group-label)")].map((a) => a.textContent)]);
-    expect(groups).toEqual([
-      ["Story", ["Overview", "What we use"]],
-      ["Try it", ["Gate scene", "Scenarios", "Studio"]],
-      ["Evidence", ["Results", "Experiments", "Analytics", "Architecture"]],
-    ]);
+    const labels = [...document.querySelectorAll("nav[aria-label='Pages'] a")].map((a) => a.textContent);
+    expect(labels).toEqual(["Dashboard", "Overview", "What we use", "Gate scene", "Scenarios", "Studio", "Results", "Experiments", "Analytics", "Architecture"]);
+    expect(screen.getByText("overview page")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Overview" }).className).toContain("active");
+    expect(screen.getByRole("link", { name: "Dashboard" }).className).not.toContain("active");
     expect(screen.queryByRole("link", { name: "Demo" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Try it" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Evidence" })).toBeNull();
+  });
+  it("keeps / as the Dashboard landing and names the inner page Overview", async () => {
+    const { default: App } = await import("../src/App");
+    render(<MemoryRouter future={R} initialEntries={["/"]}><App /></MemoryRouter>);
+    expect(screen.getByText("landing")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Dashboard" }).className).toContain("active");
+    expect(screen.getByRole("link", { name: "Overview" }).getAttribute("href")).toBe("/dashboard");
   });
   it("redirects the old Demo route to Scenarios", async () => {
     const { default: App } = await import("../src/App");
@@ -56,7 +64,7 @@ describe("opener and wording", () => {
     expect(MISSING_CLIP_TEXT).not.toContain("server");
   });
   it("lists every Pexels clip source in the clip licence file", () => {
-    const md = readFileSync("public/demo/LICENSE_CLIPS.md", "utf8");
+    const md = readFileSync("public/demo/LICENSE_CLIPS.md", "utf8").replace(/\r\n/g, "\n");
     const idx = JSON.parse(readFileSync("public/scenarios/index.json", "utf8")) as { id: string; source: string }[];
     expect(md).toContain("not** covered by\nthis repository's Apache-2.0");
     expect(md).toMatch(/Do not reuse them as stock/);

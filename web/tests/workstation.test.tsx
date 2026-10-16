@@ -44,6 +44,13 @@ function fakeApi(url: string): Response {
   if (url === "/api/results/ablation") return json(JSON.parse(readFileSync(`${REPO}docs/results/ablation/ablation.json`, "utf8")));
   if (url === "/api/configs") return json(["baselines/bytetrack", "ours/vis_botsort"]);
   if (url === "/api/outputs") return json({ runs: [] });
+  if (url.startsWith("/scenarios/")) {
+    const name = decodeURIComponent(url.split("/").pop() ?? "");
+    if (!/^[A-Za-z0-9._-]+\.json$/.test(name)) return new Response("not found", { status: 404 });
+    return new Response(readFileSync(resolve(__dirname, "../public/scenarios", name)), {
+      status: 200, headers: { "content-type": "application/json" },
+    });
+  }
   return new Response("not found", { status: 404 });
 }
 

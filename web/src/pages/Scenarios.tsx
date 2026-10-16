@@ -112,7 +112,7 @@ export function ScenarioPlayer({ data }: { data: ScenarioData }) {
   const replay = useMemo(() => fromScenario(data, videoUrl(meta.id)), [data, meta.id]);
   return (
     <ScenarioView replay={replay} credit={<>
-      Illustrative only: no ground truth on this clip, so this shows what our tracker did, not a measured score. Every ID change our tracker made is in the timeline.
+      Illustrative only: Keep-ID on this Pexels clip (one body, one number through a hide). No ground truth, not a measured score.
       The counting line is a fixed-fraction line chosen by geometry (the candidate people cross most, both trackers summed).
       Source: <a href={meta.source} target="_blank" rel="noreferrer">Pexels</a> · {meta.licence} · faces blurred · detector {meta.detector} (CPU)
       {meta.stride > 1 ? `, 1 in ${meta.stride} frames tracked` : ""}.
@@ -130,14 +130,14 @@ export async function loadTruth(name: string): Promise<Truth | null> {
   return { events, label: "human labels" };
 }
 
-/** The old Demo tab's live job flow, mounted only when opened (its keys would clash with the player). */
+/** The old Demo tab's live job flow, always on the page (no extra click to open). */
 export function LiveRunPanel() {
-  const [open, setOpen] = useState(false);
   return (
-    <details className="live-run" data-testid="live-run" style={{ marginTop: 16 }} onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}>
-      <summary>Run the tracker yourself on a clip (CPU; needs the backend and <code>make models</code>)</summary>
-      {open && <div style={{ marginTop: 12 }}><LiveRun /></div>}
-    </details>
+    <section className="live-run" data-testid="live-run" style={{ marginTop: 16 }}>
+      <h2>Run the tracker yourself on a clip</h2>
+      <p className="muted" style={{ margin: "4px 0 12px" }}>CPU; needs the backend and <code>make models</code>.</p>
+      <LiveRun />
+    </section>
   );
 }
 
