@@ -8,7 +8,7 @@ import { fromScenario, videoSources, type ReplayData } from "../guided/model";
 import { benchmarkReplay, loadBenchmarkPairs, type BenchPair } from "../guided/viewer";
 import { paintFrame } from "../identity/IdentityPlayer";
 import { boxesAt, people as peopleOf, tracksOf, type Person, type XYWH } from "../identity/story";
-import { counts, fetchVerify, methodTooltip, verdictOf, type VerifyDoc } from "../identity/verify";
+import { counts, fetchVerify, methodTooltip, peopleLine, returnsLine, verdictOf, type VerifyDoc } from "../identity/verify";
 import { fetchIndex, fetchScenario, videoUrl, type RunKey, type ScenarioMeta } from "../lib/scenarios";
 import { orderScenarios } from "../pages/Scenarios";
 
@@ -153,6 +153,7 @@ export function ComparePanes({ data, doc }: { data: ReplayData; doc: VerifyDoc |
         Same video, same detections, two trackers. {data.kind === "illustrative" ? "No ground truth here: 'kept' and 'possible swap' come from a heuristic check (hover ⓘ)." : "Human-labelled clip: kept vs swap is checked against the labels."}
         <span className="info" title={methodTooltip(doc)} data-testid="rc-tooltip"> ⓘ</span>
       </p>
+      {peopleLine(doc) && <div className="people-tally" data-testid="rc-people"><b className="tabular">{peopleLine(doc)}</b><span className="muted">{returnsLine(doc)}</span></div>}
       {src && <video key={src} ref={video} src={src} muted playsInline autoPlay style={{ display: "none" }}
         onError={() => setSrcIdx((i) => i + 1)} onLoadedMetadata={(e) => { if (!(e.currentTarget.duration > 0)) setSrcIdx((i) => i + 1); }} />}
       <div className="rc-panes">

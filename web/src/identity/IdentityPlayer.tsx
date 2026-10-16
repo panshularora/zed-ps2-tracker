@@ -3,7 +3,7 @@ import { neutralColor } from "../lib/scenarios";
 import { fallbackText, videoSources, type ReplayData } from "../guided/model";
 import { PersonTimeline } from "./PersonTimeline";
 import { boxesAt, chipText, countsAt, people as peopleOf, pickFocus, placeChips, storySteps, tracksOf, watchLine, type Drawn, type Person, type Step, type XYWH } from "./story";
-import { fetchVerify, methodTooltip, verdictOf, type VerdictOf, type VerifyDoc } from "./verify";
+import { fetchVerify, methodTooltip, peopleLine, returnsLine, verdictOf, type VerdictOf, type VerifyDoc } from "./verify";
 import { keepIdVerdict } from "./keepId";
 import { storyMoments, type StoryMoment } from "./moments";
 import { drawChip, drawFigure, figureGeom, walkStep } from "../lib/figure";
@@ -209,6 +209,12 @@ export function IdentityPlayer({ data, watch, verify }: { data: ReplayData; watc
         </div>
         <span className="muted idp-run">{data.runs.ours.label}</span>
       </div>
+      {peopleLine(vdoc) && (
+        <div className="people-tally" data-testid="people-tally">
+          <b className="tabular">{peopleLine(vdoc)}</b>
+          <span className="muted">{returnsLine(vdoc)}</span>
+        </div>
+      )}
       <PersonTimeline people={people} frames={data.frames} fps={data.fps} f={f} focus={follow ?? focus?.key ?? null} onSeek={seekFrame} />
       {moments.length > 0 && (
         <div className="kept-moments" data-testid="kept-moments">

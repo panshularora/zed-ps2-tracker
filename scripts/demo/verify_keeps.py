@@ -328,6 +328,36 @@ def verify_gt(
     return out
 
 
+def per_person(
+    tracks: dict[int, Track], gt: dict[int, Track], fps: float, min_s: float = 0.5
+) -> dict[str, int]:
+    """Same denominator for every tracker: each labelled person seen >= ``min_s``.
+
+    For every frame of that person, the tracker box with the best IoU (>= 0.5) gives its number.
+    kept = exactly one number from first to last frame (gaps allowed); changed = two or more;
+    missed = never matched.
+    """
+    by_frame: dict[int, list[tuple[int, XYWH]]] = {}
+    for tid, tr in tracks.items():
+        for f, b in tr.items():
+            by_frame.setdefault(f, []).append((tid, b))
+    out = {"labelled": 0, "kept": 0, "changed": 0, "missed": 0}
+    for _gid, g in gt.items():
+        if len(g) < min_s * fps:
+            continue
+        out["labelled"] += 1
+        ids: set[int] = set()
+        for f, gb in g.items():
+            best, who = GT_IOU, None
+            for tid, b in by_frame.get(f, []):
+                if (v := iou(gb, b)) >= best:
+                    best, who = v, tid
+            if who is not None:
+                ids.add(who)
+        out["kept" if len(ids) == 1 else "changed" if ids else "missed"] += 1
+    return out
+
+
 def load_gz(p: Path) -> Any:
     with gzip.open(p) as fh:
         return json.load(fh)
@@ -368,7 +398,9 @@ def summarise(rs: list[Reappearance]) -> dict[str, dict[str, int]]:
     return out
 
 
-def write(clip: str, kind: str, rs: list[Reappearance]) -> dict[str, Any]:
+def write(
+    clip: str, kind: str, rs: list[Reappearance], people: dict[str, Any] | None = None
+) -> dict[str, Any]:
     doc = {
         "clip": clip,
         "method": kind,
@@ -377,6 +409,8 @@ def write(clip: str, kind: str, rs: list[Reappearance]) -> dict[str, Any]:
         "summary": summarise(rs),
         "events": [asdict(r) for r in rs],
     }
+    if people is not None:
+        doc["people"] = people
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / f"{clip}.json").write_text(json.dumps(doc, separators=(",", ":")))
     return doc
@@ -398,17 +432,18 @@ def main() -> None:
         clip = gtf.name.split(".")[0]
         gt = viewer_tracks(load_gz(gtf))
         rs: list[Reappearance] = []
+        people: dict[str, Any] = {}
         # "ours" = BoT-SORT + visibility (configs/ours/visibility_botsort.yaml) when exported
         ours = "vis_botsort" if (vd / f"{clip}.vis_botsort.json.gz").exists() else "botsort"
         for tr in ("bytetrack", ours):
             p = vd / f"{clip}.{tr}.json.gz"
             if p.exists():
                 c = load_gz(p)
-                rs += verify_gt(
-                    viewer_tracks(c), gt, "baseline" if tr == "bytetrack" else "ours", c["fps"]
-                )
-        doc = write(clip, "gt", rs)
-        print(clip, doc["summary"])
+                run = "baseline" if tr == "bytetrack" else "ours"
+                rs += verify_gt(viewer_tracks(c), gt, run, c["fps"])
+                people[run] = per_person(viewer_tracks(c), gt, c["fps"])
+        doc = write(clip, "gt", rs, people)
+        print(clip, "people", people, "returns", doc["summary"])
 
 
 if __name__ == "__main__":

@@ -16,6 +16,22 @@ export interface VerifyDoc {
   thresholds: { app_min: number; motion_base: number; motion_per_s: number; size_max: number; k_frames: number; gt_iou: number };
   summary: Partial<Record<RunKey, Record<Verdict, number>>>;
   events: Reappearance[];
+  /** MOT clips only: per labelled person, same denominator for both trackers */
+  people?: Partial<Record<RunKey, { labelled: number; kept: number; changed: number; missed: number }>>;
+}
+
+/** "N labelled people · ours kept K1 · ByteTrack kept K2"; null when not computed (no win claimed). */
+export function peopleLine(doc: VerifyDoc | null): string | null {
+  const o = doc?.people?.ours, b = doc?.people?.baseline;
+  if (!o || !b || o.labelled !== b.labelled) return null;
+  return `${o.labelled} labelled people · ours kept ${o.kept} · ByteTrack kept ${b.kept}`;
+}
+
+/** Secondary line: reappearance events, clearly labelled as returns after a gap. */
+export function returnsLine(doc: VerifyDoc | null): string | null {
+  const o = doc?.summary?.ours, b = doc?.summary?.baseline;
+  if (!o || !b) return null;
+  return `Returns after a gap (events, not people): ours ${o.kept} same person / ${o.swap} swapped · ByteTrack ${b.kept} / ${b.swap}`;
 }
 /** (id, first frame back) -> verdict; undefined = not checked */
 export type VerdictOf = (id: number, back: number) => Reappearance | undefined;
