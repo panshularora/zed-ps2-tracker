@@ -608,3 +608,8 @@ main td.num, main td.tabular, main th.num { text-align: right; font-variant-nume
 .wwu-name { font-size: 15px; font-weight: 600; }
 .wwu-why { font-size: 15px; color: #8A929C; }
 .wwu-tag { justify-self: end; }
+.scn-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.scn-grid .scard { background: #161A1F; border: 1px solid #262B33; border-radius: 4px; padding: 0; text-align: left; cursor: pointer; }
+.scn-grid .scard:hover { border-color: #56B4E9; }
+.scn-grid .bench-line { grid-column: span 2; }
+.scenarios-open { display: block; }
