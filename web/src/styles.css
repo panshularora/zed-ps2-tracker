@@ -601,3 +601,10 @@ main td.num, main td.tabular, main th.num { text-align: right; font-variant-nume
 .takeaway-line { font-size: 15px; color: #8A929C; max-width: 64ch; }
 .about summary { cursor: pointer; color: #8A929C; font-size: 14px; }
 .about p { font-size: 15px; color: #8A929C; max-width: 64ch; margin: 8px 0 0; }
+.wwu-rows { margin: 8px 0 16px; }
+.wwu-row { display: grid; grid-template-columns: 48px 220px 1fr auto; gap: 16px; align-items: center; padding: 8px 0; border-bottom: 1px solid #262B33; }
+.wwu-still { width: 48px; height: 48px; border-radius: 4px; object-fit: cover; background: #161A1F; }
+.wwu-still-empty { display: grid; place-items: center; color: #8A929C; font-size: 13px; font-weight: 600; }
+.wwu-name { font-size: 15px; font-weight: 600; }
+.wwu-why { font-size: 15px; color: #8A929C; }
+.wwu-tag { justify-self: end; }
