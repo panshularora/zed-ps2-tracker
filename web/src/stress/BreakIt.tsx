@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api";
 import { AMBER } from "./model";
-import { verdict, personHeight, type SceneData } from "./scene";
+import { verdict, personHeight, type PaneKey, type SceneData } from "./scene";
 import { ScenePlayer } from "./ScenePlayer";
-import { DEFAULT_SPEC, HARDER_STEPS, fromQuery, harderDone, harderText, simplifyPath, toQuery, type BreakSpec, type HarderStep } from "./breakit";
+import { DEFAULT_SPEC, STRIP_STEPS, fromQuery, settingsRow, simplifyPath, stripRows, toQuery, type BreakSpec, type HarderStep } from "./breakit";
+import { flag } from "../lib/flags";
+import { PANE_ORDER } from "./scene";
 
 const W = 960, H = 540, GATE_Y = 300, PILLAR_W = 46, PILLAR_H = 150;
 type Tool = "path" | "pillar" | "group" | "hide";
@@ -64,6 +66,7 @@ export default function BreakIt() {
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [harder, setHarder] = useState<{ steps: HarderStep[]; running: boolean } | null>(null);
+  const harderOn = useMemo(() => flag("harder"), []); // "Make it harder" is off until the scene is reworked
   const frame = useRef(startFrame);
   const editor = useRef<HTMLCanvasElement>(null);
   const draft = useRef<[number, number][] | null>(null);
@@ -147,25 +150,26 @@ export default function BreakIt() {
     const pid = spec.hide_pid ?? 1;
     const steps: HarderStep[] = [];
     setHarder({ steps, running: true });
-    for (const h of HARDER_STEPS) {
+    for (const h of STRIP_STEPS) {
       try {
         const d = await api.breakRun({ ...spec, hide_s: h, hide_pid: pid });
         steps.push({ hide_s: h, v: { bytetrack: verdict(d, "bytetrack", pid), ours: verdict(d, "ours", pid) } });
         setHarder({ steps: [...steps], running: true });
-        if (harderDone(steps)) break;
       } catch (e) { setErr((e as Error).message); break; }
     }
     setHarder({ steps: [...steps], running: false });
   }
 
-  const v = data && spec.hide_pid != null ? { bt: verdict(data, "bytetrack", spec.hide_pid), ours: verdict(data, "ours", spec.hide_pid) } : null;
-  const link = typeof window !== "undefined" ? `${window.location.origin}${window.location.pathname}?${toQuery({ spec, frame: frame.current })}` : "";
+  const copyLink = () => {
+    if (typeof window === "undefined") return;
+    void navigator.clipboard?.writeText(`${window.location.origin}${window.location.pathname}?${toQuery({ spec, frame: frame.current })}`);
+  };
   return (
     <section className="section" data-testid="break-it">
       <h2>Break it yourself</h2>
       <p className="small muted" style={{ maxWidth: 820 }}>
         Drag a pillar or a group onto the floor, draw the blue person's path with your pointer, pick who gets hidden. Both real trackers (ByteTrack and ours) run on the same
-        deterministic simulator; the same scene always gives the same result, so the link below reproduces it exactly.
+        deterministic simulator; the same scene always gives the same result, so “Copy link to this scene” reproduces it exactly.
       </p>
       <div className="break-tray" role="toolbar" aria-label="Tray">
         {([["pillar", "Pillar"], ["group", "Group of people"], ["hide", "Hide a person (click one)"]] as [Tool, string][]).map(([t, label]) => (
@@ -185,34 +189,39 @@ export default function BreakIt() {
       <div className="break-editor">
         <canvas ref={editor} width={W} height={H} data-testid="break-editor" onPointerDown={down} onPointerMove={moveDraw} onPointerUp={upDraw} />
       </div>
-      <p className="small muted mono" data-testid="break-settings">
-        seed {spec.seed} · hidden person {spec.hide_pid ?? "none"} for {spec.hide_s} s · {spec.pillars.length} pillars · {spec.groups.length} groups · {spec.crowd} passers-by · ours = {spec.config === "mem6" ? "longer memory (opt-in)" : "default"}
-        {busy ? " · running both trackers…" : ""}
-      </p>
+      <p className="settings-row" data-testid="break-settings">{settingsRow(spec)}{busy ? " · running both trackers…" : ""}</p>
       {err && <p className="muted" data-testid="break-error">Break it yourself runs both trackers on the local service, which is not reachable: {err}</p>}
       {data && (
         <>
-          <ScenePlayer data={data} startFrame={startFrame} focus={spec.hide_pid} showVerdict onPersonClick={tool === "hide" ? hidePid : undefined} onFrame={share} />
-          <p className="break-counts" data-testid="break-counts">
-            End of scene · true crossings {data.panes.ours.true_count} · ByteTrack counted {data.panes.bytetrack.count} · ours counted {data.panes.ours.count}
-            {v ? ` · hidden person: ByteTrack ${v.bt?.text ?? "n/a"}, ours ${v.ours?.text ?? "n/a"}` : ""}
-          </p>
+          <ScenePlayer data={data} startFrame={startFrame} focus={spec.hide_pid} view="walking" onPersonClick={tool === "hide" ? hidePid : undefined} onFrame={share} />
         </>
       )}
       <div className="scene-controls">
-        <button className="btn" onClick={makeHarder} disabled={!!harder?.running || spec.hide_pid == null} data-testid="make-harder">Make it harder</button>
-        <button className="btn" onClick={() => void navigator.clipboard?.writeText(link)} data-testid="copy-link">Copy link to this scene</button>
-        <span className="small muted mono" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 560 }} data-testid="share-link">{link}</span>
+        {harderOn && <button className="btn" onClick={makeHarder} disabled={!!harder?.running || spec.hide_pid == null} data-testid="make-harder">Make it harder</button>}
+        <button className="btn" onClick={copyLink} data-testid="copy-link">Copy link to this scene</button>
       </div>
-      {harder && (
-        <div data-testid="harder-result" style={{ marginTop: 8 }}>
-          <p className="small mono muted">
-            {harder.steps.map((s) => `${s.hide_s} s: ByteTrack ${s.v.bytetrack?.text ?? "n/a"} / ours ${s.v.ours?.text ?? "n/a"}`).join(" · ")}
-            {harder.running ? " · stepping up…" : ""}
-          </p>
-          {!harder.running && <p style={{ fontSize: 16, fontWeight: 600 }} data-testid="harder-text">{harderText(harder.steps)}</p>}
-        </div>
-      )}
+      {harderOn && harder && <HarderStrip steps={harder.steps} running={harder.running} />}
     </section>
+  );
+}
+
+function HarderStrip({ steps, running }: { steps: HarderStep[]; running: boolean }) {
+  const rows = stripRows(steps);
+  const label: Record<PaneKey, string> = { bytetrack: "ByteTrack", ours: "Ours" };
+  return (
+    <div data-testid="harder-result" data-running={running ? "1" : "0"}>
+      <div className="harder-strip" role="table" aria-label="Kept or changed the number, per hidden time">
+        {PANE_ORDER.map((k) => [
+          <span key={`l${k}`} className="lab">{label[k]}</span>,
+          ...rows[k].map((c) => (
+            <span key={`${k}${c.hide_s}`} className={`c ${c.state}`} data-testid={`strip-${k}-${c.hide_s}`} title={`${label[k]}, hidden ${c.hide_s} s: ${c.state}`}>
+              {c.state === "kept" ? "kept" : c.state === "changed" ? "new #" : c.state === "pending" ? "…" : "n/a"}
+            </span>
+          )),
+        ])}
+        <span />
+        {STRIP_STEPS.map((h) => <span key={`x${h}`} className="x">{h} s</span>)}
+      </div>
+    </div>
   );
 }

@@ -125,3 +125,32 @@ export function harderDone(steps: HarderStep[]): boolean {
   const broken = (s: HarderStep) => s.v.ours?.kind !== "kept" && s.v.bytetrack?.kind !== "kept";
   return broken(steps[steps.length - 1]) && broken(steps[steps.length - 2]);
 }
+
+/** Hidden times shown in the Make-it-harder strip (one cell each). */
+export const STRIP_STEPS = [0.5, 1, 1.5, 2, 2.5];
+export type StripCell = { hide_s: number; state: "kept" | "changed" | "pending" | "none" };
+
+/** Two-row strip (ByteTrack on top, ours below): blue = kept, amber = changed or lost. */
+export function stripRows(steps: HarderStep[]): Record<PaneKey, StripCell[]> {
+  const row = (k: PaneKey): StripCell[] =>
+    STRIP_STEPS.map((h) => {
+      const s = steps.find((x) => x.hide_s === h);
+      if (!s) return { hide_s: h, state: "pending" };
+      const v = s.v[k];
+      return { hide_s: h, state: v == null ? "none" : v.kind === "kept" ? "kept" : "changed" };
+    });
+  return { bytetrack: row("bytetrack"), ours: row("ours") };
+}
+
+/** One small row of plain settings text (no monospace sentences). */
+export function settingsRow(s: BreakSpec): string {
+  const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
+  return [
+    `Seed ${s.seed}`,
+    s.hide_pid == null ? "nobody hidden" : `person ${s.hide_pid} hidden ${s.hide_s} s at the gate`,
+    n(s.pillars.length, "pillar", "pillars"),
+    n(s.groups.length, "group", "groups"),
+    n(s.crowd, "passer-by", "passers-by"),
+    s.config === "mem6" ? "ours with longer memory (opt-in)" : "ours on default settings",
+  ].join(" · ");
+}

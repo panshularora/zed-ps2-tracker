@@ -45,13 +45,20 @@ export function colourStep(diff: number): number {
   return STEPS.filter((t) => a > t).length;
 }
 
-/** Diverging fill: tie = neutral; blue when ours changed fewer IDs, amber when more. */
-export function cellFill(c: Pick<MapCell, "diff_mean" | "verdict">): { fill: string; side: "ours" | "baseline" | "tie"; step: number } {
+/** Ours-worse fills: three flat steps (|gap| ≤ 1, ≤ 3, > 3 ID changes), not a dimmed orange. */
+export const AMBER_STEPS = ["#5A4320", "#8A6420", "#F5A524"] as const;
+
+/** Diverging fill: tie = neutral; blue (5 mixed steps) when ours changed fewer IDs, amber (3 flat
+ * steps) when more. `ink` is the text colour that reads on the fill. */
+export function cellFill(c: Pick<MapCell, "diff_mean" | "verdict">): { fill: string; side: "ours" | "baseline" | "tie"; step: number; ink: string } {
   const step = colourStep(c.diff_mean);
-  if (c.verdict === "tie" || step === 0) return { fill: NEUTRAL, side: "tie", step: 0 };
-  const side = c.diff_mean < 0 ? "ours" : "baseline";
-  return { fill: mixHex(NEUTRAL, side === "ours" ? BLUE : AMBER, step / 5), side, step };
+  if (c.verdict === "tie" || step === 0) return { fill: NEUTRAL, side: "tie", step: 0, ink: LIGHT_INK };
+  if (c.diff_mean < 0) return { fill: mixHex(NEUTRAL, BLUE, step / 5), side: "ours", step, ink: step >= 4 ? DARK_INK : LIGHT_INK };
+  const a = Math.min(step, 3) - 1;
+  return { fill: AMBER_STEPS[a], side: "baseline", step, ink: a === 2 ? DARK_INK : LIGHT_INK };
 }
+export const DARK_INK = "#0E1013";
+export const LIGHT_INK = "#E6E8EB";
 
 export const isHatched = (c: Pick<MapCell, "verdict">) => c.verdict === "unclear";
 
@@ -151,5 +158,13 @@ export function headline(d: StressMapData): string {
   return `${first} From ${fmtS(next)} it depends on crowd size: better in ${better}, worse in ${worse} of ${rest.length} cells.`;
 }
 
-export const CELL_SENTENCE =
-  "Each cell is 20 seeded runs at that crowd size and hidden time; the number is ours minus ByteTrack in ID changes per clip (negative = ours changed fewer numbers).";
+/** The one line under the toggle. */
+export function cellSentence(d: Pick<StressMapData, "cells">): string {
+  const n = d.cells[0]?.seeds.length ?? 0;
+  return `Each cell: ${n} seeded runs. Number = ours minus ByteTrack in ID changes.`;
+}
+
+/** The note next to the toggle: the opt-in config carries its provenance, the default does not. */
+export function configNote(cfg: "default" | "mem6", d: Pick<StressMapData, "cells">): string {
+  return cfg === "mem6" ? "Tuned on separate seeds · tested on MOT17 only (HOTA 52.5 either way)" : `Default settings · ${d.cells[0]?.seeds.length ?? 0} seeds per cell`;
+}

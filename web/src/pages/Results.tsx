@@ -29,12 +29,11 @@ export function ResultsView({ b }: { b: Benchmarks }) {
   return (
     <div>
       <h1>Results</h1>
-      <p className="muted" style={{ marginTop: 6, maxWidth: 820 }}>
-        Every number on this page is read from the repo's own output files (named under each table). Tables first, charts after.
+      <StressMap />
+      <p className="muted" style={{ marginTop: 24, maxWidth: 820 }}>
+        Every number below is read from the repo's own output files (named under each table). Tables first, charts after.
         Nothing here uses the demo clips: they have no ground truth.
       </p>
-
-      <StressMap />
 
       <section className="section" data-testid="gpu-run-checks">
         <h2>Latest GPU run: checks</h2>

@@ -81,3 +81,75 @@ export function latestChange(d: SceneData, pane: PaneKey, f: number, windowS = 4
 }
 
 export const whyQuestion = (e: IdChange) => `Why did #${e.from} become #${e.to}?`;
+
+/** The part of the scene a pane shows, in scene pixels, always the scene's aspect ratio. */
+export interface Crop { x: number; y: number; w: number; h: number }
+
+const clampCrop = (d: Pick<SceneData, "width" | "height">, cx: number, cy: number, w: number): Crop => {
+  const ww = Math.min(d.width, Math.max(40, w));
+  const hh = (ww * d.height) / d.width;
+  return {
+    x: Math.min(d.width - ww, Math.max(0, cx - ww / 2)),
+    y: Math.min(d.height - hh, Math.max(0, cy - hh / 2)),
+    w: ww,
+    h: hh,
+  };
+};
+
+/** Where person pid is at frame f (1-based), or at the nearest frame they are in the scene. */
+export function personAt(d: SceneData, pid: number, f: number): [number, number] | null {
+  for (let k = 0; k < d.truth.length; k++) {
+    for (const s of [-1, 1]) {
+      const p = d.truth[f - 1 + s * k]?.p.find((q) => q[0] === pid);
+      if (p) return [p[1], p[2]];
+    }
+  }
+  return null;
+}
+
+/** Zoom `zoom`× and follow person pid (centre of their body), clamped to the scene. */
+export function cropFollow(d: SceneData, pid: number | null, f: number, zoom = 2): Crop {
+  const p = pid == null ? null : personAt(d, pid, f);
+  const [cx, cy] = p ? [p[0], p[1] - personHeight(p[1]) / 2] : [d.width / 2, d.gate_y];
+  return clampCrop(d, cx, cy, d.width / zoom);
+}
+
+/**
+ * Break-it pane crop: the walking area (every person's path, the pillars, the gate line), cut down
+ * just enough that a person standing on the gate line is at least `minFigPx` CSS pixels tall in a
+ * pane `paneCssW` wide, centred on the hidden person's hide point.
+ */
+export function cropWalkingArea(d: SceneData, focus: number | null, paneCssW: number, minFigPx = 90): Crop {
+  let x0 = Infinity, x1 = -Infinity, y0 = d.gate_y, y1 = d.gate_y;
+  for (const t of d.truth) for (const [, x, y] of t.p) {
+    x0 = Math.min(x0, x - 30); x1 = Math.max(x1, x + 30); y0 = Math.min(y0, y - personHeight(y)); y1 = Math.max(y1, y + 8);
+  }
+  for (const [px, py, pw, ph] of d.pillars ?? []) { x0 = Math.min(x0, px - 16); x1 = Math.max(x1, px + pw + 16); y0 = Math.min(y0, py - 16); y1 = Math.max(y1, py + ph + 16); }
+  if (!Number.isFinite(x0)) return { x: 0, y: 0, w: d.width, h: d.height };
+  const aspect = d.width / d.height;
+  const fitW = Math.max(x1 - x0, (y1 - y0) * aspect);
+  const maxW = (paneCssW * personHeight(d.gate_y)) / minFigPx;
+  const w = Math.min(fitW, maxW);
+  let cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  if (w < fitW && focus != null) {
+    const win = hideWindow(d, focus);
+    const p = win ? personAt(d, focus, Math.round((win[0] + win[1]) / 2)) : null;
+    if (p) { cx = p[0]; cy = d.gate_y; }
+  }
+  return clampCrop(d, cx, cy, w);
+}
+
+/** One plain sentence for a replay: who was hidden and which tracker gave them a new number. */
+export function replaySentence(people: number, pid: number, hideS: number | null, v: Partial<Record<PaneKey, Verdict | null>>, firstChanged?: string): string {
+  const head = hideS != null ? `${people} people, person ${pid} hidden ${hideS} s.` : `${people} people, following person ${pid}.`;
+  const did = (x: Verdict) => (x.kind === "kept" ? "kept their number" : x.kind === "changed" ? "gave them a new number" : "lost them");
+  const b = v.bytetrack, o = v.ours;
+  if (b && o) {
+    if (b.kind === o.kind) return `${head} Both trackers ${did(b)}.`;
+    if (o.kind === "kept") return `${head} ByteTrack ${did(b)}, ours didn't.`;
+    if (b.kind === "kept") return `${head} Ours ${did(o)}, ByteTrack didn't.`;
+    return `${head} ByteTrack ${did(b)}, ours ${did(o)}.`;
+  }
+  if (firstChanged) return `${head} ${firstChanged === "ours" ? "Ours" : "ByteTrack"} changed their number first.`;
+  return head;
+}

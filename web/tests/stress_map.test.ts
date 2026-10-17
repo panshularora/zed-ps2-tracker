@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { AMBER, BLUE, NEUTRAL, borders, cellFill, colourStep, fmtGap, headline, isHatched, type MapCell, type StressMapData } from "../src/stress/model";
+import { AMBER, AMBER_STEPS, BLUE, DARK_INK, LIGHT_INK, NEUTRAL, borders, cellFill, cellSentence, configNote, colourStep, fmtGap, headline, isHatched, type MapCell, type StressMapData } from "../src/stress/model";
 
 const load = (n: string) => JSON.parse(readFileSync(resolve(__dirname, "../public/offline", n), "utf8")) as StressMapData;
 const base = load("stress__map__default.json");
@@ -28,12 +28,27 @@ describe("stress map colour and hatch", () => {
   });
   it("tie is neutral, blue when ours has fewer ID changes, amber when more", () => {
     expect(cellFill(c(-0.1, "tie")).fill).toBe(NEUTRAL);
-    expect(cellFill(c(-23.8, "ours_better"))).toEqual({ fill: BLUE.toUpperCase(), side: "ours", step: 5 });
-    expect(cellFill(c(30, "ours_worse"))).toEqual({ fill: AMBER.toUpperCase(), side: "baseline", step: 5 });
+    expect(cellFill(c(-23.8, "ours_better"))).toEqual({ fill: BLUE.toUpperCase(), side: "ours", step: 5, ink: DARK_INK });
+    expect(cellFill(c(30, "ours_worse"))).toEqual({ fill: AMBER.toUpperCase(), side: "baseline", step: 5, ink: DARK_INK });
     const mid = cellFill(c(1.1, "ours_worse"));
     expect(mid.side).toBe("baseline");
     expect(mid.fill).not.toBe(NEUTRAL);
     expect(mid.fill).not.toBe(AMBER.toUpperCase());
+  });
+  it("amber is three flat steps, dark text only on the strongest", () => {
+    expect(AMBER_STEPS).toEqual(["#5A4320", "#8A6420", "#F5A524"]);
+    expect(cellFill(c(0.4, "ours_worse"))).toMatchObject({ fill: "#5A4320", ink: LIGHT_INK });
+    expect(cellFill(c(2.95, "ours_worse"))).toMatchObject({ fill: "#8A6420", ink: LIGHT_INK });
+    expect(cellFill(c(3.5, "unclear"))).toMatchObject({ fill: "#F5A524", ink: DARK_INK });
+    // blue keeps its five mixed steps
+    expect(new Set([0.4, 2, 4, 8, 20].map((x) => cellFill(c(-x, "ours_better")).fill)).size).toBe(5);
+    // every amber cell on the committed maps uses one of the three fills
+    for (const m of [base, mem6]) for (const k of m.cells) { const f = cellFill(k); if (f.side === "baseline") expect(AMBER_STEPS).toContain(f.fill); }
+  });
+  it("one line under the toggle; MOT17 note only for the opt-in config", () => {
+    expect(cellSentence(base)).toBe("Each cell: 20 seeded runs. Number = ours minus ByteTrack in ID changes.");
+    expect(configNote("default", base)).toBe("Default settings · 20 seeds per cell");
+    expect(configNote("mem6", mem6)).toBe("Tuned on separate seeds · tested on MOT17 only (HOTA 52.5 either way)");
   });
   it("only statistically unclear cells are hatched", () => {
     expect(isHatched({ verdict: "unclear" })).toBe(true);
