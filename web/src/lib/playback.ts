@@ -160,6 +160,8 @@ export function describe(e: JobEvent): string {
       return `#${e.track_id} crossed ${e.direction.toUpperCase()}`;
     case "recovery":
       return `#${e.track_id} kept its ID after ${e.reason === "lost" ? "lost" : "occluded"} ${e.gap_s.toFixed(2)} s`;
+    case "recovered_crossing":
+      return `#${e.from_track_id} ended and #${e.track_id} began across the line: ${e.direction.toUpperCase()} recovered (not counted)`;
     case "tailgate":
       return `#${e.track_id} tailgate behind #${e.lead_track_id} (${e.gap_s.toFixed(2)} s)`;
     case "ambiguous_hold":

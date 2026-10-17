@@ -44,6 +44,9 @@ export interface JobMetrics {
   crossings_out: number;
   tailgates: number;
   ambiguous_holds: number;
+  recovered_crossings?: number;
+  crossings_in_with_recovered?: number;
+  crossings_out_with_recovered?: number;
 }
 
 export interface JobTiming {
@@ -93,6 +96,7 @@ export type TrackRow = [number, number, number, number, number, number, number];
 export type JobEvent =
   | { kind: "gate"; type: "crossing"; frame: number; track_id: number; direction: "in" | "out"; timestamp: string; gate: string; confidence?: number; unsure?: boolean; reasons?: string[] }
   | { kind: "gate"; type: "tailgate"; frame: number; track_id: number; lead_track_id: number; direction: "in" | "out"; timestamp: string; gap_s: number; confidence: number }
+  | { kind: "gate"; type: "recovered_crossing"; frame: number; track_id: number; from_track_id: number; direction: "in" | "out"; timestamp: string; recovered: true }
   | { kind: "gate"; type: "ambiguous_hold"; frame: number; track_id: number; direction: "in" | "out"; timestamp: string; reasons: string[]; confidence: number }
   | { kind: "recovery"; type: "recovery"; frame: number; track_id: number; reason: "lost" | "occluded"; gap_frames: number; gap_s: number; since: number }
   | { kind: "identity"; type: "suspected_id_switch"; frame: number; from_id: number; to_id: number; gap_frames: number; heuristic: true };

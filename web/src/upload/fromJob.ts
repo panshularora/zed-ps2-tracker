@@ -43,15 +43,20 @@ export function unsureMoments(r: Pick<JobResult, "events" | "video">): UnsureMom
 
 /** Counts and IDs only (no accuracy): what the upload result page is allowed to say. */
 export function uploadSummary(r: Pick<JobResult, "events" | "tracks">) {
-  let inN = 0, outN = 0, unsure = 0, breaks = 0;
+  let inN = 0, outN = 0, unsure = 0, breaks = 0, recIn = 0, recOut = 0;
   for (const e of r.events) {
     if (e.kind === "gate" && (e.type === "crossing" || e.type === "ambiguous_hold")) {
       if (e.direction === "in") inN++; else outN++;
       if (e.type === "ambiguous_hold" || (e as { unsure?: boolean }).unsure) unsure++;
     }
+    // a crossing no single number made (one ended at the line, a new one began across it):
+    // listed, not added to IN/OUT (see docs/results/stress/CROSSING_RECOVERY.md)
+    if (e.kind === "gate" && e.type === "recovered_crossing") {
+      if (e.direction === "in") recIn++; else recOut++;
+    }
     if (e.kind === "identity") breaks++;
   }
-  return { ids: Object.keys(r.tracks).length, in: inN, out: outN, unsure, possibleBreaks: breaks };
+  return { ids: Object.keys(r.tracks).length, in: inN, out: outN, unsure, possibleBreaks: breaks, recovered: recIn + recOut, recoveredIn: recIn, recoveredOut: recOut };
 }
 
 export function fromJobResult(r: JobResult, videoUrl: string | null): ReplayData {

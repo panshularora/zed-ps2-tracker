@@ -26,6 +26,7 @@ from typing import Any
 
 import numpy as np
 
+from eval.crossing_recovery import RecoveryParams, recover_crossings
 from eval.gate_events import Gate, crossings
 from serve.events import EventParams, gate_events, track_rows
 from tracker.types import FrameResult
@@ -159,6 +160,9 @@ def neutral_crossings(
     ]
 
 
+DEFAULT_RECOVERY = RecoveryParams()
+
+
 def gate_output(
     results: list[FrameResult],
     fps: float,
@@ -166,13 +170,52 @@ def gate_output(
     start: datetime,
     styling: str,
     hysteresis_px: float = 10.0,
+    recovery: RecoveryParams | None = DEFAULT_RECOVERY,
+    count_recovered: bool = False,
 ) -> list[dict[str, Any]]:
     """``alert`` (consented clips): the full ZIG contract; ``neutral``: crossings only.
+
+    Both then get **recovered crossings** (``eval.crossing_recovery``; ``recovery=None`` turns it
+    off) when one number ended at the line and a new one began just across it, with
+    ``recovered: true`` and ``from_track_id``. Track numbers are not changed. By default they
+    are listed as ``recovered_crossing`` events and NOT added to IN/OUT, because the held-out
+    MOT17 check did not support counting them (``docs/results/stress/CROSSING_RECOVERY.md``);
+    ``count_recovered=True`` emits them as ``crossing`` events so they count.
 
     Neutral crossings still say when the tracker was unsure of that track (the same rule that makes
     an ``ambiguous_hold`` on consented footage): ``unsure`` + ``reasons``. That is a statement about
     the tracker, not an alert about the person, so it is shown for every clip.
     """
+    plain = _plain_gate_output(results, fps, gate, start, styling, hysteresis_px)
+    if recovery is None:
+        return plain
+    rec = [
+        {
+            "type": "crossing" if count_recovered else "recovered_crossing",
+            "track_id": e.track_id,
+            "from_track_id": e.from_track_id,
+            "direction": e.direction,
+            "timestamp": (start + timedelta(seconds=(e.frame - 1) / fps)).isoformat(
+                timespec="milliseconds"
+            ),
+            "frame": e.frame,
+            "gate": e.gate,
+            "recovered": True,
+            "unsure": False,
+        }
+        for e in recover_crossings(track_rows(results), gate, hysteresis_px, fps, recovery)
+    ]
+    return sorted(plain + rec, key=lambda e: (e["frame"], e["track_id"]))
+
+
+def _plain_gate_output(
+    results: list[FrameResult],
+    fps: float,
+    gate: Gate,
+    start: datetime,
+    styling: str,
+    hysteresis_px: float,
+) -> list[dict[str, Any]]:
     params = EventParams(hysteresis_px=hysteresis_px)
     if styling == "alert":
         return gate_events(results, fps, gate, start, params)
@@ -222,6 +265,13 @@ def metrics(
         "suspected_id_switches": len(sus),
         "crossings_in": sum(e["direction"] == "in" for e in counted),
         "crossings_out": sum(e["direction"] == "out" for e in counted),
+        "recovered_crossings": sum(bool(e.get("recovered")) for e in gate_ev),
+        "crossings_in_with_recovered": sum(
+            e["direction"] == "in" for e in gate_ev if e in counted or e.get("recovered")
+        ),
+        "crossings_out_with_recovered": sum(
+            e["direction"] == "out" for e in gate_ev if e in counted or e.get("recovered")
+        ),
         "tailgates": sum(e["type"] == "tailgate" for e in gate_ev),
         "ambiguous_holds": sum(e["type"] == "ambiguous_hold" for e in gate_ev),
         "unsure_crossings": sum(

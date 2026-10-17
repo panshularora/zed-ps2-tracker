@@ -150,6 +150,7 @@ export function UploadResult({ result, jobId, seek, onSeek, onAgain }: { result:
         <span>IN <b>{s.in}</b></span>
         <span>OUT <b>{s.out}</b></span>
         <span>Unsure crossings <b>{s.unsure}</b></span>
+        <span data-testid="recovered-crossings" title={`A number ended at the line and a new one began just across it. Not added to IN/OUT: the held-out MOT17 check did not support it. With them: IN ${s.in + s.recoveredIn} · OUT ${s.out + s.recoveredOut}.`}>Recovered crossings <b>{s.recovered}</b></span>
         <span title="Heuristic: a new number started next to where another vanished. Not checked against labels.">Possible ID breaks <b>{s.possibleBreaks}</b></span>
       </div>
       <IdentityPlayer data={data} verify={null} seek={seek} unchecked

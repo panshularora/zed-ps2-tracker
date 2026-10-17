@@ -325,3 +325,11 @@ Seeds 1000–1019 (20 per cell), CPU only, git `b9dd300`, ours = `configs/ours/v
 Verdicts over 48 cells: WORSE 1, better 36, tie 1, unclear 10
 
 Seeds where the two trackers' ID histories diverge: 951 of 960. Reasons in the trace at the first disagreement (tracker, reason → count): bytetrack/expired 558, ours/cost_above_threshold 389, ours/expired 217, bytetrack/taken_by_other_box 111, ours/taken_by_other_box 95, bytetrack/cost_above_threshold 50, bytetrack/transfer 17, ours/transfer 13
+
+## Crossing recovery
+
+[`CROSSING_RECOVERY.md`](CROSSING_RECOVERY.md) covers four things:
+- the counting step that pairs an ID ending at the gate with a new ID starting across it;
+- its limits (gap 4.0 s, distance 2.0 box heights, near 3.0 box heights), tuned on simulator seeds 0–9 only;
+- the held-out checks: simulator seeds 1000–1019, MOT17-04, MOT17-09 and the MOT17-09 upload;
+- why recovered crossings are listed but not counted by default.
