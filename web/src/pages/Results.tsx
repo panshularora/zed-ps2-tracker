@@ -6,6 +6,7 @@ import { DatasetTable } from "../components/DatasetTable";
 import { Mot20Status } from "../components/Mot20Status";
 import { api, type AblationRow, type Benchmarks } from "../api";
 import StressChart from "../components/StressChart";
+import StressMap from "../stress/StressMap";
 import { DASH, int, num, pct } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 
@@ -32,6 +33,8 @@ export function ResultsView({ b }: { b: Benchmarks }) {
         Every number on this page is read from the repo's own output files (named under each table). Tables first, charts after.
         Nothing here uses the demo clips: they have no ground truth.
       </p>
+
+      <StressMap />
 
       <section className="section" data-testid="gpu-run-checks">
         <h2>Latest GPU run: checks</h2>

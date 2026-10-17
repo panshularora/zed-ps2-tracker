@@ -1,3 +1,6 @@
+import type { StressMapData } from "./stress/model";
+import type { SceneData } from "./stress/scene";
+import type { BreakSpec } from "./stress/breakit";
 // Typed client for the FastAPI service (serve/api.py). Every number the UI shows comes from here.
 
 export type Styling = "neutral" | "alert";
@@ -201,6 +204,11 @@ export const api = {
   annotatedUrl: (jobId: string) => `/api/jobs/${jobId}/annotated.mp4`,
   eventsUrl: (jobId: string) => `/api/jobs/${jobId}/events.json`,
   cancel: (id: string) => request<Job>(`/api/jobs/${id}/cancel`, { method: "POST" }),
+  stressMap: (config: "default" | "mem6") => request<StressMapData>(`/api/stress/map/${config}`),
+  stressReplay: (q: { people: number; hide_s: number; seed: number; config: "default" | "mem6" }) =>
+    request<SceneData>(`/api/stress/replay?${new URLSearchParams({ people: String(q.people), hide_s: String(q.hide_s), seed: String(q.seed), config: q.config })}`),
+  breakRun: (spec: BreakSpec) =>
+    request<SceneData>("/api/break/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(spec) }),
   upload: (file: File, consent: boolean) => {
     const fd = new FormData();
     fd.append("file", file);
