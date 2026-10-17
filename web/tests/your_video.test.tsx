@@ -63,7 +63,7 @@ describe("Studio step 4 · Your video", () => {
     expect(screen.getByTestId("upload-counts").textContent).not.toMatch(/kept|accuracy|IDF1|HOTA/i);
     expect(screen.getAllByTestId("unsure-item")).toHaveLength(1);
     expect(screen.getByTestId("timeline-summary").textContent).toMatch(/track numbers? on screen · no ground truth/);
-    expect(screen.getByTestId("upload-result").textContent).not.toMatch(/\bkept one number|accuracy|IDF1|HOTA/i);
+    expect(screen.getByTestId("upload-result").textContent).not.toMatch(/\bkept\b|accuracy|IDF1|HOTA/i);
     expect(screen.getByTestId("dl-csv").getAttribute("href")).toBe("/api/jobs/j1/tracks.csv");
     expect(screen.getByTestId("dl-annotated").getAttribute("href")).toBe("/api/jobs/j1/annotated.mp4");
   });

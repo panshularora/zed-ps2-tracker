@@ -9,7 +9,7 @@ export const MAX_ROWS = 12;
  * (no dashed bridge there: we do not claim it was still the same person). */
 /** Summary for a clip with no ground truth and no check: numbers drawn, never "kept". */
 export function uncheckedSummary(ps: Person[]): string {
-  return `${ps.length} track ${ps.length === 1 ? "number" : "numbers"} on screen · no ground truth, so we do not say whether anyone kept their number`;
+  return `${ps.length} track ${ps.length === 1 ? "number" : "numbers"} on screen · no ground truth, so no claim about who stayed one person`;
 }
 
 export function PersonTimeline({ people, frames, f, focus, onSeek, unchecked }: { people: Person[]; frames: number; f: number; focus: number | null; onSeek: (frame: number) => void; unchecked?: boolean }) {
