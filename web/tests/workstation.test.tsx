@@ -144,6 +144,11 @@ describe("workstation screens (was test_journey.mjs)", () => {
     mount("/dashboard/studio/your-video");
     await screen.findByText("Step 4 · Your video", undefined, { timeout: 5000 });
     expect(screen.getByTestId("your-video")).toBeTruthy();
+    expect(screen.getByTestId("your-video-intro").textContent).toBe("Upload a clip, draw your gate, and see what the tracker counts.");
+    const what = screen.getByTestId("your-video-what") as HTMLDetailsElement;
+    expect(what.open).toBe(false);
+    expect(what.querySelector("summary")!.textContent).toBe("What am I looking at?");
+    expect(what.textContent).toMatch(/BoT-SORT \+ visibility.*never a score/s);
     expect(screen.queryByText(/Lab notes/)).toBeNull();
     expect(screen.queryByText(/Active config/)).toBeNull();
     expect(screen.queryByText(/Eval log/)).toBeNull();

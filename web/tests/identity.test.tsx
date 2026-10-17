@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { boxesAt, people, pickFocus, placeChips, storySteps, summaryText, tracksOf, watchLine } from "../src/identity/story";
 import { PersonTimeline } from "../src/identity/PersonTimeline";
-import { chipAlpha, CountBar } from "../src/identity/IdentityPlayer";
+import { chipAlpha, clipClock, CountBar } from "../src/identity/IdentityPlayer";
 import { orderScenarios } from "../src/pages/Scenarios";
 import type { ReplayData } from "../src/guided/model";
 import type { Reappearance } from "../src/identity/verify";
@@ -108,10 +108,14 @@ describe("identity story", () => {
     fireEvent.click(ch);
     expect(onSeek).toHaveBeenCalledWith(6);
   });
-  it("count bar is a single row 'So far in the clip · IN n · OUT n' with no gate-side prose", () => {
-    render(<CountBar inN={0} outN={1} />);
-    expect(screen.getByTestId("count-bar").textContent).toBe("So far in the clipIN 0 · OUT 1");
-    expect(screen.getByTestId("count-bar-label").textContent).toBe("So far in the clip");
+  it("count bar is a single row 'So far at mm:ss: IN n · OUT n' with no gate-side prose", () => {
+    const { rerender } = render(<CountBar inN={0} outN={1} t={4.7} />);
+    expect(screen.getByTestId("count-bar").textContent).toBe("So far at 00:04:IN 0 · OUT 1");
+    expect(screen.getByTestId("count-bar-label").textContent).toBe("So far at 00:04:");
+    rerender(<CountBar inN={2} outN={1} t={65.2} />);
+    expect(screen.getByTestId("count-bar-label").textContent).toBe("So far at 01:05:");
+    expect(clipClock(0)).toBe("00:00");
+    expect(clipClock(-1)).toBe("00:00");
   });
   it("scenario order: 'What tracking is' first", () => {
     const o = orderScenarios([{ id: "shibuya_crossing" }, { id: "subway_turnstile" }, { id: "man_entering_metro" }] as never);

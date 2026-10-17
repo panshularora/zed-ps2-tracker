@@ -18,10 +18,13 @@ const ease = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
  *  not seen for a moment is slightly see-through. Focus only changes the box, never the chip. */
 export const chipAlpha = (state: Drawn["state"]) => (state === "hidden" ? 0.85 : 1);
 
-export function CountBar({ inN, outN, note }: { inN: number; outN: number; note?: string | null }) {
+/** mm:ss of a clip time in seconds (floored, so it ticks once per second while playing). */
+export const clipClock = (s: number) => { const t = Math.max(0, Math.floor(s)); return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
+
+export function CountBar({ inN, outN, note, t = 0 }: { inN: number; outN: number; note?: string | null; t?: number }) {
   return (
     <div className="count-bar" data-testid="count-bar">
-      <span className="count-bar-label muted" data-testid="count-bar-label">So far in the clip</span>
+      <span className="count-bar-label muted" data-testid="count-bar-label">So far at {clipClock(t)}:</span>
       <span className="count-bar-nums tabular"><b>IN</b> {inN} <span className="muted">·</span> <b>OUT</b> {outN}</span>
       {note && <span className="count-bar-note muted" data-testid="video-hint">{note}</span>}
     </div>
@@ -208,7 +211,7 @@ export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data:
       <p className="watch-line" data-testid="watch-line">{watch ?? (moments.length
         ? `Watch ${moments.map((m) => `#${m.ev.id}`).join(" and ")}: hidden for a moment, back with the same number, and the check agrees it is the same person.`
         : watchLine(focus, steps))}</p>
-      <CountBar inN={counts.in} outN={counts.out} note={hint} />
+      <CountBar inN={counts.in} outN={counts.out} note={hint} t={t} />
       <div className="idp-stage" data-testid="identity-stage" data-t={t.toFixed(2)} data-playing={playing ? "1" : "0"} style={{ aspectRatio: `${data.width} / ${data.height}` }}>
         {src && <video key={src} ref={video} src={src} muted playsInline autoPlay className="idp-video" aria-label={data.title}
           onError={() => setSrcIdx((i) => i + 1)} onLoadedMetadata={(e) => { if (!(e.currentTarget.duration > 0)) setSrcIdx((i) => i + 1); }} />}

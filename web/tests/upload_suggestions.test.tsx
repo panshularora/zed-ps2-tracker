@@ -159,15 +159,18 @@ describe("upload result: Confirm / Dismiss", () => {
     expect(rankSuggestions(suggestions(ranked)).map((x) => x.score)).toEqual([0.9, 0.7, 0.55, 0.4, 0.1]);
   });
 
-  it("top counts are two 32px blocks; the strip above the player says 'So far in the clip'", () => {
-    render(<UploadResult result={res} jobId="j6" seek={null} onSeek={() => {}} grab={fakeGrab} />);
+  it("top counts are two 32px blocks; the strip above the player shows the clip time ('So far at mm:ss:')", () => {
+    const { rerender } = render(<UploadResult result={res} jobId="j6" seek={null} onSeek={() => {}} grab={fakeGrab} />);
     for (const id of ["upload-counts", "adjusted-counts"]) {
       const big = screen.getByTestId(`${id}-in`).parentElement!;
       expect(big.className).toContain("text-[32px]");
     }
     expect(screen.getByTestId("upload-counts").textContent).toMatch(/^Tracker count/);
     expect(screen.getByTestId("adjusted-counts").textContent).toMatch(/^Operator-adjusted/);
-    expect(screen.getByTestId("count-bar-label").textContent).toBe("So far in the clip");
+    expect(screen.getByTestId("count-bar-label").textContent).toBe("So far at 00:00:");
+    // follows the player: a seek to 1 s before the crossing at 14.0 s
+    rerender(<UploadResult result={res} jobId="j6" seek={timeSeek(421, 1)} onSeek={() => {}} grab={fakeGrab} />);
+    expect(screen.getByTestId("count-bar-label").textContent).toBe("So far at 00:13:");
   });
 });
 
