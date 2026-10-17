@@ -214,7 +214,9 @@ def metrics(
         "avg_track_length_s": round(float(lens.mean()) / fps, 2) if len(lens) else None,
         "median_track_length_s": round(float(np.median(lens)) / fps, 2) if len(lens) else None,
         "boxes": len(rows),
+        # per reappearance EVENT (one track can come back many times): never show it as people
         "id_preserving_recoveries": len(rec),
+        "reappeared_ids": len({e["track_id"] for e in rec}),
         "recoveries_after_lost": sum(e["reason"] == "lost" for e in rec),
         "recoveries_after_occluded": sum(e["reason"] == "occluded" for e in rec),
         "suspected_id_switches": len(sus),

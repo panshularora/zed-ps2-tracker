@@ -88,7 +88,7 @@ export interface Job {
 export type TrackRow = [number, number, number, number, number, number, number];
 
 export type JobEvent =
-  | { kind: "gate"; type: "crossing"; frame: number; track_id: number; direction: "in" | "out"; timestamp: string; gate: string; confidence?: number }
+  | { kind: "gate"; type: "crossing"; frame: number; track_id: number; direction: "in" | "out"; timestamp: string; gate: string; confidence?: number; unsure?: boolean; reasons?: string[] }
   | { kind: "gate"; type: "tailgate"; frame: number; track_id: number; lead_track_id: number; direction: "in" | "out"; timestamp: string; gap_s: number; confidence: number }
   | { kind: "gate"; type: "ambiguous_hold"; frame: number; track_id: number; direction: "in" | "out"; timestamp: string; reasons: string[]; confidence: number }
   | { kind: "recovery"; type: "recovery"; frame: number; track_id: number; reason: "lost" | "occluded"; gap_frames: number; gap_s: number; since: number }
@@ -194,8 +194,12 @@ export const api = {
   job: (id: string) => request<Job>(`/api/jobs/${id}`),
   result: (id: string) => request<JobResult>(`/api/jobs/${id}/result`),
   benchmarks: () => request<Benchmarks>("/api/benchmarks"),
-  createJob: (body: { clip_id: string; detector?: string; stride?: number; max_seconds?: number | null; config?: string; reuse?: boolean }) =>
+  createJob: (body: { clip_id: string; detector?: string; stride?: number; max_seconds?: number | null; config?: string; reuse?: boolean; gate?: [number, number, number, number] }) =>
     request<Job>("/api/jobs", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
+  firstFrameUrl: (clipId: string) => `/api/clips/${encodeURIComponent(clipId)}/first-frame.jpg`,
+  csvUrl: (jobId: string) => `/api/jobs/${jobId}/tracks.csv`,
+  annotatedUrl: (jobId: string) => `/api/jobs/${jobId}/annotated.mp4`,
+  eventsUrl: (jobId: string) => `/api/jobs/${jobId}/events.json`,
   cancel: (id: string) => request<Job>(`/api/jobs/${id}/cancel`, { method: "POST" }),
   upload: (file: File, consent: boolean) => {
     const fd = new FormData();

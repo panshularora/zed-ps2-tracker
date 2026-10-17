@@ -93,13 +93,17 @@ describe("gate comparison summary", () => {
 });
 
 describe("real-clip comparison table", () => {
-  it("per-person rows for both trackers; summary back counts equal the check file", () => {
+  it("per-person rows for both trackers; kept never exceeds people; reappearances are the listed people's", () => {
     for (const run of ["baseline", "ours"] as const) {
       const rows = personRows(turn, run, turnDoc);
-      const s = runSummary(rows, turnDoc, run);
+      const s = runSummary(rows);
       expect(s.kept + s.changed + s.uncertain).toBe(rows.length);
-      expect(s.backConfirmed).toBe(turnDoc.summary[run]!.kept);
-      expect(s.backFlagged).toBe(turnDoc.summary[run]!.swap);
+      expect(s.kept).toBeLessThanOrEqual(s.people);
+      // reappearance events are a different unit (one person can come back several times) and
+      // only those of listed people are counted, so they can be fewer than the whole check file
+      expect(s.backConfirmed).toBe(rows.reduce((a, r) => a + r.kept, 0));
+      expect(s.backConfirmed).toBeLessThanOrEqual(turnDoc.summary[run]!.kept);
+      expect(s.backFlagged).toBeLessThanOrEqual(turnDoc.summary[run]!.swap);
     }
     expect(personRows(turn, "ours", turnDoc).find((r) => r.ids.includes(4))?.status).toBe("uncertain");
   });

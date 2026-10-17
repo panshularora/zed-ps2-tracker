@@ -23,7 +23,17 @@ export function CountBar({ inN, outN, note }: { inN: number; outN: number; note?
   );
 }
 
-export function IdentityLegend({ doc }: { doc?: VerifyDoc | null }) {
+export function IdentityLegend({ doc, unchecked }: { doc?: VerifyDoc | null; unchecked?: boolean }) {
+  if (unchecked) {
+    return (
+      <div className="id-legend" data-testid="identity-legend">
+        <span><i className="lg lg-box" />Box + number = what the tracker drew</span>
+        <span><i className="lg lg-dash" />Dashed = that number, not seen for a moment</span>
+        <span data-testid="kept-tooltip">Back with the same number = not checked (no ground truth, no re-identification)</span>
+        <span><i className="lg lg-line" />Your gate line: crossing it adds to IN or OUT</span>
+      </div>
+    );
+  }
   const tip = methodTooltip(doc ?? null);
   return (
     <div className="id-legend" data-testid="identity-legend">
@@ -55,7 +65,7 @@ export function useVerify(clip: string, given?: VerifyDoc | null): VerifyDoc | n
   return doc;
 }
 
-export function IdentityPlayer({ data, watch, verify }: { data: ReplayData; watch?: string; verify?: VerifyDoc | null }) {
+export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data: ReplayData; watch?: string; verify?: VerifyDoc | null; seek?: { f: number; n: number } | null; unchecked?: boolean }) {
   const video = useRef<HTMLVideoElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const vdoc = useVerify(data.id, verify);
@@ -74,7 +84,7 @@ export function IdentityPlayer({ data, watch, verify }: { data: ReplayData; watc
   const swaps = useMemo(() => people.flatMap((p) => p.swaps.map((s) => ({ ...s, key: p.key }))).sort((a, b) => a.f - b.f), [people]);
   const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(true);
-  const [story, setStory] = useState(true);
+  const [story, setStory] = useState(!unchecked);
   const [follow, setFollow] = useState<number | null>(null);
   const [step, setStep] = useState<number | null>(null);
   const sources = useMemo(() => videoSources(data), [data]);
@@ -159,6 +169,11 @@ export function IdentityPlayer({ data, watch, verify }: { data: ReplayData; watc
     setStep(null); setT(s);
   }
 
+  useEffect(() => {
+    if (seek) { seekFrame(seek.f); setPlaying(false); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- seek only when a new request (n) arrives
+  }, [seek?.n]);
+
   function onClick(e: React.MouseEvent<HTMLCanvasElement>) {
     const r = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - r.left) / r.width) * data.width, y = ((e.clientY - r.top) / r.height) * data.height;
@@ -216,7 +231,7 @@ export function IdentityPlayer({ data, watch, verify }: { data: ReplayData; watc
           ))}
         </details>
       )}
-      <IdentityLegend doc={vdoc} />
+      <IdentityLegend doc={vdoc} unchecked={unchecked} />
     </div>
   );
 }

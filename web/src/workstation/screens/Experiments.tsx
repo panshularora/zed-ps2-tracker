@@ -17,6 +17,7 @@ import {
   type TrackResponse,
 } from "../api";
 import { ms, num, pct } from "../format";
+import { YourVideo } from "./YourVideo";
 
 interface Props {
   refs: ClipRef[];
@@ -111,16 +112,20 @@ export function Experiments({ refs, picked, onPicked, onOpenStudio, onClip }: Pr
     <div className="h-full overflow-y-auto p-4 space-y-4">
       <header className="max-w-3xl space-y-1">
         <div className="font-display uppercase tracking-[0.18em] text-[11px] text-signal">
-          Step 4 · optional
+          Step 4 · Your video
         </div>
-        <h1 className="font-display text-[26px] leading-none text-ink font-semibold">Drop your video</h1>
+        <h1 className="font-display text-[26px] leading-none text-ink font-semibold">Your video</h1>
         <p className="text-[13px] text-mute">
-          You can drop an MP4 here to play it under the boxes from this demo. This page does not
-          find people in a new recording — it only overlays the saved tracks. To get new IDs you
-          need a detection cache from Stage A.
+          Upload a short clip, draw your gate on its first frame, and our tracker (BoT-SORT +
+          visibility) runs on it here on the CPU. You get the same player as the Studio: boxes and
+          numbers, IN/OUT at your line, a timeline per number, and the moments the tracker was
+          unsure. Your clip has no ground truth, so we show counts, IDs and events, never a score.
         </p>
       </header>
-      <section className="bg-raised border border-line rounded-sm p-4 space-y-3">
+      <YourVideo />
+      <details className="bg-raised border border-line rounded-sm p-4">
+        <summary className="cursor-pointer text-[12px] text-mute">Advanced: play a video under the saved demo boxes, or run a Stage A detection cache</summary>
+      <section className="space-y-3 mt-3">
         <div
           className="rounded-sm border border-dashed border-line bg-paper px-4 py-10 text-center"
           onDragOver={(e) => e.preventDefault()}
@@ -226,6 +231,7 @@ export function Experiments({ refs, picked, onPicked, onOpenStudio, onClip }: Pr
           </div>
         )}
       </section>
+      </details>
 
       <section className="text-[12px] text-mute">
         <h3 className="text-ink font-semibold">Lab notes (config, delayed no-go, local outputs)</h3>

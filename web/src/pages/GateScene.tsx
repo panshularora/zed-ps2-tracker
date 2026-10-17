@@ -427,7 +427,7 @@ export default function GateScene() {
               </div>
               <p className="gs-pane-note muted">
                 {p === "ours"
-                  ? "Same body keeps the same number from approach to exit. Amber HELD while the box is gone, then the original ID when they step out."
+                  ? "Amber HELD while the box is gone. If the last box was mostly hidden (visibility under 0.7) the number is remembered for 90 frames instead of 30; whether it comes back is shown, not assumed."
                   : "After the box is gone longer than 30 frames, ByteTrack drops the track and issues a new number when they reappear."}
               </p>
             </figure>

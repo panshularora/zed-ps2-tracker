@@ -543,3 +543,16 @@ def test_tracks_csv_and_annotated_clip(env: dict[str, Any]) -> None:
     n = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     cap.release()
     assert n == N
+
+
+def test_reappearances_are_events_not_people() -> None:
+    # the "2 people, 4 kept their number" bug: one track recovering several times is several
+    # recovery events but one ID; the per-ID count can never exceed the number of tracks
+    walk = [(f, 50.0 + 10 * f, 1.0) for f in range(1, 21)]
+    rows = rows_from({1: walk, 2: walk})
+    rec = [{"track_id": 1, "reason": "lost"}] * 3 + [{"track_id": 2, "reason": "occluded"}]
+    m = analysis.metrics(rows, 10.0, 20, [], rec, [])
+    assert m["tracks"] == 2
+    assert m["id_preserving_recoveries"] == 4
+    assert m["reappeared_ids"] == 2
+    assert m["reappeared_ids"] <= m["tracks"]

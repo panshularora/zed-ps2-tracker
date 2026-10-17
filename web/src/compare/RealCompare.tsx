@@ -8,7 +8,7 @@ import { fromScenario, videoSources, type ReplayData } from "../guided/model";
 import { benchmarkReplay, loadBenchmarkPairs, type BenchPair } from "../guided/viewer";
 import { paintFrame } from "../identity/IdentityPlayer";
 import { boxesAt, people as peopleOf, tracksOf, type Person, type XYWH } from "../identity/story";
-import { counts, fetchVerify, methodTooltip, verdictOf, type VerifyDoc } from "../identity/verify";
+import { fetchVerify, methodTooltip, verdictOf, type VerifyDoc } from "../identity/verify";
 import { fetchIndex, fetchScenario, videoUrl, type RunKey, type ScenarioMeta } from "../lib/scenarios";
 import { orderScenarios } from "../pages/Scenarios";
 
@@ -28,14 +28,16 @@ export function personRows(d: Pick<ReplayData, "runs" | "events" | "fps">, run: 
   });
 }
 
-export function runSummary(rows: PersonRow[], doc: VerifyDoc | null, run: RunKey) {
-  const c = counts(doc, run);
+export function runSummary(rows: PersonRow[]) {
+  // Reappearance checks are per EVENT (one person can hide and come back several times) and the
+  // verify doc also covers brief tracks that are not listed as people, so they are reported as
+  // reappearances of the listed people only, never as a number of people.
   return {
     people: rows.length,
     kept: rows.filter((r) => r.status === "kept").length,
     changed: rows.filter((r) => r.status === "changed").length,
     uncertain: rows.filter((r) => r.status === "uncertain").length,
-    backConfirmed: c.kept, backFlagged: c.swap, backUnknown: c.unknown,
+    backConfirmed: rows.reduce((a, r) => a + r.kept, 0), backFlagged: rows.reduce((a, r) => a + r.flagged, 0),
   };
 }
 
@@ -146,7 +148,7 @@ export function ComparePanes({ data, doc }: { data: ReplayData; doc: VerifyDoc |
     if (video.current) video.current.currentTime = s + off;
   }
 
-  const sums = { baseline: runSummary(rows.baseline, doc, "baseline"), ours: runSummary(rows.ours, doc, "ours") };
+  const sums = { baseline: runSummary(rows.baseline), ours: runSummary(rows.ours) };
   return (
     <div>
       <p className="muted" style={{ margin: "0 0 8px", fontSize: 13 }}>
@@ -167,7 +169,7 @@ export function ComparePanes({ data, doc }: { data: ReplayData; doc: VerifyDoc |
               <span>Kept one number <b>{sums[run].kept}</b></span>
               <span>Changed <b>{sums[run].changed}</b></span>
               <span>Uncertain <b>{sums[run].uncertain}</b></span>
-              <span title="Reappearances (same number drawn again after a gap): confirmed same person / flagged possible swap">Back: confirmed <b>{sums[run].backConfirmed}</b> · flagged <b>{sums[run].backFlagged}</b>{sums[run].backUnknown ? <> · unknown <b>{sums[run].backUnknown}</b></> : null}</span>
+              <span title="Reappearance events of the people listed here (one person can come back several times): check says same person / possible swap. Not a count of people.">Reappearances: same person <b>{sums[run].backConfirmed}</b> · possible swap <b>{sums[run].backFlagged}</b></span>
             </div>
           </figure>
         ))}

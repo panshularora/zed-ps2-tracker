@@ -140,15 +140,18 @@ describe("workstation screens (was test_journey.mjs)", () => {
     expect(screen.getByTestId("method").textContent).toContain("Delayed assignment");
     expect(screen.getByTestId("papers")).toBeTruthy();
   });
-  it("experiments: drop-your-video panel", async () => {
+  it("step 4 is 'Your video': real upload panel first, old overlay tools under Advanced", async () => {
     mount("/dashboard/experiments");
-    await screen.findByText(/Drop your video/, undefined, { timeout: 5000 });
+    await screen.findByText("Step 4 · Your video", undefined, { timeout: 5000 });
+    expect(screen.getByTestId("your-video")).toBeTruthy();
+    expect(screen.getByText(/Advanced: play a video under the saved demo boxes/)).toBeTruthy();
+    expect(screen.queryByText(/does not\s+find people in a new recording/)).toBeNull();
   });
   it("step header navigates between screens (was test_sidebar.mjs)", async () => {
     mount("/dashboard/studio");
     await act(async () => { fireEvent.click(screen.getByTestId("step-evidence")); });
     expect(await screen.findByTestId("gate-flows")).toBeTruthy();
     await act(async () => { fireEvent.click(screen.getByTestId("step-try")); });
-    await screen.findByText(/Drop your video/);
+    await screen.findByTestId("your-video");
   });
 });
