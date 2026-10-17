@@ -218,7 +218,12 @@ def track_and_analyse(
             "tracker_p95_ms": round(float(np.percentile(lat, 95)), 3),
             "tracker_total_s": round(float(lat.sum()) / 1e3, 3),
         },
-        "tracker_info": run.info,
+        "tracker_info": {
+            **run.info,
+            # CPU job: no re-ID embeddings (Stage A / GPU), and a clip has no ground truth
+            "reid": bool(cfg.appearance.enabled and cache.emb is not None),
+            "ground_truth": False,
+        },
         "analysis_params": asdict(p),
         "mot_rows": rows,
     }

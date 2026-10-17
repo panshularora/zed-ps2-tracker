@@ -203,6 +203,42 @@ class Service:
             raise ApiError(404, "clip_missing", f"clip {clip_id} has no video on this server")
         return found[0]
 
+    def first_frame(self, clip_id: str) -> Path:
+        """A face-blurred still of the first frame, for drawing the gate before the first job.
+
+        Uploads: the original's frame 0 goes through the face blur before it is written; the
+        original itself is still never served. Library clips: frame 0 of the blurred copy.
+        """
+        import cv2
+
+        from serve import blur
+
+        if clip_id.startswith("upload-"):
+            d = self.upload_dir(clip_id)
+            rec = self.upload_record(clip_id)
+            out = d / "first_frame.jpg"
+            if out.exists():
+                return out
+            cap = cv2.VideoCapture(str(d / json.loads((d / "meta.json").read_text())["original"]))
+            ok, img = cap.read()
+            cap.release()
+            if not ok:
+                raise ApiError(500, "frame_failed", f"could not decode a frame of {rec['id']}")
+            img = blur.blur_frame(img, self.settings.model_dir,
+                                  threads=self.settings.detector_threads)  # fmt: skip
+        else:
+            src = self.video_path(clip_id)
+            out = self.settings.cache_dir / f"first-{clip_id}-{src.stat().st_mtime_ns}.jpg"
+            if out.exists():
+                return out
+            cap = cv2.VideoCapture(str(src))
+            ok, img = cap.read()
+            cap.release()
+            if not ok:
+                raise ApiError(500, "frame_failed", "could not decode a frame")
+        cv2.imwrite(str(out), img, [cv2.IMWRITE_JPEG_QUALITY, 88])
+        return out
+
     def poster(self, clip_id: str) -> Path:
         import cv2
 
@@ -436,6 +472,11 @@ def clip_video(clip_id: str, request: Request) -> FileResponse:
     )
 
 
+@router.get("/clips/{clip_id}/first-frame.jpg")
+def clip_first_frame(clip_id: str, request: Request) -> FileResponse:
+    return FileResponse(svc(request).first_frame(clip_id), media_type="image/jpeg")
+
+
 @router.get("/clips/{clip_id}/poster.jpg")
 def clip_poster(clip_id: str, request: Request) -> FileResponse:
     return FileResponse(svc(request).poster(clip_id), media_type="image/jpeg")
@@ -482,6 +523,42 @@ def job_tracks(job_id: str, request: Request) -> PlainTextResponse:
     return PlainTextResponse(
         p.read_text(),
         headers={"Content-Disposition": f'attachment; filename="{job_id}.tracks.txt"'},
+    )
+
+
+@router.get("/jobs/{job_id}/tracks.csv")
+def job_tracks_csv(job_id: str, request: Request) -> PlainTextResponse:
+    """Per-box CSV for spreadsheets: tracked frame, video time, track id, box, score, visibility."""
+    s = svc(request)
+    res = json.loads(s.job_file(job_id, "result.json").read_text())
+    stride, fps = int(res["video"]["stride"]), float(res["video"]["fps"])
+    lines = ["frame,time_s,track_id,x,y,w,h,score,visibility"]
+    rows = sorted((int(r[0]), int(tid), r) for tid, rs in res["tracks"].items() for r in rs)
+    for f, tid, r in rows:
+        t = (f - 1) * stride / fps
+        lines.append(f"{f},{t:.3f},{tid},{r[1]},{r[2]},{r[3]},{r[4]},{r[5]},{r[6]}")
+    return PlainTextResponse(
+        "\n".join(lines) + "\n",
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{job_id}.tracks.csv"'},
+    )
+
+
+@router.get("/jobs/{job_id}/annotated.mp4")
+def job_annotated(job_id: str, request: Request) -> FileResponse:
+    """The blurred clip with this job's boxes, numbers and gate line drawn in (rendered once)."""
+    from serve.render import render_annotated
+
+    s = svc(request)
+    res_path = s.job_file(job_id, "result.json")
+    out = res_path.parent / "annotated.mp4"
+    if not out.exists():
+        res = json.loads(res_path.read_text())
+        render_annotated(s.video_path(res["clip"]["id"]), res, out)
+    return FileResponse(
+        out,
+        media_type="video/mp4",
+        headers={"Content-Disposition": f'attachment; filename="{job_id}.annotated.mp4"'},
     )
 
 

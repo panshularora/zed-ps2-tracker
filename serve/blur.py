@@ -77,6 +77,22 @@ def blur_regions(img: np.ndarray, boxes: np.ndarray) -> np.ndarray:
     return img
 
 
+def blur_frame(img: np.ndarray, model_dir: Path, *, detector: str = "yolox_tiny",
+               threads: int = 2) -> np.ndarray:  # fmt: skip
+    """Face-blur one frame with the same detectors as :func:`blur_video` (faces + head boxes)."""
+    import cv2
+
+    h, w = img.shape[:2]
+    fd = cv2.FaceDetectorYN.create(str(model_dir / YUNET[0]), "", (w, h), 0.4, 0.3, 5000)
+    det = YoloxDetector(model_path(detector, model_dir), MODELS[detector][0], 0.3, threads=threads)
+    tl, sc = det.detect(img)
+    boxes = np.concatenate([face_boxes(fd, img), head_boxes(tl, sc)]).astype(np.float32)
+    out = img.copy()
+    if len(boxes):
+        blur_regions(out, boxes)
+    return out
+
+
 def blur_video(
     src: Path,
     dst: Path,

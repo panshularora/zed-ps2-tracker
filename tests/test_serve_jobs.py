@@ -456,3 +456,90 @@ def test_neutral_crossings_and_metrics() -> None:
     empty = analysis.metrics(np.zeros((0, 8)), 10.0, 0, [], [], [])
     assert empty["tracks"] == 0
     assert empty["avg_track_length_s"] is None
+
+
+# ---------------------------------------------------------------- upload -> Studio ("Your video")
+@pytest.fixture
+def blurred_frames(monkeypatch: pytest.MonkeyPatch) -> list[int]:
+    calls: list[int] = []
+
+    def fake_blur_frame(img: np.ndarray, model_dir: Path, **kw: Any) -> np.ndarray:
+        calls.append(img.shape[0])
+        return img
+
+    monkeypatch.setattr("serve.blur.blur_frame", fake_blur_frame)
+    return calls
+
+
+def test_upload_first_frame_is_blurred_before_any_job(
+    env: dict[str, Any], blurred_frames: list[int]
+) -> None:
+    c = env["client"]
+    vid = (env["settings"].clip_dir / "walk.mp4").read_bytes()
+    up = c.post("/api/uploads", files={"file": ("gate.mp4", vid, "video/mp4")}).json()
+    assert c.get(f"/api/clips/{up['id']}/video").status_code == 409  # video still not served
+    r = c.get(f"/api/clips/{up['id']}/first-frame.jpg")
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "image/jpeg"
+    assert blurred_frames == [H]  # went through the face blur
+    img = cv2.imdecode(np.frombuffer(r.content, np.uint8), cv2.IMREAD_COLOR)
+    assert img.shape[:2] == (H, W)
+
+
+def test_user_drawn_gate_counts_crossings(env: dict[str, Any]) -> None:
+    c = env["client"]
+    vid = (env["settings"].clip_dir / "walk.mp4").read_bytes()
+    up = c.post("/api/uploads", files={"file": ("gate.mp4", vid, "video/mp4")}).json()
+    gate = [0.0, 0.45, 1.0, 0.45]
+    job = wait(c, c.post("/api/jobs", json={"clip_id": up["id"], "gate": gate}).json()["id"])
+    assert job["status"] == "succeeded", job
+    res = c.get(f"/api/jobs/{job['id']}/result").json()
+    assert res["gate"]["norm"] == gate
+    m = res["metrics"]
+    assert m["crossings_in"] + m["crossings_out"] >= 1  # both walkers cross y = 0.45 H
+    assert res["config"] == "ours/visibility_botsort"
+    assert res["tracker_info"]["reid"] is False
+    assert res["tracker_info"]["ground_truth"] is False
+
+
+def test_neutral_crossings_carry_unsure_flag() -> None:
+    # a weak (score 0.3) track crossing: neutral styling keeps it a crossing but flags it unsure
+    walk = [(f, 50.0 + 10 * f, 1.0) for f in range(1, 21)]
+    rows = rows_from({1: walk})
+    rows[:, 6] = 0.3
+    from tracker.types import FrameResult, TrackOutput
+
+    results = [
+        FrameResult(
+            int(r[0]),
+            (TrackOutput(int(r[1]), tuple(r[2:6]), float(r[6]), "confirmed", float(r[7])),),
+        )
+        for r in rows
+    ]
+    gate = Gate("g", (0.0, 150.0), (400.0, 150.0))
+    ev = analysis.gate_output(results, 10.0, gate, START, "neutral")
+    assert [e["type"] for e in ev] == ["crossing"]
+    assert ev[0]["unsure"] is True
+    assert ev[0]["reasons"] == ["low_confidence"]
+    m = analysis.metrics(rows, 10.0, 20, ev, [], [])
+    assert m["unsure_crossings"] == 1
+    assert m["crossings_in"] + m["crossings_out"] == 1
+
+
+def test_tracks_csv_and_annotated_clip(env: dict[str, Any]) -> None:
+    c = env["client"]
+    job = wait(c, c.post("/api/jobs", json={"clip_id": "walk"}).json()["id"])
+    r = c.get(f"/api/jobs/{job['id']}/tracks.csv")
+    assert r.status_code == 200
+    lines = r.text.strip().split("\n")
+    assert lines[0] == "frame,time_s,track_id,x,y,w,h,score,visibility"
+    assert len(lines) > 10
+    assert "attachment" in r.headers["content-disposition"]
+    r = c.get(f"/api/jobs/{job['id']}/annotated.mp4")
+    assert r.status_code == 200, r.text
+    out = env["tmp"] / "ann.mp4"
+    out.write_bytes(r.content)
+    cap = cv2.VideoCapture(str(out))
+    n = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    cap.release()
+    assert n == N

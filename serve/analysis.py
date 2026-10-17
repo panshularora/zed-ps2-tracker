@@ -167,10 +167,27 @@ def gate_output(
     styling: str,
     hysteresis_px: float = 10.0,
 ) -> list[dict[str, Any]]:
-    """``alert`` (consented clips): the full ZIG contract; ``neutral``: crossings only."""
+    """``alert`` (consented clips): the full ZIG contract; ``neutral``: crossings only.
+
+    Neutral crossings still say when the tracker was unsure of that track (the same rule that makes
+    an ``ambiguous_hold`` on consented footage): ``unsure`` + ``reasons``. That is a statement about
+    the tracker, not an alert about the person, so it is shown for every clip.
+    """
+    params = EventParams(hysteresis_px=hysteresis_px)
     if styling == "alert":
-        return gate_events(results, fps, gate, start, EventParams(hysteresis_px=hysteresis_px))
-    return neutral_crossings(track_rows(results), fps, gate, start, hysteresis_px)
+        return gate_events(results, fps, gate, start, params)
+    ev = neutral_crossings(track_rows(results), fps, gate, start, hysteresis_px)
+    held = {
+        (e["frame"], e["track_id"]): e["reasons"]
+        for e in gate_events(results, fps, gate, start, params)
+        if e["type"] == "ambiguous_hold"
+    }
+    for e in ev:
+        reasons = held.get((e["frame"], e["track_id"]))
+        e["unsure"] = reasons is not None
+        if reasons is not None:
+            e["reasons"] = reasons
+    return ev
 
 
 def metrics(
@@ -205,4 +222,7 @@ def metrics(
         "crossings_out": sum(e["direction"] == "out" for e in counted),
         "tailgates": sum(e["type"] == "tailgate" for e in gate_ev),
         "ambiguous_holds": sum(e["type"] == "ambiguous_hold" for e in gate_ev),
+        "unsure_crossings": sum(
+            e["type"] == "ambiguous_hold" or bool(e.get("unsure")) for e in gate_ev
+        ),
     }
