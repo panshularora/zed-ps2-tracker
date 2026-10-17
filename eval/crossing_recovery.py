@@ -136,3 +136,12 @@ def recover_crossings(
             )
         )
     return sorted(out, key=lambda x: (x.frame, x.track_id))
+
+
+def pair_score(e: RecoveredCrossing, fps: float, p: RecoveryParams) -> float:
+    """How close a pair is to a plain hand-off, in [0, 1]: 1 = the new number starts at once and
+    on the spot, 0 = at both limits. Half from the time gap, half from the distance; used only to
+    order suggestions for an operator, never to count."""
+    gap = min(1.0, (e.gap_frames / fps) / p.max_gap_s) if p.max_gap_s > 0 else 1.0
+    dist = min(1.0, e.distance_rel / p.max_dist_rel) if p.max_dist_rel > 0 else 1.0
+    return round(1.0 - 0.5 * gap - 0.5 * dist, 3)

@@ -65,7 +65,7 @@ export function useVerify(clip: string, given?: VerifyDoc | null): VerifyDoc | n
   return doc;
 }
 
-export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data: ReplayData; watch?: string; verify?: VerifyDoc | null; seek?: { f: number; n: number } | null; unchecked?: boolean }) {
+export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data: ReplayData; watch?: string; verify?: VerifyDoc | null; seek?: { f: number; n: number; leadS?: number; playS?: number } | null; unchecked?: boolean }) {
   const video = useRef<HTMLVideoElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const vdoc = useVerify(data.id, verify);
@@ -95,6 +95,7 @@ export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data:
   const clock = useRef(0);
   const prev = useRef(0);
   const holdUntil = useRef(0);
+  const stopAt = useRef(0); // seconds; >0 while playing a short window after a seek request
   const zoomK = useRef({ k: 0, at: 0, target: 0 });
   const followRef = useRef(follow); followRef.current = follow;
   const focusIds = useMemo(() => new Set([...(focus?.ids ?? []), ...moments.map((m) => m.ev.id)]), [focus, moments]);
@@ -114,7 +115,7 @@ export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data:
       const holding = now < holdUntil.current;
       let cur: number;
       if (v && src) {
-        if (playing && !holding && v.paused) v.play().catch(() => undefined);
+        if (playing && !holding && v.paused) void Promise.resolve(v.play()).catch(() => undefined);
         if ((!playing || holding) && !v.paused) v.pause();
         if (v.currentTime - off > data.duration) { v.currentTime = off; }
         cur = Math.max(0, v.currentTime - off);
@@ -123,8 +124,9 @@ export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data:
         if (clock.current > data.duration) clock.current = 0;
         cur = clock.current;
       }
+      if (stopAt.current > 0 && cur >= stopAt.current) { stopAt.current = 0; setPlaying(false); }
       // story: pause briefly on each key moment of the focus person
-      if (story && playing && !holding && cur > prev.current && cur - prev.current < 0.5) {
+      if (story && stopAt.current === 0 && playing && !holding && cur > prev.current && cur - prev.current < 0.5) {
         const i = steps.findIndex((s) => { const ts = (s.f - 1) / data.fps; return ts > prev.current && ts <= cur; });
         if (i >= 0) { holdUntil.current = now + STEP_PAUSE_MS; setStep(i); }
       }
@@ -162,15 +164,20 @@ export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data:
     return () => cancelAnimationFrame(raf);
   }, [data, src, off, playing, story, steps, tracks, focusIds, verdict]);
 
-  function seekFrame(f: number) {
-    const s = Math.max(0, (f - 1) / data.fps - 0.3);
+  function seekFrame(f: number, lead = 0.3) {
+    const s = Math.max(0, (f - 1) / data.fps - lead);
     clock.current = s; prev.current = s; holdUntil.current = 0;
     if (video.current) video.current.currentTime = s + off;
     setStep(null); setT(s);
   }
 
   useEffect(() => {
-    if (seek) { seekFrame(seek.f); setPlaying(false); }
+    if (!seek) return;
+    const lead = seek.leadS ?? 0.3;
+    seekFrame(seek.f, lead);
+    const start = Math.max(0, (seek.f - 1) / data.fps - lead);
+    if (seek.playS && seek.playS > 0) { stopAt.current = start + seek.playS; setPlaying(true); }
+    else { stopAt.current = 0; setPlaying(false); }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- seek only when a new request (n) arrives
   }, [seek?.n]);
 
@@ -197,7 +204,7 @@ export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data:
         ? `Watch ${moments.map((m) => `#${m.ev.id}`).join(" and ")}: hidden for a moment, back with the same number, and the check agrees it is the same person.`
         : watchLine(focus, steps))}</p>
       <CountBar inN={counts.in} outN={counts.out} note={hint} />
-      <div className="idp-stage" data-testid="identity-stage" style={{ aspectRatio: `${data.width} / ${data.height}` }}>
+      <div className="idp-stage" data-testid="identity-stage" data-t={t.toFixed(2)} data-playing={playing ? "1" : "0"} style={{ aspectRatio: `${data.width} / ${data.height}` }}>
         {src && <video key={src} ref={video} src={src} muted playsInline autoPlay className="idp-video" aria-label={data.title}
           onError={() => setSrcIdx((i) => i + 1)} onLoadedMetadata={(e) => { if (!(e.currentTarget.duration > 0)) setSrcIdx((i) => i + 1); }} />}
         <canvas ref={canvas} className="idp-canvas" onClick={onClick} aria-label={`${data.title}: ${data.runs.ours.label}. Click a person to follow.`} />

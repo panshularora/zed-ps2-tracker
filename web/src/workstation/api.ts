@@ -1,6 +1,6 @@
 import { loadClipGz, parseClip, type IndexedClip } from "@viewer/data";
 
-export type Screen = "watch" | "compare" | "evidence" | "try";
+export type Screen = "watch" | "compare" | "evidence" | "try" | "lab";
 
 export interface ClipRef {
   file: string;

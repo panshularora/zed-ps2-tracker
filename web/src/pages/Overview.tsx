@@ -81,6 +81,9 @@ export function OverviewView({ data }: { data: OverviewData | null }) {
         <Link to="/dashboard/scenarios" className="btn">
           Scenarios
         </Link>
+        <Link to="/dashboard/studio/your-video" className="btn" data-testid="overview-your-video">
+          Try your own video
+        </Link>
         <Link to="/dashboard/results#stress-map" className="btn" data-testid="overview-stress-map">
           Stress Map: when does each tracker lose an ID?
         </Link>

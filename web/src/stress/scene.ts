@@ -189,3 +189,18 @@ export function lostLine(d: SceneData, pane: PaneKey, focus: number | null, at: 
   }
   return `${name} lost ${n} crossing${n === 1 ? "" : "s"} across the scene${where}${tail}`;
 }
+
+/** People other than `focus` whose figure overlaps the crop at frame f. */
+export function othersInView(d: Pick<SceneData, "truth">, f: number, crop: { x: number; y: number; w: number; h: number }, focus: number): number {
+  const t = d.truth[f - 1];
+  if (!t) return 0;
+  return t.p.filter(([pid, x, y]) => {
+    if (pid === focus) return false;
+    const h = personHeight(y), w = h * 0.4;
+    return x + w / 2 >= crop.x && x - w / 2 <= crop.x + crop.w && y >= crop.y && y - h <= crop.y + crop.h;
+  }).length;
+}
+
+/** Caption under the paused cell replay, so the sentence matches what is drawn. */
+export const pausedNote = (focus: number, others: number) =>
+  others === 0 ? `Paused: person ${focus} ringed; nobody else is in this view.` : `Paused: person ${focus} ringed; the other ${others} ${others === 1 ? "person in view is" : "people in view are"} dimmed.`;

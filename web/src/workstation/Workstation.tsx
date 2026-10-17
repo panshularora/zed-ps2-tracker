@@ -1,5 +1,6 @@
 // Panshul's MOT research workstation (was dashboard/, branch feat/dashboard-workstation), mounted in
-// the web app under /dashboard/{studio,compare,evidence,experiments}. Routing moved from the
+// the web app under /dashboard/{studio,compare,evidence,experiments}; Studio step 4 (your video) is
+// /dashboard/studio/your-video. Routing moved from the
 // #/hash router to react-router; screens, journey/story and identity overlays are his.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -10,6 +11,7 @@ import { Analytics } from "./screens/Analytics";
 import { Experiments } from "./screens/Experiments";
 import { GuidedStudio } from "./screens/GuidedStudio";
 import { Studio } from "./screens/Studio";
+import { YourVideoScreen } from "./screens/YourVideoScreen";
 import { Header } from "./components/Header";
 import { FAILURE } from "./lib/journey";
 import "./workstation.css";
@@ -26,7 +28,8 @@ export const SCREEN_PATH: Record<Screen, string> = {
   watch: "/dashboard/studio",
   compare: "/dashboard/compare",
   evidence: "/dashboard/evidence",
-  try: "/dashboard/experiments",
+  try: "/dashboard/studio/your-video",
+  lab: "/dashboard/experiments",
 };
 
 export function storyJump(screen: Screen, extra?: Jump): Jump {
@@ -116,7 +119,8 @@ export default function Workstation({ screen }: { screen: Screen }) {
           />
         )}
         {screen === "evidence" && <Analytics clips={clips} onInspect={(j) => go("compare", j)} />}
-        {screen === "try" && (
+        {screen === "try" && <YourVideoScreen />}
+        {screen === "lab" && (
           <Experiments
             refs={refs}
             clips={clips}

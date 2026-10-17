@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AMBER, BLUE } from "./model";
 import {
-  PANE_ORDER, cropAt, cropFollow, cropWalkingArea, latestChange, lostLine, wholeSceneText, personHeight, verdict, whyQuestion,
+  PANE_ORDER, othersInView, pausedNote, cropAt, cropFollow, cropWalkingArea, latestChange, lostLine, wholeSceneText, personHeight, verdict, whyQuestion,
   type Crop, type PaneKey, type SceneData, type Verdict,
 } from "./scene";
 
@@ -66,7 +66,10 @@ function chip(ctx: CanvasRenderingContext2D, x: number, y: number, text: string,
   ctx.fillText(text, x, y - hh / 2 + 0.5 * r);
 }
 
-function drawPane(c: HTMLCanvasElement, d: SceneData, pane: PaneKey, f: number, focus: number | null, crop: Crop) {
+/** Alpha for people other than the focus while the cell replay is paused (they stay visible). */
+export const DIM_ALPHA = 0.35;
+
+function drawPane(c: HTMLCanvasElement, d: SceneData, pane: PaneKey, f: number, focus: number | null, crop: Crop, dim = false) {
   const ctx = c.getContext("2d");
   if (!ctx) return;
   const k = c.width / crop.w; // canvas px per scene px
@@ -96,7 +99,8 @@ function drawPane(c: HTMLCanvasElement, d: SceneData, pane: PaneKey, f: number, 
     items.push({ y: py + ph, draw: () => { ctx.fillStyle = "#262B33"; ctx.fillRect(px, py, pw, ph); ctx.strokeStyle = "#3A414C"; ctx.lineWidth = r / k; ctx.strokeRect(px, py, pw, ph); } });
   for (const [pid, x, y, vis] of t?.p ?? []) {
     const hidden = t.hidden.includes(pid);
-    items.push({ y, draw: () => drawFigure(ctx, x, y, hidden, vis, f * 0.25 + pid, r / k) });
+    const a = dim && pid !== focus ? DIM_ALPHA : 1;
+    items.push({ y, draw: () => { ctx.globalAlpha = a; drawFigure(ctx, x, y, hidden, vis, f * 0.25 + pid, r / k); ctx.globalAlpha = 1; } });
   }
   items.sort((a, b) => a.y - b.y).forEach((it) => it.draw());
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -113,7 +117,9 @@ function drawPane(c: HTMLCanvasElement, d: SceneData, pane: PaneKey, f: number, 
   const recent = new Set(d.panes[pane].events.filter((e) => e.frame <= f && e.frame > f - 1.5 * d.fps).map((e) => e.to));
   for (const [tid, pid, x, y] of tracks) {
     if (focus != null && pid === focus) ring(x, y, false);
+    ctx.globalAlpha = dim && pid !== focus ? DIM_ALPHA : 1;
     chip(ctx, sx(x), sy(y - personHeight(y)) - 4 * r, `#${tid}`, recent.has(tid) ? AMBER : PANE_COLOUR[pane], r);
+    ctx.globalAlpha = 1;
   }
   if (focus != null && t) {
     const p = t.p.find((q) => q[0] === focus);
@@ -145,8 +151,10 @@ export function ScenePlayer({ data, startFrame = 1, focus = null, view = "full",
   useEffect(() => { onFrame?.(f); }, [f, onFrame]);
   const fixed = useMemo(() => (view === "walking" ? cropWalkingArea(data) : view === "pause" ? cropAt(data, focus, startFrame, 1.5) : null), [view, data, focus, startFrame]);
   const crop: Crop = fixed ?? (view === "follow" ? cropFollow(data, focus, f, 2) : { x: 0, y: 0, w: data.width, h: data.height });
+  const dim = view === "pause" && !playing && focus != null;
+  const pauseNote = dim ? pausedNote(focus!, othersInView(data, f, crop, focus!)) : null;
   useEffect(() => {
-    for (const k of PANE_ORDER) if (refs[k].current) drawPane(refs[k].current!, data, k, f, focus, crop);
+    for (const k of PANE_ORDER) if (refs[k].current) drawPane(refs[k].current!, data, k, f, focus, crop, dim);
   });
   useEffect(() => {
     if (!playing) return;
@@ -174,7 +182,8 @@ export function ScenePlayer({ data, startFrame = 1, focus = null, view = "full",
     if (best) onPersonClick(best[0]);
   }
   return (
-    <div className="scene-player" data-testid="scene-player" data-frame={f} data-crop={`${Math.round(crop.x)},${Math.round(crop.y)},${Math.round(crop.w)},${Math.round(crop.h)}`}>
+    <div className="scene-player" data-testid="scene-player" data-frame={f} data-crop={`${Math.round(crop.x)},${Math.round(crop.y)},${Math.round(crop.w)},${Math.round(crop.h)}`} data-dim={dim ? "1" : "0"}>
+      {pauseNote && <p className="pause-note" data-testid="pause-note">{pauseNote}</p>}
       <div className="scene-panes">
         {PANE_ORDER.map((k) => {
           const v = verdicts[k];

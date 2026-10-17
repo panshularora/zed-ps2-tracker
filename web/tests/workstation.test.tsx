@@ -140,12 +140,24 @@ describe("workstation screens (was test_journey.mjs)", () => {
     expect(screen.getByTestId("method").textContent).toContain("Delayed assignment");
     expect(screen.getByTestId("papers")).toBeTruthy();
   });
-  it("step 4 is 'Your video': real upload panel first, old overlay tools under Advanced", async () => {
-    mount("/dashboard/experiments");
+  it("step 4 is 'Your video' in the Studio: upload panel only, no config or eval internals", async () => {
+    mount("/dashboard/studio/your-video");
     await screen.findByText("Step 4 · Your video", undefined, { timeout: 5000 });
     expect(screen.getByTestId("your-video")).toBeTruthy();
+    expect(screen.queryByText(/Lab notes/)).toBeNull();
+    expect(screen.queryByText(/Active config/)).toBeNull();
+    expect(screen.queryByText(/Eval log/)).toBeNull();
+    expect(screen.queryByText(/Advanced: play a video under the saved demo boxes/)).toBeNull();
+  });
+  it("Experiments keeps the research tools and links to Studio step 4", async () => {
+    mount("/dashboard/experiments");
+    expect((await screen.findByTestId("try-your-video-link")).getAttribute("href")).toBe("/dashboard/studio/your-video");
+    expect(screen.queryByTestId("your-video")).toBeNull();
     expect(screen.getByText(/Advanced: play a video under the saved demo boxes/)).toBeTruthy();
-    expect(screen.queryByText(/does not\s+find people in a new recording/)).toBeNull();
+  });
+  it("Studio links to 'Try your own video'", async () => {
+    mount("/dashboard/studio");
+    expect((await screen.findByTestId("studio-your-video")).getAttribute("href")).toBe("/dashboard/studio/your-video");
   });
   it("step header navigates between screens (was test_sidebar.mjs)", async () => {
     mount("/dashboard/studio");

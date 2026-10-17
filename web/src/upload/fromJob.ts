@@ -99,22 +99,70 @@ export function gateFromClicks(a: [number, number], b: [number, number], w: numb
 
 export type Decision = "confirmed" | "dismissed";
 export type Decisions = Record<string, Decision>;
-export interface Suggestion { key: string; f: number; t: number; from: number; to: number; dir: "in" | "out"; text: string }
+export type XYWH = [number, number, number, number];
+export interface Suggestion {
+  key: string; f: number; t: number; from: number; to: number; dir: "in" | "out"; text: string;
+  /** pairing score from the service (1 = immediate, on-the-spot hand-off), null on old jobs */
+  score: number | null;
+  /** last box of the number that ended, first box of the new one (with their frames) */
+  fromBox: { f: number; box: XYWH } | null;
+  toBox: { f: number; box: XYWH } | null;
+}
 
 type RecEv = Extract<JobEvent, { type: "recovered_crossing" }>;
 
 /** mm:ss of a time in seconds. */
 export const mmss = (t: number) => `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
 
-export function suggestions(r: Pick<JobResult, "events" | "video">): Suggestion[] {
+/** First or last box of a track: { tracked frame, [x, y, w, h] }. */
+export function trackEnd(r: Pick<JobResult, "tracks">, id: number, which: "first" | "last"): { f: number; box: XYWH } | null {
+  const rows = r.tracks[String(id)];
+  if (!rows?.length) return null;
+  const row = which === "first" ? rows.reduce((a, b) => (b[0] < a[0] ? b : a)) : rows.reduce((a, b) => (b[0] > a[0] ? b : a));
+  return { f: row[0], box: [row[1], row[2], row[3], row[4]] };
+}
+
+/** Box of a track at a tracked frame (nearest row), for an unsure crossing's crop. */
+export function boxAt(r: Pick<JobResult, "tracks">, id: number, f: number): XYWH | null {
+  const rows = r.tracks[String(id)];
+  if (!rows?.length) return null;
+  const row = rows.reduce((a, b) => (Math.abs(b[0] - f) < Math.abs(a[0] - f) ? b : a));
+  return [row[1], row[2], row[3], row[4]];
+}
+
+export const frameTime = (r: Pick<JobResult, "video">, f: number) => ((f - 1) * r.video.stride) / r.video.fps;
+
+export function suggestions(r: Pick<JobResult, "events" | "video" | "tracks">): Suggestion[] {
   return r.events
     .filter((e): e is RecEv => e.kind === "gate" && e.type === "recovered_crossing")
     .map((e) => {
-      const t = ((e.frame - 1) * r.video.stride) / r.video.fps;
-      return { key: `${e.frame}:${e.from_track_id}:${e.track_id}`, f: e.frame, t, from: e.from_track_id, to: e.track_id, dir: e.direction, text: `Possible missed crossing at ${mmss(t)} · #${e.from_track_id} → #${e.track_id}` };
+      const t = frameTime(r, e.frame);
+      return {
+        key: `${e.frame}:${e.from_track_id}:${e.track_id}`, f: e.frame, t, from: e.from_track_id, to: e.track_id, dir: e.direction,
+        text: `Possible missed crossing at ${mmss(t)} · #${e.from_track_id} → #${e.track_id}`,
+        score: typeof e.pair_score === "number" ? e.pair_score : null,
+        fromBox: trackEnd(r, e.from_track_id, "last"),
+        toBox: trackEnd(r, e.track_id, "first"),
+      };
     })
     .sort((a, b) => a.f - b.f);
 }
+
+/** Highest pairing score first (ties and old jobs without a score: earlier first). */
+export const rankSuggestions = (s: Suggestion[]) => [...s].sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || a.f - b.f);
+
+/** Crop around a box (with a margin), clamped to the frame. */
+export function cropRect(box: XYWH, w: number, h: number, pad = 0.15): XYWH {
+  const px = box[2] * pad, py = box[3] * pad;
+  const x0 = Math.max(0, box[0] - px), y0 = Math.max(0, box[1] - py);
+  const x1 = Math.min(w, box[0] + box[2] + px), y1 = Math.min(h, box[1] + box[3] + py);
+  return [x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0)];
+}
+
+/** Player request for a row: start lead s before the crossing; play play s (0 = stay paused). */
+export interface SeekReq { f: number; n: number; leadS?: number; playS?: number }
+export const rowSeek = (f: number, n: number): SeekReq => ({ f, n, leadS: 1, playS: 2 });
+export const timeSeek = (f: number, n: number): SeekReq => ({ f, n, leadS: 1, playS: 0 });
 
 /** Suggestions still on screen: dismissed ones disappear. */
 export const visibleSuggestions = (s: Suggestion[], d: Decisions) => s.filter((x) => d[x.key] !== "dismissed");
@@ -128,17 +176,17 @@ export function adjustedCounts(plain: { in: number; out: number }, s: Suggestion
 const csvCell = (v: string | number) => (/[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
 
 /** Crossings CSV: every plain crossing and every suggestion, with the operator's decision. */
-export function crossingsCsv(r: Pick<JobResult, "events" | "video">, d: Decisions): string {
-  const head = ["frame", "time_s", "time", "kind", "track_id", "from_track_id", "direction", "operator_decision", "in_plain_count", "in_operator_adjusted_count"];
+export function crossingsCsv(r: Pick<JobResult, "events" | "video" | "tracks">, d: Decisions): string {
+  const head = ["frame", "time_s", "time", "kind", "track_id", "from_track_id", "direction", "operator_decision", "in_plain_count", "in_operator_adjusted_count", "pair_score"];
   const rows: (string | number)[][] = [];
   for (const e of r.events) {
     if (e.kind !== "gate" || (e.type !== "crossing" && e.type !== "ambiguous_hold")) continue;
     const t = ((e.frame - 1) * r.video.stride) / r.video.fps;
-    rows.push([e.frame, t.toFixed(2), mmss(t), e.type, e.track_id, "", e.direction, "", "yes", "yes"]);
+    rows.push([e.frame, t.toFixed(2), mmss(t), e.type, e.track_id, "", e.direction, "", "yes", "yes", ""]);
   }
   for (const s of suggestions(r)) {
     const dec = d[s.key] ?? "pending";
-    rows.push([s.f, s.t.toFixed(2), mmss(s.t), "possible_missed_crossing", s.to, s.from, s.dir, dec, "no", dec === "confirmed" ? "yes" : "no"]);
+    rows.push([s.f, s.t.toFixed(2), mmss(s.t), "possible_missed_crossing", s.to, s.from, s.dir, dec, "no", dec === "confirmed" ? "yes" : "no", s.score ?? ""]);
   }
   rows.sort((a, b) => Number(a[0]) - Number(b[0]));
   return [head, ...rows].map((r) => r.map(csvCell).join(",")).join("\n") + "\n";

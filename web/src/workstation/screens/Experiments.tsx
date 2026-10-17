@@ -17,7 +17,7 @@ import {
   type TrackResponse,
 } from "../api";
 import { ms, num, pct } from "../format";
-import { YourVideo } from "./YourVideo";
+import { Link } from "react-router-dom";
 
 interface Props {
   refs: ClipRef[];
@@ -110,19 +110,11 @@ export function Experiments({ refs, picked, onPicked, onOpenStudio, onClip }: Pr
 
   return (
     <div className="h-full overflow-y-auto p-4 space-y-4">
-      <header className="max-w-3xl space-y-1">
-        <div className="font-display uppercase tracking-[0.18em] text-[11px] text-signal">
-          Step 4 · Your video
-        </div>
-        <h1 className="font-display text-[26px] leading-none text-ink font-semibold">Your video</h1>
-        <p className="text-[13px] text-mute">
-          Upload a short clip, draw your gate on its first frame, and our tracker (BoT-SORT +
-          visibility) runs on it here on the CPU. You get the same player as the Studio: boxes and
-          numbers, IN/OUT at your line, a timeline per number, and the moments the tracker was
-          unsure. Your clip has no ground truth, so we show counts, IDs and events, never a score.
-        </p>
-      </header>
-      <YourVideo />
+      <div className="max-w-3xl rounded-sm border border-line bg-paper p-3 text-[13px]" data-testid="your-video-moved">
+        Uploading your own clip lives in the Studio now:{" "}
+        <Link to="/dashboard/studio/your-video" className="text-signal font-semibold" data-testid="try-your-video-link">Try your own video (Studio step 4)</Link>.
+        This page keeps the research tools.
+      </div>
       <details className="bg-raised border border-line rounded-sm p-4">
         <summary className="cursor-pointer text-[12px] text-mute">Advanced: play a video under the saved demo boxes, or run a Stage A detection cache</summary>
       <section className="space-y-3 mt-3">

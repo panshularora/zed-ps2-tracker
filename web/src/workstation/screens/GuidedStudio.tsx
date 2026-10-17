@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import type { IndexedClip } from "@viewer/data";
 import { IdentityPlayer } from "../../identity/IdentityPlayer";
 import { ScenarioIntro, orderScenarios } from "../../pages/Scenarios";
@@ -33,6 +34,7 @@ export function GuidedStudio({ clips, onNext }: { clips: IndexedClip[]; onNext: 
     <div className="h-full overflow-auto p-4" data-testid="guided-studio">
       <div className="flex flex-wrap items-center gap-3 mb-3">
         <h2 className="text-[16px] font-semibold text-ink m-0">Our tracker: one person, one number</h2>
+        <Link to="/dashboard/studio/your-video" className="text-[13px] text-signal font-semibold" data-testid="studio-your-video">Try your own video →</Link>
         <label className="flex items-center gap-2 text-[13px] text-mute">
           Clip
           <select value={sel} onChange={(e) => setSel(e.target.value)} className="bg-raised border border-line rounded-sm px-2 py-1 text-ink" data-testid="studio-clip">

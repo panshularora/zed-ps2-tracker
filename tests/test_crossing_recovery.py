@@ -106,3 +106,15 @@ def test_recovered_events_are_json_serialisable() -> None:
     assert ev
     json.dumps([asdict(e) for e in ev])  # numpy ints here once broke upload jobs
     assert all(type(e.track_id) is int and type(e.from_track_id) is int for e in ev)
+
+
+def test_pair_score_orders_closer_pairs_first() -> None:
+    from eval.crossing_recovery import RecoveredCrossing, pair_score
+
+    p = RecoveryParams(max_gap_s=4.0, max_dist_rel=2.0, near_rel=3.0)
+    near = RecoveredCrossing(10, 2, 1, "g", "in", gap_frames=3, distance_rel=0.1)
+    far = RecoveredCrossing(10, 4, 3, "g", "in", gap_frames=110, distance_rel=1.9)
+    assert pair_score(near, 30.0, p) > pair_score(far, 30.0, p)
+    edge = RecoveredCrossing(10, 4, 3, "g", "in", gap_frames=120, distance_rel=2.0)
+    assert pair_score(edge, 30.0, p) == 0.0
+    assert 0.0 <= pair_score(near, 30.0, p) <= 1.0

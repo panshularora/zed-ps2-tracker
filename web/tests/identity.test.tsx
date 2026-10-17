@@ -81,6 +81,17 @@ describe("identity story", () => {
     const far = placeChips([{ id: 1, box: [0, 0, 50, 100], text: "#1", w: 30, h: 20 }, { id: 2, box: [500, 0, 50, 100], text: "#2", w: 30, h: 20 }]);
     expect(far.every((x) => !x.below)).toBe(true);
   });
+  it("timeline: past 12 people, a 'Show all people' toggle instead of a cutoff line", () => {
+    const many = Array.from({ length: 34 }, (_, k) => ({ ...people(replay()).people[0], key: 100 + k, f0: k }));
+    render(<PersonTimeline people={many} frames={40} f={5} focus={100} onSeek={() => {}} />);
+    expect(screen.getAllByTestId("ptl-row")).toHaveLength(12);
+    const tog = screen.getByTestId("ptl-show-all");
+    expect(tog.textContent).toBe("Show all people (22 more)");
+    expect(document.body.textContent).not.toMatch(/not drawn/);
+    fireEvent.click(tog);
+    expect(screen.getAllByTestId("ptl-row")).toHaveLength(34);
+    expect(tog.textContent).toBe("Show the first 12 only");
+  });
   it("timeline: one bar per person, dashed hidden, change tag, seek on click", () => {
     const onSeek = vi.fn();
     render(<PersonTimeline people={people(replay()).people} frames={20} f={5} focus={4} onSeek={onSeek} />);

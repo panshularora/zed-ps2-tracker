@@ -26,7 +26,7 @@ from typing import Any
 
 import numpy as np
 
-from eval.crossing_recovery import RecoveryParams, recover_crossings
+from eval.crossing_recovery import RecoveryParams, pair_score, recover_crossings
 from eval.gate_events import Gate, crossings
 from serve.events import EventParams, gate_events, track_rows
 from tracker.types import FrameResult
@@ -199,6 +199,9 @@ def gate_output(
             "gate": e.gate,
             "recovered": True,
             "unsure": False,
+            "gap_s": round(e.gap_frames / fps, 2),
+            "distance_rel": e.distance_rel,
+            "pair_score": pair_score(e, fps, recovery),
         }
         for e in recover_crossings(track_rows(results), gate, hysteresis_px, fps, recovery)
     ]

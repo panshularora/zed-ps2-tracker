@@ -71,7 +71,8 @@ export default function App() {
           <Route path="/dashboard/studio" element={<Workstation screen="watch" />} />
           <Route path="/dashboard/compare" element={<Workstation screen="compare" />} />
           <Route path="/dashboard/evidence" element={<Workstation screen="evidence" />} />
-          <Route path="/dashboard/experiments" element={<Workstation screen="try" />} />
+          <Route path="/dashboard/studio/your-video" element={<Workstation screen="try" />} />
+          <Route path="/dashboard/experiments" element={<Workstation screen="lab" />} />
           <Route path="/dashboard/demo" element={<Navigate to="/dashboard/scenarios" replace />} />
           <Route path="/dashboard/results" element={<Results />} />
           <Route path="/dashboard/architecture" element={<Architecture />} />

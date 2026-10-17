@@ -59,7 +59,7 @@ describe("Studio step 4 · Your video", () => {
     expect(JSON.parse(String(create?.init?.body))).toEqual({ clip_id: "upload-x1", gate: [0, 0.5, 1, 0.5] });
     expect(screen.getByTestId("no-gt-label").textContent).toBe("Your clip · no ground truth");
     expect(screen.getByTestId("reid-off-label").textContent).toMatch(/re-identification off on CPU/i);
-    expect(screen.getByTestId("upload-counts").textContent).toContain("IN 1");
+    expect(screen.getByTestId("upload-counts-in").textContent).toBe("1");
     expect(screen.getByTestId("upload-counts").textContent).not.toMatch(/kept|accuracy|IDF1|HOTA/i);
     expect(screen.getAllByTestId("unsure-item")).toHaveLength(1);
     expect(screen.getByTestId("timeline-summary").textContent).toMatch(/track numbers? on screen · no ground truth/);

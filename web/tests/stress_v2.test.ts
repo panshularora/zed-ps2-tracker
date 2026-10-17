@@ -98,3 +98,15 @@ describe("make it harder strip and flag", () => {
     expect(settingsRow(DEFAULT_SPEC)).toBe("Seed 7 · person 1 hidden 1.5 s at the gate · 1 pillar · 1 group · 0 passers-by · ours on default settings");
   });
 });
+
+describe("cell replay paused frame: other people dimmed, caption says so", () => {
+  it("counts people other than the focus inside the crop", async () => {
+    const { othersInView, pausedNote } = await import("../src/stress/scene");
+    const d = { truth: [{ p: [[1, 100, 300, 1], [2, 120, 300, 1], [3, 900, 300, 1]], hidden: [] }] } as never;
+    expect(othersInView(d, 1, { x: 0, y: 100, w: 300, h: 300 }, 1)).toBe(1);
+    expect(othersInView(d, 1, { x: 0, y: 100, w: 960, h: 300 }, 1)).toBe(2);
+    expect(pausedNote(1, 1)).toBe("Paused: person 1 ringed; the other 1 person in view is dimmed.");
+    expect(pausedNote(4, 3)).toBe("Paused: person 4 ringed; the other 3 people in view are dimmed.");
+    expect(pausedNote(4, 0)).toBe("Paused: person 4 ringed; nobody else is in this view.");
+  });
+});

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { neutralColor } from "../lib/scenarios";
 import type { Person } from "./story";
 import { summaryText } from "./story";
@@ -13,7 +14,9 @@ export function uncheckedSummary(ps: Person[]): string {
 }
 
 export function PersonTimeline({ people, frames, f, focus, onSeek, unchecked }: { people: Person[]; frames: number; f: number; focus: number | null; onSeek: (frame: number) => void; unchecked?: boolean }) {
-  const rows = [...people].sort((a, b) => (a.key === focus ? -1 : b.key === focus ? 1 : a.f0 - b.f0)).slice(0, MAX_ROWS);
+  const [all, setAll] = useState(false);
+  const sorted = [...people].sort((a, b) => (a.key === focus ? -1 : b.key === focus ? 1 : a.f0 - b.f0));
+  const rows = all ? sorted : sorted.slice(0, MAX_ROWS);
   const pct = (x: number) => `${(((x - 1) / Math.max(1, frames - 1)) * 100).toFixed(3)}%`;
   const width = (a: number, b: number) => `${(((b - a + 1) / Math.max(1, frames)) * 100).toFixed(3)}%`;
   const seekAt = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -51,7 +54,11 @@ export function PersonTimeline({ people, frames, f, focus, onSeek, unchecked }: 
         ))}
         <div className="ptl-head" style={{ left: `calc(40px + (100% - 40px) * ${((f - 1) / Math.max(1, frames - 1)).toFixed(4)})` }} aria-hidden data-testid="ptl-playhead" />
       </div>
-      {people.length > rows.length && <div className="ptl-more muted">{people.length - rows.length} more {unchecked ? "numbers" : "people"} not drawn (summary counts everyone).</div>}
+      {people.length > MAX_ROWS && (
+        <button type="button" className="ptl-more chip-btn" onClick={() => setAll((x) => !x)} aria-expanded={all} data-testid="ptl-show-all">
+          {all ? `Show the first ${MAX_ROWS} only` : `Show all people (${people.length - MAX_ROWS} more)`}
+        </button>
+      )}
     </section>
   );
 }
