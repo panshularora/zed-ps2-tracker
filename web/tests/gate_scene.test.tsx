@@ -5,7 +5,7 @@ import GateScene from "../src/pages/GateScene";
 
 const pane = (events: [number, number, number, number, number][] = [], counted = 0) => ({ ids: [[1, 4]] as [number, number][], extra: [], held: [] as [number, number, number][], events, counted, id_changes: events.length });
 const frame = (f: number, ev: [number, number, number, number, number][] = []): SimFrame => ({ type: "frame", f, people: [[1, 10, 10, 1]], dets: [], true_count: 1, beat: null, focus: null, bytetrack: pane(ev, 2), ours: pane() });
-const meta = { type: "meta", width: 800, height: 450, gate: [[0, 225], [800, 225]], fps: 30, params: { seed: 7, play: "keep" }, trackers: { bytetrack: { label: "ByteTrack", config: "c" }, ours: { label: "Ours · one body, one number", config: "keep_id" } }, max_people: 40, play: "keep" };
+const meta = { type: "meta", width: 800, height: 450, gate: [[0, 225], [800, 225]], fps: 30, params: { seed: 7, play: "keep" }, trackers: { bytetrack: { label: "ByteTrack", config: "c" }, ours: { label: "Ours · BoT-SORT + visibility", config: "configs/ours/visibility_botsort.yaml" } }, max_people: 40, play: "keep" };
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -63,7 +63,7 @@ describe("gate scene page", () => {
     expect(screen.getByTestId("play-keep").textContent).toMatch(/one body, one number/i);
     expect(screen.getByTestId("how-id-kept").textContent).toContain("HELD #N");
     expect(screen.getByTestId("how-id-kept").textContent).toContain("NEW #M was #N");
-    expect(screen.getByText(/Ours · one body, one number/)).toBeTruthy();
+    expect(screen.getByText(/Ours · BoT-SORT \+ visibility/)).toBeTruthy();
   });
   it("falls back to the recorded run when the backend is offline", async () => {
     const body = [meta, frame(1)].map((x) => JSON.stringify(x)).join("\n") + "\n";

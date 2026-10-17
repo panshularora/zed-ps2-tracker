@@ -58,7 +58,7 @@ export function beatCopy(beat: Beat, pid: number): { tag: string; body: string }
   }
   return {
     tag: `Look here · person ${pid} came back`,
-    body: "Same body. Ours should still say ID with the first number. ByteTrack often says NEW with a different number.",
+    body: "Same body. ID with the first number = kept; NEW with a different number = the tracker forgot them.",
   };
 }
 

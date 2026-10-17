@@ -48,7 +48,7 @@ export function GuidedStudio({ clips, onNext }: { clips: IndexedClip[]; onNext: 
       {data && <div className="mb-2"><ScenarioIntro id={bench ? bench.name : data.id} /></div>}
       {data ? <IdentityPlayer key={data.id} data={data} /> : <p className="text-mute">Loading clip…</p>}
       {data && data.kind === "illustrative" && (
-        <p className="credit">Illustrative only: Keep-ID on this Pexels clip (one body, one number through a hide). No ground truth, not a measured score. Goal we measure against: one body, one number, from approach to exit.</p>
+        <p className="credit">Illustrative only: our tracker (BoT-SORT + visibility) exactly as it ran on this Pexels clip; numbers are not relabelled. No ground truth, not a measured score. Goal we measure against: one body, one number, from approach to exit.</p>
       )}
     </div>
   );

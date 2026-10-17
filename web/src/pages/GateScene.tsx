@@ -1,4 +1,4 @@
-// Live gate scene: synthetic people, fake detector, ByteTrack vs Keep-ID (one body, one number).
+// Live gate scene: synthetic people, fake detector, ByteTrack vs ours (BoT-SORT + visibility), the real trackers.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { layoutChips } from "../compare/model";
 import { differences, paneStats, type Diff } from "../compare/gateDiff";
@@ -363,7 +363,7 @@ export default function GateScene() {
         <span className="tag" data-testid="synthetic-tag">Synthetic scene · exact ground truth</span>
         <span className="muted gs-sub">
           {source === "recorded" ? `Backend offline: replaying a recorded run (seed ${DEFAULTS.seed}, ${RECORDED_SECONDS} s). Live trackers need make serve.`
-            : "Two people walk to the gate. One goes behind the other. The box disappears. Ours must keep the same number; ByteTrack mints a new one."}
+            : "Two people walk to the gate. One goes behind the other. The box disappears. Watch whether each tracker gives them the same number when they come out."}
         </span>
       </div>
       <div className="gs-modes" role="tablist" aria-label="Scene">
@@ -373,7 +373,7 @@ export default function GateScene() {
       <ol className="gs-steps" data-testid="how-id-kept">
         <li><b>ID #N (green).</b> In view, first number still on them. Shirt and chip match.</li>
         <li><b>HELD #N (amber).</b> Dashed body plus an amber box: they are behind someone, the detector has no box, the tracker is still remembering N.</li>
-        <li><b>NEW #M was #N (red).</b> They came back and the tracker minted a new identity. Ours must not do this.</li>
+        <li><b>NEW #M was #N (red).</b> They came back and the tracker minted a new identity. This is the failure we measure.</li>
       </ol>
       {copy && (
         <div className="gs-why" data-testid="gs-why">
@@ -413,8 +413,8 @@ export default function GateScene() {
           return (
             <figure key={p} className="gs-pane" data-testid={`scene-${p}`}>
               <figcaption className="cmp-head">
-                <b className={p === "ours" ? "ours" : "base"}>{meta?.trackers[p].label ?? (p === "ours" ? "Ours · one body, one number" : "ByteTrack")}</b>
-                <span className="muted">{p === "ours" ? "Keep-ID · rebind the lost box" : "baseline · 30-frame buffer"}</span>
+                <b className={p === "ours" ? "ours" : "base"}>{meta?.trackers[p].label ?? (p === "ours" ? "Ours · BoT-SORT + visibility" : "ByteTrack")}</b>
+                <span className="muted">{p === "ours" ? "BoT-SORT + visibility · longer memory when hidden" : "baseline · 30-frame buffer"}</span>
               </figcaption>
               <div className="gs-stage">
                 <canvas ref={cv[p]} aria-label={`Gate scene, ${p}`} />

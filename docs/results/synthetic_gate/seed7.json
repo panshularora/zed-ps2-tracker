@@ -20,7 +20,7 @@
    "config": "configs/baselines/botsort.yaml"
   },
   "ours": {
-   "label": "BoT-SORT + vis-gating",
+   "label": "Ours \u00b7 BoT-SORT + visibility",
    "config": "configs/ours/visibility_botsort.yaml"
   }
  },

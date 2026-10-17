@@ -17,8 +17,7 @@ const TRACKERS = [
   ["ByteTrack", "Baseline. Links boxes by overlap from frame to frame. After a hide it often hands out a new number."],
   ["BoT-SORT", "ByteTrack plus camera-motion correction and a Kalman filter. Headline comparison tracker."],
   ["OC-SORT / Hybrid-SORT / Deep OC-SORT", "Other published baselines we re-ran on the same detections."],
-  ["Keep-ID (gate scene)", "Demo tracker: hold the same number while the box is gone, then rebind it when they step out. ByteTrack mints a new one."],
-  ["BoT-SORT + visibility", "Tried on MOT17. It is not the keep-ID contract — the gate scene uses Keep-ID vs ByteTrack."],
+  ["Ours: BoT-SORT + visibility", "One tracker everywhere (gate scene, clips, MOT17): a person whose box is estimated as hidden is remembered 3× longer before their number is retired."],
   ["Delayed assignment", "Wait extra frames before committing an ID. Measured and left off: documented no-go."],
 ];
 

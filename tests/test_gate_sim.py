@@ -110,27 +110,29 @@ def test_committed_recording_matches_backend():
     assert rec[-1] == list(simulate(p))[-1]
 
 
-def test_keep_play_ours_holds_id_bytetrack_switches():
+def test_keep_play_runs_the_real_ours_tracker_no_relabel():
+    """The scripted two-person hide runs BoT-SORT + visibility, not a display relabeller.
+
+    Honest outcome on seed 7 (recorded, not tuned for): ByteTrack mints a new number after the
+    1.5 s hide; ours does too, because the hidden person's last box was still >= 0.7 visible, so the
+    visibility rule did not extend its 30-frame buffer.
+    """
     xs = frames(SimParams(play="keep", seed=7, occlusion_s=1.5, noise=0.15, speed=1.0))
     meta, end = xs[0], xs[-1]
     assert meta["play"] == "keep"
-    assert meta["trackers"]["ours"]["config"] == "keep_id"
-    assert end["summary"]["ours"]["id_changes"] == 0
+    assert meta["trackers"]["ours"]["config"] == "configs/ours/visibility_botsort.yaml"
+    assert "keep" not in meta["trackers"]["ours"]["label"].lower()
     assert end["summary"]["bytetrack"]["id_changes"] >= 1
     hides = [x for x in xs if x.get("beat") == "hide"]
     backs = [x for x in xs if x.get("beat") == "back"]
-    assert len(hides) == 1 and hides[0]["focus"] == 1
-    assert len(backs) == 1 and backs[0]["focus"] == 1
-    hide_f, back_f = hides[0]["f"], backs[0]["f"]
-    assert back_f - hide_f >= 40  # longer than ByteTrack's 30-frame buffer
-    mid = next(x for x in xs if hide_f < x.get("f", 0) < back_f and x.get("type") == "frame")
-    assert [p for p in mid["people"] if p[0] == 1][0][3] == 0
-    pre = next(x for x in xs if x.get("f") == hide_f - 1)
-    post = next(x for x in xs if x.get("f") == min(back_f + 3, xs[-2]["f"]))
-    ours_id = dict(pre["ours"]["ids"]).get(1)
-    after = dict(post["ours"]["ids"]).get(1)
-    assert ours_id is not None and after == ours_id
-    assert any(h[0] == ours_id for h in mid["ours"]["held"])
-    bt_before = dict(pre["bytetrack"]["ids"]).get(1)
-    bt_after = dict(post["bytetrack"]["ids"]).get(1)
-    assert bt_before is not None and bt_after is not None and bt_after != bt_before
+    assert len(hides) == 1
+    assert hides[0]["focus"] == 1
+    assert len(backs) == 1
+    assert backs[0]["focus"] == 1
+    assert backs[0]["f"] - hides[0]["f"] >= 40  # longer than the 30-frame base buffer
+
+
+def test_keep_id_relabeller_is_gone():
+    import importlib.util
+
+    assert importlib.util.find_spec("tracker.keep_id") is None

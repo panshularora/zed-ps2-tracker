@@ -4,7 +4,6 @@
 // tracker did and that they disagree; only "measured" moments (human labels) may say a number
 // changed wrongly, and a tracker comparison only when the data shows the other one kept it.
 import type { Box, RunKey, ScenarioData } from "../lib/scenarios";
-import { collapseRenumbers, oursEvents } from "../identity/keepId";
 
 export type Kind = "illustrative" | "measured";
 
@@ -50,8 +49,6 @@ export interface ReplayData {
   credit?: string;
   /** one-line framing shown under the title */
   caption?: string;
-  /** Studio / Scenarios: ours IDs collapsed so a minted number keeps the first one. */
-  keepId?: boolean;
 }
 
 export const SHORT: Record<RunKey, string> = { baseline: "ByteTrack", ours: "ours" };
@@ -70,23 +67,14 @@ export function fromScenario(
   d: ScenarioData & { guide?: Guide },
   videoUrl: string | null,
   demoUrl: string | null = demoUrlFor(d.meta.id),
-  opts?: { keepId?: boolean },
 ): ReplayData {
+  // The ours run is shown exactly as the tracker produced it: no relabelling of its numbers.
   const m = d.meta;
   const fps = m.src_fps / m.stride;
-  const applyKeep = opts?.keepId ?? m.kind === "illustrative";
-  const rawOurs = d.guide?.events?.ours ?? [];
-  let oursFrames = d.runs.ours.frames;
-  let oursEv = rawOurs;
-  let oursLabel = d.runs.ours.label;
-  let oursShort = SHORT.ours;
-  if (applyKeep) {
-    const { frames, remap, idOf } = collapseRenumbers(oursFrames, rawOurs);
-    oursFrames = frames;
-    oursEv = oursEvents(rawOurs, remap, frames, fps, idOf);
-    oursLabel = "Keep-ID";
-    oursShort = "Keep-ID";
-  }
+  const oursFrames = d.runs.ours.frames;
+  const oursEv = d.guide?.events?.ours ?? [];
+  const oursLabel = d.runs.ours.label;
+  const oursShort = SHORT.ours;
   return {
     id: m.id,
     title: m.title,
@@ -99,7 +87,6 @@ export function fromScenario(
     duration: m.covered_s,
     videoUrl,
     demoUrl,
-    keepId: applyKeep,
     runs: {
       baseline: { label: d.runs.baseline.label, short: SHORT.baseline, frames: d.runs.baseline.frames },
       ours: { label: oursLabel, short: oursShort, frames: oursFrames },

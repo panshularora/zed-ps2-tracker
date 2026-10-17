@@ -24,7 +24,6 @@ from fastapi.responses import StreamingResponse
 from scipy.optimize import linear_sum_assignment
 
 from tracker.config import load_config
-from tracker.keep_id import KeepIdTracker
 from tracker.runner import build_tracker
 from tracker.types import Detections
 
@@ -36,9 +35,9 @@ MAX_PEOPLE = 40
 TRACKERS = {
     "bytetrack": ("ByteTrack", "configs/baselines/bytetrack.yaml"),
     "botsort": ("BoT-SORT", "configs/baselines/botsort.yaml"),
-    "ours": ("Ours · one body, one number", "keep_id"),
+    # Ours is the same tracker in every play: BoT-SORT + the depth-order visibility rule.
+    "ours": ("Ours · BoT-SORT + visibility", "configs/ours/visibility_botsort.yaml"),
 }
-OURS_CROWD = ("BoT-SORT + vis-gating", "configs/ours/visibility_botsort.yaml")
 
 
 @dataclass(frozen=True)
@@ -280,16 +279,11 @@ class Scoring:
 
 
 def _tracker_card(key: str, play: str) -> dict[str, str]:
-    if key == "ours" and play != "keep":
-        return {"label": OURS_CROWD[0], "config": OURS_CROWD[1]}
     return {"label": TRACKERS[key][0], "config": TRACKERS[key][1]}
 
 
-def _make_tracker(key: str, fps: float, play: str = "keep"):
-    if key == "ours" and play == "keep":
-        return KeepIdTracker(fps=fps, buffer=max(90, int(fps * 4)))
-    if key == "ours":
-        return build_tracker(load_config(ROOT / OURS_CROWD[1]), fps)[0]
+def _make_tracker(key: str, fps: float, play: str = "keep") -> Any:
+    """The repo tracker for ``key``; the same config in every play (no display relabelling)."""
     return build_tracker(load_config(ROOT / TRACKERS[key][1]), fps)[0]
 
 

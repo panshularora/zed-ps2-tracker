@@ -66,7 +66,7 @@ export default function RealCompare() {
     let live = true;
     const choice: Choice = sel.startsWith("bench:") ? { kind: "bench", name: sel.slice(6) } : { kind: "scn", id: sel };
     setData(null);
-    if (choice.kind === "scn") fetchScenario(choice.id).then((d) => live && setData(fromScenario(d, videoUrl(d.meta.id), undefined, { keepId: false }))).catch(() => live && setData(null));
+    if (choice.kind === "scn") fetchScenario(choice.id).then((d) => live && setData(fromScenario(d, videoUrl(d.meta.id)))).catch(() => live && setData(null));
     else { const p = pairs.find((x) => x.name === choice.name); if (p) setData(benchmarkReplay(p)); }
     fetchVerify(choice.kind === "scn" ? choice.id : choice.name).then((d) => live && setDoc(d));
     return () => { live = false; };
