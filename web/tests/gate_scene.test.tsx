@@ -54,8 +54,9 @@ describe("gate scene page", () => {
     vi.stubGlobal("fetch", f);
     render(<GateScene />);
     expect(screen.getByTestId("synthetic-tag").textContent).toBe("Synthetic scene · exact ground truth");
-    await waitFor(() => expect(f).toHaveBeenCalled());
-    expect(String(f.mock.calls[0][0])).toContain("/api/gate-sim/stream?seed=7");
+    // the page also hosts Break it yourself (POST /api/break/run); find the gate stream call
+    await waitFor(() => expect(f.mock.calls.some((c) => String(c[0]).includes("/api/gate-sim/stream"))).toBe(true));
+    expect(f.mock.calls.map((c) => String(c[0])).find((u) => u.includes("/api/gate-sim/stream"))).toContain("/api/gate-sim/stream?seed=7");
     await waitFor(() => expect(screen.getByText("ByteTrack")).toBeTruthy());
     expect(screen.getByTestId("seed-chip").textContent).toContain("seed 7");
     expect(screen.getByTestId("gate-caption").textContent).toBe("Left: ByteTrack, the published tracker we start from. Right: ours = ByteTrack + rules that keep a hidden person's number.");

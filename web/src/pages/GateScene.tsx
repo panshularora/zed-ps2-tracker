@@ -1,6 +1,7 @@
 // Live gate scene: synthetic people, fake detector, ByteTrack vs ours (BoT-SORT + visibility), the real trackers.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { layoutChips } from "../compare/model";
+import BreakIt from "../stress/BreakIt";
 import { differences, paneStats, type Diff } from "../compare/gateDiff";
 import { neutralColor } from "../lib/scenarios";
 import {
@@ -226,7 +227,7 @@ function paintPane(ctx: CanvasRenderingContext2D, cw: number, ch: number, meta: 
   }
 }
 
-export default function GateScene() {
+function GateSceneLive() {
   const [ctl, setCtl] = useState<SimControls>(DEFAULTS);
   const [playing, setPlaying] = useState(true);
   const [source, setSource] = useState<Source>("live");
@@ -471,5 +472,14 @@ export default function GateScene() {
         <span className="mono muted tabular">{meta ? `${(ui.idx / meta.fps).toFixed(1)} s${ui.slow ? " · 0.5x mix-up" : ""}` : ""}</span>
       </div>
     </div>
+  );
+}
+
+export default function GateScene() {
+  return (
+    <>
+      <GateSceneLive />
+      <BreakIt />
+    </>
   );
 }
