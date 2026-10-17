@@ -145,15 +145,29 @@ describe("upload result: Confirm / Dismiss", () => {
     expect(stage().dataset.playing).toBe("0");
   });
 
-  it("suggestions sorted by pairing score; top 3 then 'Show N more'", () => {
+  it("every suggestion renders in crossing-time order, no cap or 'Show N more', score as grey text", () => {
     render(<UploadResult result={ranked} jobId="j5" seek={null} onSeek={() => {}} grab={fakeGrab} />);
     const keyOf = (r: HTMLElement) => within(r).getAllByTestId("id-chip").map((c) => c.textContent).join(">");
-    expect(screen.getAllByTestId("suggestion-item").map(keyOf)).toEqual(["#22>#23", "#26>#27", "#28>#29"]);
-    const more = screen.getByTestId("suggestions-more");
-    expect(more.textContent).toBe("Show 2 more");
-    fireEvent.click(more);
-    expect(screen.getAllByTestId("suggestion-item").map(keyOf)).toEqual(["#22>#23", "#26>#27", "#28>#29", "#20>#21", "#24>#25"]);
+    expect(screen.queryByTestId("suggestions-more")).toBeNull();
+    expect(screen.getByTestId("missed-list").textContent).not.toMatch(/Show \d+ more|Show top/);
+    const rows = screen.getAllByTestId("suggestion-item");
+    expect(rows.map(keyOf)).toEqual(["#20>#21", "#22>#23", "#24>#25", "#26>#27", "#28>#29"]);
+    expect(rows.map((r) => within(r).getByTestId("row-score").textContent)).toEqual(["pairing score 0.40", "pairing score 0.90", "pairing score 0.10", "pairing score 0.70", "pairing score 0.55"]);
+    expect(within(rows[0]).getByTestId("row-score").className).toContain("text-mute");
+    expect(within(rows[0]).getByTestId("row-score").className).toContain("text-[11px]");
+    // the score order is still available for the offline demo, it just isn't the list order
     expect(rankSuggestions(suggestions(ranked)).map((x) => x.score)).toEqual([0.9, 0.7, 0.55, 0.4, 0.1]);
+  });
+
+  it("top counts are two 32px blocks; the strip above the player says 'So far in the clip'", () => {
+    render(<UploadResult result={res} jobId="j6" seek={null} onSeek={() => {}} grab={fakeGrab} />);
+    for (const id of ["upload-counts", "adjusted-counts"]) {
+      const big = screen.getByTestId(`${id}-in`).parentElement!;
+      expect(big.className).toContain("text-[32px]");
+    }
+    expect(screen.getByTestId("upload-counts").textContent).toMatch(/^Tracker count/);
+    expect(screen.getByTestId("adjusted-counts").textContent).toMatch(/^Operator-adjusted/);
+    expect(screen.getByTestId("count-bar-label").textContent).toBe("So far in the clip");
   });
 });
 

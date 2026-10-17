@@ -77,7 +77,7 @@ the hide plus the ramp is longer than `max_gap_s`.
 
 The method holds up on the simulator, where it was tuned, and on held-out seeds. It does **not**
 hold up on real footage: on the frozen MOT17-09 gates it makes the count worse for both trackers,
-and on the MOT17-09 upload only 3 of 9 recoveries match a true crossing. The limits are relative to
+and on the MOT17-09 upload (head-blur run) only 3 of 9 recoveries match a true crossing. The limits are relative to
 box height, so the large boxes in MOT17-09 widen "near the line" to most of the frame. Box heights
 in the simulator are 46–130 px; in MOT17-09 they are up to about 400 px.
 
@@ -85,13 +85,14 @@ Product call: a recovered crossing is a **suggestion** for an operator, never ad
 - The API emits `recovered_crossing` events with `from_track_id`. The job metrics report
   `possible_missed_crossings`, separate from `crossings_in` / `crossings_out`. There is no option
   to count them automatically.
-- The upload result lists each one in the unsure-moments list:
-  "Possible missed crossing at mm:ss · #a → #b · Confirm / Dismiss". Clicking the row jumps the
-  player to that moment.
+- Studio step 4 lists every one, in crossing-time order with no cap, under "Possible missed
+  crossings (N)" (the "Unsure crossings (N)" list follows). Each row has a still, an mm:ss link,
+  `#a → #b` chips, crops of both IDs, the pairing score in grey and Confirm / Dismiss. Clicking
+  the row plays the 2 s around the moment.
 - IN/OUT stays the tracker's plain count. Confirmed suggestions go into a separate,
   labelled **Operator-adjusted** count. Dismissed suggestions disappear from the list.
 - Decisions are kept on the client (localStorage per job).
-- "Download CSV (crossings + your decisions)" lists every crossing and every suggestion, with an
+- "Crossings + your decisions CSV" lists every crossing and every suggestion, with an
   `operator_decision` column (confirmed / dismissed / pending) and whether the row is in the plain
   count and in the operator-adjusted count.
 - A double-count guard is out of scope.
@@ -101,18 +102,32 @@ held-out check into tuning.
 
 Raw numbers: `docs/results/stress/crossing_recovery.json`.
 
-## Pairing score (order of suggestions only)
+## Pairing score (a hint on each row, never an order or a filter)
 
 Each suggestion carries `gap_s`, `distance_rel` and
 `pair_score = 1 − ½·min(1, gap_s / max_gap_s) − ½·min(1, distance_rel / max_dist_rel)`:
 1 means the new number started at once, on the spot; 0 means it sits at both limits. The score
-only orders the list an operator reviews (top 3, then "Show N more"). It never counts anything.
+is a hint shown as small grey text on each row. It never counts anything and never hides or
+orders a row: Studio step 4 shows every suggestion, in crossing-time order, with no top-N cap.
+On the head-blur MOT17-09 upload run the real crossings ranked 2, 4 and 9 of 9 by score (below), so a top-3 cap
+would have hidden two of the three real ones, and a score order would have put a false one
+first.
 
 ## Operator demo on the MOT17-09 upload
 
-`operator_demo_mot17_09.json` (`python -m eval.operator_demo`, ground truth offline only). Truth
-3 IN / 10 OUT. The tracker counted 0 / 7. Of 9 suggestions, 3 match a true crossing the tracker
-missed. Confirming only those 3 in the UI gives an operator-adjusted count of 1 IN / 9 OUT. The
-real ones rank 2, 4 and 9 of 9 under the pairing-score sort, so 1 of them is in the top 3. The
-score does not reliably surface the real ones on this clip, and an operator still has to look at
-every row.
+`operator_demo_mot17_09.json` (`python -m eval.operator_demo`, ground truth offline only; truth
+3 IN / 10 OUT). The tracker runs on the blurred copy of an upload, so the blur changes the
+result:
+
+| Upload blur | Tracker count | Plain matched to truth | Suggestions | Real | Real ranks by score | Operator-adjusted (real ones confirmed) |
+|---|---|---|---|---|---|---|
+| Head squares (earlier run, job 367de74b7ea3) | 0 IN / 7 OUT | 6 of 7 | 9 | 3 | 2, 4, 9 | 1 IN / 9 OUT |
+| Face-only oval (current, job d90a457d1cab) | 3 IN / 9 OUT | 8 of 12 | 6 | 1 | 1 | 4 IN / 9 OUT |
+
+With the face-only blur the tracker counts more crossings, but 4 of its 12 do not match a true
+crossing (8 of 12 do). So its IN of 3 is not three real INs, and confirming the one real
+suggestion (an IN) takes the operator-adjusted IN to 4, one above the true 3. On the head-blur run the real ones ranked 2, 4 and 9 of 9 by score: a top-3 cap would
+have hidden two of three, and a score order would have put a false one first. That is why the
+list shows all suggestions in clip order instead of the top 3 by score with a "Show N more"
+toggle (an earlier version of this branch had that cap and order). The score does not reliably
+surface the real ones, and an operator still has to look at every row.

@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { boxesAt, people, pickFocus, placeChips, storySteps, summaryText, tracksOf, watchLine } from "../src/identity/story";
 import { PersonTimeline } from "../src/identity/PersonTimeline";
-import { CountBar } from "../src/identity/IdentityPlayer";
+import { chipAlpha, CountBar } from "../src/identity/IdentityPlayer";
 import { orderScenarios } from "../src/pages/Scenarios";
 import type { ReplayData } from "../src/guided/model";
 import type { Reappearance } from "../src/identity/verify";
@@ -81,6 +81,11 @@ describe("identity story", () => {
     const far = placeChips([{ id: 1, box: [0, 0, 50, 100], text: "#1", w: 30, h: 20 }, { id: 2, box: [500, 0, 50, 100], text: "#2", w: 30, h: 20 }]);
     expect(far.every((x) => !x.below)).toBe(true);
   });
+  it("overlay chips are solid for every tracked person, not just the focus", () => {
+    expect(chipAlpha("seen")).toBe(1);
+    expect(chipAlpha("hidden")).toBe(0.85);
+    expect(chipAlpha("swap")).toBe(1);
+  });
   it("timeline: past 12 people, a 'Show all people' toggle instead of a cutoff line", () => {
     const many = Array.from({ length: 34 }, (_, k) => ({ ...people(replay()).people[0], key: 100 + k, f0: k }));
     render(<PersonTimeline people={many} frames={40} f={5} focus={100} onSeek={() => {}} />);
@@ -103,9 +108,10 @@ describe("identity story", () => {
     fireEvent.click(ch);
     expect(onSeek).toHaveBeenCalledWith(6);
   });
-  it("count bar is a single row 'IN n · OUT n' with no gate-side prose", () => {
+  it("count bar is a single row 'So far in the clip · IN n · OUT n' with no gate-side prose", () => {
     render(<CountBar inN={0} outN={1} />);
-    expect(screen.getByTestId("count-bar").textContent).toBe("IN 0 · OUT 1");
+    expect(screen.getByTestId("count-bar").textContent).toBe("So far in the clipIN 0 · OUT 1");
+    expect(screen.getByTestId("count-bar-label").textContent).toBe("So far in the clip");
   });
   it("scenario order: 'What tracking is' first", () => {
     const o = orderScenarios([{ id: "shibuya_crossing" }, { id: "subway_turnstile" }, { id: "man_entering_metro" }] as never);

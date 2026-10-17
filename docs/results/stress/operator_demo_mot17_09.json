@@ -1,6 +1,7 @@
 {
  "what": "Operator demo on the MOT17-09 upload: confirm only the possible missed crossings that ground truth (checked offline, never shown in the UI) says are real, and record the operator-adjusted count the UI shows.",
- "job": "367de74b7ea3",
+ "job": "d90a457d1cab",
+ "blur": "face-only soft oval (serve.blur mode='face'); the tracker runs on this blurred copy, so the blur changes the tracking result",
  "upload": "MOT17-09 (960x540, 525 frames, 30 fps) via Studio step 4 /dashboard/studio/your-video; gate clicked at (0.02, 0.65) -> (0.98, 0.65) of the first frame; ours/visibility_botsort on CPU, YOLOX-S",
  "truth_method": "MOT17-09 gt.txt (pedestrians, visible) on the job's gate scaled to 1920x1080, hysteresis scaled the same way; plain crossings matched one-to-one to true ones (same direction, within 15 frames); a suggestion is real if it matches one-to-one a true crossing the plain count missed (same direction, within 15 frames). Script: python -m eval.operator_demo",
  "truth": {
@@ -8,170 +9,148 @@
   "out": 10
  },
  "tracker_count_ui": {
-  "in": 0,
-  "out": 7
+  "in": 3,
+  "out": 9
  },
- "plain_matched_to_truth": "6 of 7",
- "true_crossings_missed_by_plain": 7,
- "suggestions": 9,
+ "plain_matched_to_truth": "8 of 12",
+ "true_crossings_missed_by_plain": 5,
+ "suggestions": 6,
+ "unsure_crossings": 8,
  "real_suggestions": [
-  "283:3:29",
-  "357:30:32",
-  "403:21:34"
+  "365:13:26"
  ],
  "confirmed_in_ui": [
-  "357:30:32",
-  "283:3:29",
-  "403:21:34"
+  "365:13:26"
  ],
  "operator_adjusted_ui": {
-  "in": 1,
+  "in": 4,
   "out": 9
  },
  "tracker_count_ui_after_confirming": {
-  "in": 0,
-  "out": 7
+  "in": 3,
+  "out": 9
  },
- "real_ranks_under_pair_score_sort": [
-  2,
-  4,
-  9
+ "real_ranks_under_pair_score": [
+  1
  ],
- "real_in_top_3": 1,
- "score_order_shown_in_ui": [
-  "187:13:19",
-  "357:30:32",
-  "432:35:36",
-  "283:3:29",
-  "248:18:28",
-  "476:38:40",
-  "295:23:30",
-  "197:4:22",
-  "403:21:34"
+ "list_order_in_ui": "crossing time (all rows, no cap); pairing score shown as grey text",
+ "order_shown_in_ui": [
+  "131:5:12",
+  "188:4:17",
+  "365:13:26",
+  "400:11:27",
+  "440:12:29",
+  "475:31:32"
  ],
  "pair_score": "1 - 0.5*min(1, gap_s/max_gap_s) - 0.5*min(1, distance_rel/max_dist_rel), max_gap_s 4.0, max_dist_rel 2.0 (limits tuned on simulator seeds 0-9)",
  "suggestion_detail": [
   {
-   "key": "187:13:19",
-   "frame": 187,
-   "from": 13,
-   "to": 19,
-   "direction": "in",
-   "pair_score": 0.731,
-   "gap_s": 1.47,
-   "distance_rel": 0.342,
-   "score_rank": 1,
-   "real": false
-  },
-  {
-   "key": "357:30:32",
-   "frame": 357,
-   "from": 30,
-   "to": 32,
+   "key": "131:5:12",
+   "frame": 131,
+   "from": 5,
+   "to": 12,
    "direction": "out",
-   "pair_score": 0.708,
-   "gap_s": 0.63,
-   "distance_rel": 0.852,
-   "score_rank": 2,
-   "real": true
-  },
-  {
-   "key": "432:35:36",
-   "frame": 432,
-   "from": 35,
-   "to": 36,
-   "direction": "out",
-   "pair_score": 0.652,
-   "gap_s": 0.37,
-   "distance_rel": 1.207,
-   "score_rank": 3,
-   "real": false
-  },
-  {
-   "key": "283:3:29",
-   "frame": 283,
-   "from": 3,
-   "to": 29,
-   "direction": "in",
-   "pair_score": 0.621,
-   "gap_s": 1.47,
-   "distance_rel": 0.784,
-   "score_rank": 4,
-   "real": true
-  },
-  {
-   "key": "248:18:28",
-   "frame": 248,
-   "from": 18,
-   "to": 28,
-   "direction": "out",
-   "pair_score": 0.552,
-   "gap_s": 0.9,
-   "distance_rel": 1.342,
+   "pair_score": 0.282,
+   "gap_s": 3.8,
+   "distance_rel": 0.972,
    "score_rank": 5,
    "real": false
   },
   {
-   "key": "476:38:40",
-   "frame": 476,
-   "from": 38,
-   "to": 40,
-   "direction": "out",
-   "pair_score": 0.465,
-   "gap_s": 0.43,
-   "distance_rel": 1.923,
+   "key": "188:4:17",
+   "frame": 188,
+   "from": 4,
+   "to": 17,
+   "direction": "in",
+   "pair_score": 0.154,
+   "gap_s": 2.8,
+   "distance_rel": 1.983,
    "score_rank": 6,
    "real": false
   },
   {
-   "key": "295:23:30",
-   "frame": 295,
-   "from": 23,
-   "to": 30,
+   "key": "365:13:26",
+   "frame": 365,
+   "from": 13,
+   "to": 26,
    "direction": "in",
-   "pair_score": 0.316,
-   "gap_s": 2.23,
-   "distance_rel": 1.619,
-   "score_rank": 7,
-   "real": false
-  },
-  {
-   "key": "197:4:22",
-   "frame": 197,
-   "from": 4,
-   "to": 22,
-   "direction": "in",
-   "pair_score": 0.231,
-   "gap_s": 2.97,
-   "distance_rel": 1.592,
-   "score_rank": 8,
-   "real": false
-  },
-  {
-   "key": "403:21:34",
-   "frame": 403,
-   "from": 21,
-   "to": 34,
-   "direction": "out",
-   "pair_score": 0.182,
-   "gap_s": 3.8,
-   "distance_rel": 1.373,
-   "score_rank": 9,
+   "pair_score": 0.909,
+   "gap_s": 0.2,
+   "distance_rel": 0.263,
+   "score_rank": 1,
    "real": true
+  },
+  {
+   "key": "400:11:27",
+   "frame": 400,
+   "from": 11,
+   "to": 27,
+   "direction": "out",
+   "pair_score": 0.389,
+   "gap_s": 3.5,
+   "distance_rel": 0.696,
+   "score_rank": 4,
+   "real": false
+  },
+  {
+   "key": "440:12:29",
+   "frame": 440,
+   "from": 12,
+   "to": 29,
+   "direction": "out",
+   "pair_score": 0.583,
+   "gap_s": 2.67,
+   "distance_rel": 0.336,
+   "score_rank": 2,
+   "real": false
+  },
+  {
+   "key": "475:31:32",
+   "frame": 475,
+   "from": 31,
+   "to": 32,
+   "direction": "out",
+   "pair_score": 0.568,
+   "gap_s": 0.43,
+   "distance_rel": 1.511,
+   "score_rank": 3,
+   "real": false
   }
  ],
  "player_checks": {
   "row_click": {
-   "crossingT": 6.2,
-   "tAfter600ms": 5.76,
+   "crossingT": 4.33,
+   "tAfter600ms": 3.85,
    "playing": "1",
-   "tAfter3200ms": 7.23,
+   "tAfter3200ms": 5.35,
    "playingAfter3200ms": "0"
   },
   "time_link": {
-   "t": 5.2,
+   "t": 3.33,
    "playing": "0"
   }
  },
- "csv": "upload_crossings_demo.csv downloaded from the UI (operator_decision column) - not committed"
+ "previous_run_head_blur": {
+  "job": "367de74b7ea3",
+  "tracker_count_ui": {
+   "in": 0,
+   "out": 7
+  },
+  "plain_matched_to_truth": "6 of 7",
+  "suggestions": 9,
+  "real_suggestions": [
+   "283:3:29",
+   "357:30:32",
+   "403:21:34"
+  ],
+  "operator_adjusted_ui": {
+   "in": 1,
+   "out": 9
+  },
+  "real_ranks_under_pair_score_sort": [
+   2,
+   4,
+   9
+  ]
+ }
 }

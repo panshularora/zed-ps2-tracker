@@ -125,3 +125,37 @@ def test_blur_video_keyframe_interval(tmp_path: Path) -> None:
     )
     assert len(types) == 30
     assert [i for i, t in enumerate(types) if t == "I"] == [0, 10, 20]
+
+
+def test_face_mode_is_a_soft_oval_and_leaves_the_body_sharp() -> None:
+    from serve.blur import blur_faces_soft, blur_with, face_from_person
+
+    rng = np.random.default_rng(0)
+    img = rng.integers(0, 255, (200, 200, 3), dtype=np.uint8)
+    out = blur_faces_soft(img.copy(), np.array([[80, 40, 120, 90]], np.float32))
+    centre = out[60:70, 95:105].astype(int) - img[60:70, 95:105].astype(int)
+    assert np.abs(centre).mean() > 20  # the face is blurred
+    # the oval is 1.2x the box (x 76-124, y 35-95); the corner of that square is outside the
+    # oval and (almost) untouched, so there is no blurred square
+    corner = out[35:39, 76:80].astype(int) - img[35:39, 76:80].astype(int)
+    assert np.abs(corner).mean() < 0.1 * np.abs(centre).mean()
+    # the body below the face is untouched
+    assert np.array_equal(out[120:200], img[120:200])
+    # person box -> a face-sized box near the top, far smaller than the head region
+    fb = face_from_person(np.array([[50, 20, 60, 180]], np.float32), np.array([0.9]))
+    w, h = fb[0, 2] - fb[0, 0], fb[0, 3] - fb[0, 1]
+    assert w < 0.4 * 60
+    assert h < 0.12 * 180
+    assert fb[0, 1] < 20 + 0.1 * 180
+    assert blur_with("face") is blur_faces_soft
+
+
+def test_uploads_use_the_face_only_blur() -> None:
+    import inspect
+
+    from serve import blur
+
+    assert inspect.signature(blur.blur_video).parameters["mode"].default == "face"
+    assert inspect.signature(blur.blur_frame).parameters["mode"].default == "face"
+    src = (ROOT / "serve" / "api.py").read_text()
+    assert 'mode="head"' not in src

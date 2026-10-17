@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError, type Clip, type Job, type JobResult } from "../../api";
 import { IdentityPlayer } from "../../identity/IdentityPlayer";
-import { adjustedCounts, boxAt, cropRect, crossingsCsv, frameTime, fromJobResult, gateFromClicks, mmss, NO_GT_LABEL, rankSuggestions, REID_OFF_LABEL, rowSeek, suggestions, timeSeek, unsureMoments, uploadSummary, visibleSuggestions, type Decision, type Decisions, type SeekReq, type XYWH } from "../../upload/fromJob";
+import { adjustedCounts, boxAt, cropRect, crossingsCsv, frameTime, fromJobResult, gateFromClicks, mmss, NO_GT_LABEL, REID_OFF_LABEL, rowSeek, suggestions, timeSeek, unsureMoments, uploadSummary, visibleSuggestions, type Decision, type Decisions, type SeekReq, type XYWH } from "../../upload/fromJob";
 import { useThumbs, type Grabber, type ThumbReq } from "../../upload/thumbs";
 import { neutralColor } from "../../lib/scenarios";
 
@@ -137,7 +137,6 @@ export function YourVideo() {
 }
 
 export type SeekMode = "row" | "time";
-const TOP_N = 3;
 const TH_W = 64, TH_H = 36, CROP_W = 24, CROP_H = 36;
 
 export function UploadResult({ result, jobId, seek, onSeek, onAgain, grab }: {
@@ -149,11 +148,9 @@ export function UploadResult({ result, jobId, seek, onSeek, onAgain, grab }: {
   const data = useMemo(() => fromJobResult(result, videoUrl), [result, videoUrl]);
   const unsure = useMemo(() => unsureMoments(result), [result]);
   const s = useMemo(() => uploadSummary(result), [result]);
-  const sugs = useMemo(() => rankSuggestions(suggestions(result)), [result]);
+  const sugs = useMemo(() => suggestions(result), [result]); // by crossing time
   const [dec, setDec] = useDecisions(jobId);
-  const [more, setMore] = useState(false);
   const shown = visibleSuggestions(sugs, dec);
-  const listed = more ? shown : shown.slice(0, TOP_N);
   const adj = adjustedCounts(s, sugs, dec);
   const decide = (k: string, d: Decision | null) => setDec((x) => { const n = { ...x }; if (d) n[k] = d; else delete n[k]; return n; });
   const csvHref = useMemo(() => (typeof URL !== "undefined" && URL.createObjectURL ? URL.createObjectURL(new Blob([crossingsCsv(result, dec)], { type: "text/csv" })) : "#"), [result, dec]);
@@ -190,15 +187,15 @@ export function UploadResult({ result, jobId, seek, onSeek, onAgain, grab }: {
         watch="Each box and number is what our tracker drew. Click a box to follow a number; the bars below show when each number was on screen." />
       <section className="space-y-2" data-testid="missed-list">
         <h3 className="yv-h">Possible missed crossings ({shown.length})</h3>
-        <p className="text-[12px] text-mute">One number ended at the line and a new one began just across it. Highest pairing score first (quick, on-the-spot hand-offs). Not counted unless you confirm.</p>
+        <p className="text-[12px] text-mute">One number ended at the line and a new one began just across it. All of them, in clip order. The grey pairing score (1 = quick, on-the-spot hand-off) is a rough hint, not a filter: check every row. Not counted unless you confirm.</p>
         {shown.length === 0 && <div className="text-[12px] text-mute">None.</div>}
-        {listed.map((x) => {
+        {shown.map((x) => {
           const d = dec[x.key];
           return (
             <Row key={x.key} rowKey={x.key} testid="suggestion-item" decision={d ?? "pending"} done={d === "confirmed"} onPlay={() => onSeek(x.f, "row")}
               thumb={thumbs[`s:${x.key}`]?.[0]} t={x.t} onTime={() => onSeek(x.f, "time")}
               ids={[x.from, x.to]} crops={[thumbs[`a:${x.key}`]?.[0], thumbs[`b:${x.key}`]?.[0]]}
-              detail={`${x.dir.toUpperCase()}${x.score !== null ? ` · pairing score ${x.score.toFixed(2)}` : ""}`}
+              detail={x.dir.toUpperCase()} score={x.score}
               actions={d === "confirmed" ? (
                 <>
                   <span className="text-[13px] text-ink" aria-label="Confirmed" data-testid="suggestion-confirmed">✓</span>
@@ -212,11 +209,6 @@ export function UploadResult({ result, jobId, seek, onSeek, onAgain, grab }: {
               )} />
           );
         })}
-        {shown.length > TOP_N && (
-          <button type="button" className="yv-small" onClick={() => setMore((m) => !m)} aria-expanded={more} data-testid="suggestions-more">
-            {more ? "Show top 3 only" : `Show ${shown.length - TOP_N} more`}
-          </button>
-        )}
       </section>
       <section className="space-y-2" data-testid="unsure-list">
         <h3 className="yv-h">Unsure crossings ({unsure.length})</h3>
@@ -259,9 +251,9 @@ function IdChip({ id }: { id: number }) {
   return <span className="inline-flex items-center h-5 px-1.5 rounded-sm text-[12px] font-semibold text-[#0E1013] tabular" style={{ background: neutralColor(id) }} data-testid="id-chip">#{id}</span>;
 }
 
-function Row({ testid, rowKey, decision, done, onPlay, thumb, t, onTime, ids, crops, detail, actions }: {
+function Row({ testid, rowKey, decision, done, onPlay, thumb, t, onTime, ids, crops, detail, score, actions }: {
   testid: string; rowKey?: string; decision?: string; done?: boolean; onPlay: () => void; thumb?: string; t: number; onTime: () => void;
-  ids: number[]; crops: (string | undefined)[]; detail: string; actions?: React.ReactNode;
+  ids: number[]; crops: (string | undefined)[]; detail: string; score?: number | null; actions?: React.ReactNode;
 }) {
   return (
     <div className={`yv-row flex items-center gap-2 h-12 px-2 rounded-sm bg-paper cursor-pointer hover:bg-raised ${done ? "opacity-60" : ""}`}
@@ -284,6 +276,7 @@ function Row({ testid, rowKey, decision, done, onPlay, thumb, t, onTime, ids, cr
           : <span key={i} className="inline-block rounded-sm bg-raised" style={{ width: CROP_W, height: CROP_H }} />)}
       </span>
       <span className="text-[12px] text-mute truncate">{detail}</span>
+      {score != null && <span className="text-[11px] text-mute tabular" data-testid="row-score">pairing score {score.toFixed(2)}</span>}
       <span className="flex-1" />
       {actions && <span className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>{actions}</span>}
     </div>

@@ -14,9 +14,14 @@ const GATE = "#F5A524";
 const ease = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 
 /** Counters live in a bar outside the frame: a single row "IN n · OUT n". */
+/** Every tracked person gets a solid chip in its ID colour (dark text); only a number that is
+ *  not seen for a moment is slightly see-through. Focus only changes the box, never the chip. */
+export const chipAlpha = (state: Drawn["state"]) => (state === "hidden" ? 0.85 : 1);
+
 export function CountBar({ inN, outN, note }: { inN: number; outN: number; note?: string | null }) {
   return (
     <div className="count-bar" data-testid="count-bar">
+      <span className="count-bar-label muted" data-testid="count-bar-label">So far in the clip</span>
       <span className="count-bar-nums tabular"><b>IN</b> {inN} <span className="muted">·</span> <b>OUT</b> {outN}</span>
       {note && <span className="count-bar-note muted" data-testid="video-hint">{note}</span>}
     </div>
@@ -295,7 +300,7 @@ export function paintFrame(ctx: CanvasRenderingContext2D, cw: number, ch: number
   for (const c of placeChips(items.filter((i) => i.d.state !== "hidden" || isF(i.id)))) {
     const it = items.find((i) => i.id === c.id)!;
     const size = c.id === follow ? 18 : 13;
-    ctx.globalAlpha = isF(c.id) ? (it.d.state === "hidden" ? 0.85 : 1) : DIM;
+    ctx.globalAlpha = chipAlpha(it.d.state);
     ctx.fillStyle = it.d.state === "swap" ? SWAP_FILL : neutralColor(c.id);
     const x = Math.min(Math.max(vx, c.x), vx + vw - c.w), y = Math.max(vy, c.y);
     ctx.beginPath(); ctx.roundRect(x, y, c.w, c.h, 4 * px); ctx.fill();
