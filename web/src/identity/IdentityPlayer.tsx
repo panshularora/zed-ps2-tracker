@@ -212,7 +212,7 @@ export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data:
         </div>
         <span className="muted idp-run">{data.runs.ours.label}</span>
       </div>
-      <PersonTimeline people={people} frames={data.frames} f={f} focus={follow ?? focus?.key ?? null} onSeek={seekFrame} />
+      <PersonTimeline people={people} frames={data.frames} f={f} focus={follow ?? focus?.key ?? null} onSeek={seekFrame} unchecked={unchecked} />
       {moments.length > 0 && (
         <div className="kept-moments" data-testid="kept-moments">
           <b>Verified moments</b>

@@ -7,7 +7,12 @@ export const MAX_ROWS = 12;
 /** One 8px bar per person: solid where seen, dashed 50 % where hidden, a 4px break + tag at an ID
  * change, and a break + "swap?" tag where the kept-vs-swap check flagged a possible identity transfer
  * (no dashed bridge there: we do not claim it was still the same person). */
-export function PersonTimeline({ people, frames, f, focus, onSeek }: { people: Person[]; frames: number; f: number; focus: number | null; onSeek: (frame: number) => void }) {
+/** Summary for a clip with no ground truth and no check: numbers drawn, never "kept". */
+export function uncheckedSummary(ps: Person[]): string {
+  return `${ps.length} track ${ps.length === 1 ? "number" : "numbers"} on screen · no ground truth, so we do not say whether anyone kept their number`;
+}
+
+export function PersonTimeline({ people, frames, f, focus, onSeek, unchecked }: { people: Person[]; frames: number; f: number; focus: number | null; onSeek: (frame: number) => void; unchecked?: boolean }) {
   const rows = [...people].sort((a, b) => (a.key === focus ? -1 : b.key === focus ? 1 : a.f0 - b.f0)).slice(0, MAX_ROWS);
   const pct = (x: number) => `${(((x - 1) / Math.max(1, frames - 1)) * 100).toFixed(3)}%`;
   const width = (a: number, b: number) => `${(((b - a + 1) / Math.max(1, frames)) * 100).toFixed(3)}%`;
@@ -17,7 +22,7 @@ export function PersonTimeline({ people, frames, f, focus, onSeek }: { people: P
   };
   return (
     <section className="ptl" aria-label="Per-person timeline" data-testid="person-timeline">
-      <div className="ptl-summary" data-testid="timeline-summary">{summaryText(people)}</div>
+      <div className="ptl-summary" data-testid="timeline-summary">{unchecked ? uncheckedSummary(people) : summaryText(people)}</div>
       <div className="ptl-rows">
         {rows.map((p) => (
           <div key={p.key} className={`ptl-row${p.key === focus ? " focus" : ""}`} data-testid="ptl-row">
@@ -46,7 +51,7 @@ export function PersonTimeline({ people, frames, f, focus, onSeek }: { people: P
         ))}
         <div className="ptl-head" style={{ left: `calc(40px + (100% - 40px) * ${((f - 1) / Math.max(1, frames - 1)).toFixed(4)})` }} aria-hidden data-testid="ptl-playhead" />
       </div>
-      {people.length > rows.length && <div className="ptl-more muted">{people.length - rows.length} more people not drawn (summary counts everyone).</div>}
+      {people.length > rows.length && <div className="ptl-more muted">{people.length - rows.length} more {unchecked ? "numbers" : "people"} not drawn (summary counts everyone).</div>}
     </section>
   );
 }
