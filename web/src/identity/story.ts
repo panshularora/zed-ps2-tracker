@@ -121,14 +121,14 @@ export function boxesAt(tracks: Map<number, Map<number, XYWH>>, ff: number, fps:
       out.push({ id, box: b ? lerpBox(a, b, k) : a, state });
       continue;
     }
-    // inside a gap of this same id: dashed ghost moving from last-seen to where it comes back
+    // inside a gap of this same id: dashed box parked at the last-seen position (no guessing where they went)
     let p = -1, q = -1;
     for (let j = f - 1; j >= Math.max(1, f - 4 * fps); j--) if (m.has(j)) { p = j; break; }
     if (p < 0) continue;
     for (let j = f + 1; j <= f + 4 * fps; j++) if (m.has(j)) { q = j; break; }
     if (q < 0) continue;
     if (verdict?.(id, q)?.verdict === "swap") continue; // not "still #N": the number may have moved to someone else
-    out.push({ id, box: lerpBox(m.get(p)!, m.get(q)!, (ff - p) / (q - p)), state: "hidden" });
+    out.push({ id, box: m.get(p)!, state: "hidden" });
   }
   return out;
 }
@@ -160,6 +160,28 @@ export function chipText(b: Drawn, emphasised: boolean): string {
   if (b.state === "swap") return swapLabel(b.id);
   if (!emphasised) return `#${b.id}`;
   return b.state === "kept" ? keptLabel(b.id) : b.state === "back" ? backLabel(b.id) : `#${b.id}`;
+}
+
+/** The one short event tag drawn on the frame, next to the focus person's chip; null for everyone
+ * else and for plain boxes. Every other event goes to the timeline and the caption bar instead. */
+export function frameTag(b: Drawn, isFocus: boolean): string | null {
+  if (!isFocus) return null;
+  if (b.state === "kept") return keptLabel(b.id);
+  if (b.state === "back") return `back #${b.id}`;
+  if (b.state === "swap") return `swap? #${b.id}`;
+  return null;
+}
+
+/** Caption-bar lines for events of people who are not in focus (never drawn on the frame). */
+export function eventLines(all: Drawn[], focus: Set<number>): string[] {
+  const out: string[] = [];
+  for (const b of [...all].sort((a, c) => a.id - c.id)) {
+    if (focus.has(b.id)) continue;
+    if (b.state === "swap") out.push(swapLabel(b.id));
+    else if (b.state === "kept") out.push(`#${b.id} back, check says same person`);
+    else if (b.state === "back") out.push(backLabel(b.id));
+  }
+  return out;
 }
 
 export function storySteps(d: Pick<ReplayData, "events" | "fps" | "gate">, p: Person, verdict?: VerdictOf): Step[] {

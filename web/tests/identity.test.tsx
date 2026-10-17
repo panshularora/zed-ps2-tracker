@@ -83,7 +83,7 @@ describe("identity story", () => {
   });
   it("overlay chips are solid for every tracked person, not just the focus", () => {
     expect(chipAlpha("seen")).toBe(1);
-    expect(chipAlpha("hidden")).toBe(0.85);
+    expect(chipAlpha("hidden")).toBe(0.5);
     expect(chipAlpha("swap")).toBe(1);
   });
   it("timeline: past 12 people, a 'Show all people' toggle instead of a cutoff line", () => {

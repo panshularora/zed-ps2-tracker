@@ -37,6 +37,10 @@ export function PersonTimeline({ people, frames, f, focus, onSeek, unchecked }: 
               {p.hidden.map((s, i) => (
                 <span key={`h${i}`} className="ptl-hidden" data-testid="ptl-hidden" style={{ left: pct(s.f0), width: width(s.f0, s.f1), color: neutralColor(s.id) }} />
               ))}
+              {p.hidden.map((s, i) => (
+                <button key={`b${i}`} type="button" className="ptl-back" data-testid="ptl-back" style={{ left: pct(s.f1 + 1) }}
+                  onClick={(e) => { e.stopPropagation(); onSeek(s.f0); }} title={`#${s.id} back after ${s.f1 - s.f0 + 1} frames hidden`} aria-label={`#${s.id} back at frame ${s.f1 + 1}`} />
+              ))}
               {p.swaps.map((c, i) => (
                 <button key={`s${i}`} type="button" className="ptl-swap" data-testid="ptl-swap" style={{ left: pct(c.f) }}
                   onClick={(e) => { e.stopPropagation(); onSeek(c.last); }} title={`Possible swap: #${c.id} given to someone else (${c.why})`}>

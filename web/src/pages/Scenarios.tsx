@@ -24,11 +24,15 @@ export const BENCH_CARDS = [
 ];
 export const benchKey = (name: string) => `bench:${name}`;
 
+/** Rail thumbnails fill the 16:9 frame (centre crop, a little below centre where people walk), so a
+ * portrait clip such as the Fast Lane entrance is not shown as a thin strip with bars. */
+export const THUMB_CROP = { objectFit: "cover", objectPosition: "50% 62%" } as const;
+
 export function Thumb({ id }: { id: string }) {
   const [bad, setBad] = useState(false);
   return (
     <div className="thumb thumb-frame">
-      {bad ? <span className="thumb-ph" aria-hidden /> : <img src={thumbUrlFor(id)} alt="" loading="lazy" onError={() => setBad(true)} />}
+      {bad ? <span className="thumb-ph" aria-hidden /> : <img src={thumbUrlFor(id)} alt="" loading="lazy" onError={() => setBad(true)} style={THUMB_CROP} data-testid="rail-thumb" />}
     </div>
   );
 }

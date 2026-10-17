@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { neutralColor } from "../lib/scenarios";
 import { fallbackText, videoSources, type ReplayData } from "../guided/model";
 import { PersonTimeline } from "./PersonTimeline";
-import { boxesAt, chipText, countsAt, people as peopleOf, pickFocus, placeChips, storySteps, tracksOf, watchLine, type Drawn, type Person, type Step, type XYWH } from "./story";
+import { boxesAt, countsAt, eventLines, frameTag, people as peopleOf, pickFocus, placeChips, storySteps, tracksOf, watchLine, type Drawn, type Person, type Step, type XYWH } from "./story";
 import { fetchVerify, methodTooltip, verdictOf, type VerdictOf, type VerifyDoc } from "./verify";
 import { storyMoments, type StoryMoment } from "./moments";
 import { applyContent, letterbox, stageAspect, stageToSource } from "../lib/letterbox";
@@ -17,7 +17,8 @@ const ease = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 /** Counters live in a bar outside the frame: a single row "IN n · OUT n". */
 /** Every tracked person gets a solid chip in its ID colour (dark text); only a number that is
  *  not seen for a moment is slightly see-through. Focus only changes the box, never the chip. */
-export const chipAlpha = (state: Drawn["state"]) => (state === "hidden" ? 0.85 : 1);
+/** Solid chips; the chip of a hidden person is dimmed (their box is dashed at the last-seen spot). */
+export const chipAlpha = (state: Drawn["state"]) => (state === "hidden" ? 0.5 : 1);
 
 /** mm:ss of a clip time in seconds (floored, so it ticks once per second while playing). */
 export const clipClock = (s: number) => { const t = Math.max(0, Math.floor(s)); return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
@@ -204,6 +205,7 @@ export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data:
   const counts = countsAt(data.events.ours, f);
   const cur = step != null ? steps[step] : null;
   const liveMoment = moments.filter((m) => { const dt = t - (m.ev.back - 1) / data.fps; return dt >= -0.05 && dt < 2.5; }).sort((a, b) => b.ev.back - a.ev.back)[0];
+  const others = eventLines(boxesAt(tracks, Math.max(1, 1 + t * data.fps), data.fps, verdict), follow != null ? new Set([follow]) : focusIds);
   const caption = cur && t - (cur.f - 1) / data.fps < 3 ? cur.text
     : liveMoment ? liveMoment.caption
     : follow != null ? `Following #${follow}. Click again or press Esc to stop.`
@@ -220,7 +222,10 @@ export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data:
           onError={() => setSrcIdx((i) => i + 1)} onLoadedMetadata={(e) => { if (!(e.currentTarget.duration > 0)) setSrcIdx((i) => i + 1); }} />}
         <canvas ref={canvas} className="idp-canvas" onClick={onClick} aria-label={`${data.title}: ${data.runs.ours.label}. Click a person to follow.`} />
       </div>
-      <div className="idp-caption" aria-live="polite" data-testid="story-caption">{caption}</div>
+      <div className="idp-caption" aria-live="polite">
+        <span data-testid="story-caption">{caption}</span>
+        {others.length > 0 && <span className="idp-events muted" data-testid="event-line">Also now: {others.join(" · ")}</span>}
+      </div>
       <div className="idp-controls">
         <button type="button" className="btn" onClick={() => setPlaying((p) => !p)} aria-label={playing ? "Pause" : "Play"}>{playing ? "❚❚ Pause" : "▶ Play"}</button>
         <span className="mono muted tabular">{t.toFixed(1)} / {data.duration.toFixed(1)} s</span>
@@ -301,12 +306,14 @@ export function paintFrame(ctx: CanvasRenderingContext2D, cw: number, ch: number
       ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = 2 * px;
       ctx.strokeRect(b.box[0] - 4 * px, b.box[1] - 4 * px, b.box[2] + 8 * px, b.box[3] + 8 * px);
     }
-    const text = chipText(b, isF(b.id));
+    const text = `#${b.id}`; // the chip is only the number; events never become text on the frame
     const size = b.id === follow ? 18 : 13;
     ctx.font = `600 ${size * px}px Inter, sans-serif`;
     items.push({ id: b.id, box: b.box, text, w: ctx.measureText(text).width + 10 * px, h: (size + 7) * px, d: b });
   }
-  for (const c of placeChips(items.filter((i) => i.d.state !== "hidden" || isF(i.id)))) {
+  // only the focus person's event is drawn on the frame, as one short tag next to their chip
+  const tagged = (id: number) => (follow != null ? id === follow : focus.has(id));
+  for (const c of placeChips(items)) {
     const it = items.find((i) => i.id === c.id)!;
     const size = c.id === follow ? 18 : 13;
     ctx.globalAlpha = chipAlpha(it.d.state);
@@ -316,6 +323,18 @@ export function paintFrame(ctx: CanvasRenderingContext2D, cw: number, ch: number
     ctx.fillStyle = "#0E1013"; ctx.font = `600 ${size * px}px Inter, sans-serif`;
     ctx.textAlign = "left"; ctx.textBaseline = "middle";
     ctx.fillText(c.text, x + 5 * px, y + c.h / 2 + 0.5 * px);
+    ctx.globalAlpha = 1;
+    const tag = frameTag(it.d, tagged(c.id));
+    if (tag) {
+      ctx.font = `600 ${12 * px}px Inter, sans-serif`;
+      const tw = ctx.measureText(tag).width + 10 * px, th = 18 * px;
+      let tx = x + c.w + 4 * px;
+      if (tx + tw > vx + vw) tx = Math.max(vx, x - 4 * px - tw);
+      const ty = y + (c.h - th) / 2;
+      ctx.fillStyle = "#161A1F"; ctx.beginPath(); ctx.roundRect(tx, ty, tw, th, 4 * px); ctx.fill();
+      ctx.strokeStyle = it.d.state === "swap" ? SWAP_FILL : neutralColor(c.id); ctx.lineWidth = 1 * px; ctx.stroke();
+      ctx.fillStyle = "#E6E8EB"; ctx.fillText(tag, tx + 5 * px, ty + th / 2 + 0.5 * px);
+    }
   }
   ctx.globalAlpha = 1;
   ctx.restore();

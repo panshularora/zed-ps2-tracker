@@ -511,7 +511,8 @@ a.nav-group-label.active { color: #8A929C; border: 0; background: none; }
 .idp-stage { position: relative; width: 100%; background: #13171C; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .idp-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; pointer-events: none; }
 .idp-canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; display: block; }
-.idp-caption { min-height: 44px; display: flex; align-items: center; padding: 8px 12px; background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--ours); border-radius: var(--radius); font: 500 15px/1.4 var(--sans); }
+.idp-caption { min-height: 44px; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 2px; padding: 8px 12px; background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--ours); border-radius: var(--radius); font: 500 15px/1.4 var(--sans); }
+.idp-events { font: 400 12px/1.4 var(--sans); }
 .idp-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .idp-run { margin-left: auto; font-size: 12px; }
 .ptl { display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); }
@@ -524,6 +525,8 @@ a.nav-group-label.active { color: #8A929C; border: 0; background: none; }
 .ptl-seen { position: absolute; top: 0; height: 8px; border-radius: 2px; }
 .ptl-hidden { position: absolute; top: 0; height: 8px; opacity: .5; background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px); }
 .ptl-change { position: absolute; top: 0; width: 4px; height: 8px; margin-left: -2px; padding: 0; border: 0; background: var(--panel); cursor: pointer; }
+.ptl-row:not(.focus) .ptl-tag { display: none; } /* other people: a small tick only (tooltip has the text) */
+.ptl-back { position: absolute; top: -2px; width: 2px; height: 12px; margin-left: -1px; padding: 0; border: 0; background: #E6E8EB; opacity: .7; cursor: pointer; }
 .ptl-tag { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--text); white-space: nowrap; }
 .ptl-head { position: absolute; top: 10px; bottom: 0; width: 1px; background: #FFFFFF; pointer-events: none; }
 .ptl-more { font-size: 12px; }
