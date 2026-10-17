@@ -27,6 +27,8 @@
  "/api/results/ablation": "results__ablation.json",
  "/api/results/gate-events": "results__gate-events.json",
  "/api/results/go-no-go": "results__go-no-go.json",
+ "/api/stress/map/default": "stress__map__default.json",
+ "/api/stress/map/mem6": "stress__map__mem6.json",
  "/api/viewer-clips": "viewer-clips.json",
  "/api/workstation": "workstation.json"
 }

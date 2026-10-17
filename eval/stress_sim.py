@@ -28,6 +28,7 @@ detections, replayable bit-for-bit by the web app later.
 
 from __future__ import annotations
 
+import itertools
 import math
 from dataclasses import asdict, dataclass, field, replace
 from typing import Any
@@ -96,6 +97,10 @@ class Walker:
     turned: bool = False
     active: bool = False
     gone: bool = False
+    path: list[tuple[float, float]] = field(default_factory=list)  # waypoints (Break it yourself)
+    speed_px: float = 0.0  # walking speed along ``path`` (px/s)
+    hide_at_arc: float | None = None  # path walkers: arc length (px) at which the hide starts
+    arc: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -244,11 +249,67 @@ def _visible_fraction(boxes: np.ndarray, grid: int = 12) -> np.ndarray:
     return np.asarray(vis * cx * cy, np.float64)
 
 
-def render(sc: Scenario, seed: int) -> list[Frame]:
-    """Simulate ``sc`` with ``seed``: per-frame truth and detections (deterministic)."""
+def pillar_cover(
+    boxes: np.ndarray,
+    foot_y: np.ndarray,
+    pillars: list[tuple[float, float, float, float]],
+    grid: int = 12,
+) -> np.ndarray:
+    """Fraction of each person box hidden by pillars (tlwh) standing in front of them (pillar base
+    ``y + h`` below the person's foot row)."""
+    n = len(boxes)
+    hid = np.zeros(n)
+    if n == 0 or not pillars:
+        return hid
+    fr = (np.arange(grid) + 0.5) / grid
+    xs = boxes[:, 0:1] + fr[None] * boxes[:, 2:3]
+    ys = boxes[:, 1:2] + fr[None] * boxes[:, 3:4]
+    cov = np.zeros((n, grid, grid), bool)
+    for px, py, pw, ph in pillars:
+        front = (py + ph) > foot_y
+        inx = (xs >= px) & (xs < px + pw)
+        iny = (ys >= py) & (ys < py + ph)
+        cov |= front[:, None, None] & iny[:, :, None] & inx[:, None, :]
+    return np.asarray(cov.reshape(n, -1).mean(axis=1), np.float64)
+
+
+def path_walker(
+    pid: int, path: list[tuple[float, float]], t0: float, speed_px: float, hide_s: float | None
+) -> Walker:
+    """A person walking a drawn path. If ``hide_s`` is set, the scripted hide is centred on the
+    point of the path closest to the gate line (or its middle if it never comes near)."""
+    pts = [(float(x), float(y)) for x, y in path]
+    if len(pts) < 2:
+        raise ValueError("a path needs at least two points")
+    seg = [math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in itertools.pairwise(pts)]
+    cum = np.concatenate([[0.0], np.cumsum(seg)])
+    (x0, y0), (x1, y1) = pts[0], pts[1]
+    d = max(seg[0], 1e-6)
+    vx, vy = speed_px * (x1 - x0) / d, speed_px * (y1 - y0) / d
+    w = Walker(pid, x0, y0, vx, vy, vx, vy, t0, path=pts[1:], speed_px=speed_px)
+    if hide_s is not None and hide_s > 0:
+        k = int(np.argmin([abs(y - GATE_Y) for _, y in pts]))
+        centre = float(cum[k]) if abs(pts[k][1] - GATE_Y) < 60 else float(cum[-1]) / 2
+        span = speed_px * (hide_s + 2 * RAMP_F / FPS)
+        w.hide_at_arc = max(20.0, centre - span / 2)
+    return w
+
+
+def render(
+    sc: Scenario,
+    seed: int,
+    walkers: list[Walker] | None = None,
+    pillars: list[tuple[float, float, float, float]] | None = None,
+) -> list[Frame]:
+    """Simulate ``sc`` with ``seed``: per-frame truth and detections (deterministic).
+
+    ``walkers`` (default: the choreography of ``sc.kind``) and ``pillars`` (tlwh occluders the
+    detector does not see as people) are for user-built scenes; ``sc.hide_s`` is the length of
+    every scripted hide either way."""
     rng = np.random.default_rng([seed, 11])
     drng = np.random.default_rng([seed, 12])
-    ws = build_walkers(sc, rng)
+    ws = build_walkers(sc, rng) if walkers is None else walkers
+    pillars = pillars or []
     n_f = round(sc.seconds * FPS)
     dt = 1.0 / FPS
     hide_f = round(sc.hide_s * FPS)
@@ -273,28 +334,47 @@ def render(sc: Scenario, seed: int) -> list[Frame]:
                 w.vx += (w.gvx - w.vx) * dt / tau + sig * math.sqrt(2 * dt / tau) * rng.normal()
                 w.vy += (w.gvy - w.vy) * dt / tau + sig * math.sqrt(2 * dt / tau) * rng.normal()
             py = w.y
+            if w.path:  # steer towards the next waypoint; small OU wobble stays in vx/vy
+                tx, ty = w.path[0]
+                dx, dy = tx - w.x, ty - w.y
+                dist = math.hypot(dx, dy)
+                if dist < max(6.0, w.speed_px * dt):
+                    w.path.pop(0)
+                    if not w.path:
+                        w.gone = True
+                        continue
+                    tx, ty = w.path[0]
+                    dx, dy = tx - w.x, ty - w.y
+                    dist = max(math.hypot(dx, dy), 1e-6)
+                w.gvx, w.gvy = w.speed_px * dx / dist, w.speed_px * dy / dist
+                w.vx, w.vy = 0.7 * w.vx + 0.3 * w.gvx, 0.7 * w.vy + 0.3 * w.gvy
+            ax, ay = w.x, w.y
             w.x += w.vx * dt
             w.y += w.vy * dt
+            arc0 = w.arc
+            w.arc += math.hypot(w.x - ax, w.y - ay)
             if w.turn_at is not None and not w.turned and (py - w.turn_at) * (w.y - w.turn_at) <= 0:
                 w.turned = True
                 w.gvy, w.vy = -w.gvy, -w.vy * 0.5
-            if w.x < 10 or w.x > W - 10:
+            if not w.speed_px and (w.x < 10 or w.x > W - 10):
                 w.gvx, w.vx = -w.gvx, -w.vx
             if w.hide_left_f > 0:
                 w.hide_left_f -= 1
-            elif (
-                w.hide_at is not None
-                and not w.hide_done
-                and (py - w.hide_at) * (w.y - w.hide_at) <= 0
+            elif not w.hide_done and (
+                (w.hide_at is not None and (py - w.hide_at) * (w.y - w.hide_at) <= 0)
+                or (w.hide_at_arc is not None and arc0 <= w.hide_at_arc < w.arc)
             ):
                 w.hide_done = True
                 total = sc.dropout_f if sc.kind == "dropout" else hide_f + 2 * RAMP_F
                 w.hide_left_f = w.hide_total_f = total
-            if w.y < -8 or w.y > H + box_h(H) + 8:
+            if w.y < -8 or w.y > H + box_h(H) + 8 or (w.speed_px and not -60 < w.x < W + 60):
                 w.gone = True
         on = [w for w in ws if w.active and not w.gone]
         boxes = np.asarray([tlwh_of(w.x, w.y) for w in on], np.float64).reshape(-1, 4)
         vis = _visible_fraction(boxes)
+        if pillars:
+            foot = np.asarray([w.y for w in on], np.float64)
+            vis = vis * (1.0 - pillar_cover(boxes, foot, pillars))
         hidden: list[int] = []
         for i, w in enumerate(on):
             if w.hide_left_f > 0:

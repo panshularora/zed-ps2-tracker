@@ -52,6 +52,7 @@ from serve.detector import MODELS
 from serve.events import EventParams, gate_events
 from serve.gate_sim import router as gate_sim_router
 from serve.settings import Settings
+from serve.stress_live import router as stress_live_router
 from tracker.config import load_config
 from tracker.io import CacheFormatError, load_cache
 from tracker.runner import run_sequence
@@ -130,6 +131,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(router)
     application.include_router(workstation_router)
     application.include_router(gate_sim_router)
+    application.include_router(stress_live_router)
 
     web = settings.web_dist
     viewer = (VIEWER_DIST / "index.html").exists()

@@ -29,6 +29,8 @@ ENDPOINTS = [
     "/api/results/gate-events",
     "/api/results/go-no-go",
     "/api/configs",
+    "/api/stress/map/default",
+    "/api/stress/map/mem6",
 ]
 
 
