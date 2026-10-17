@@ -41,3 +41,20 @@
 .ws button { background: none; cursor: pointer; padding: 0; }
 .ws h1, .ws h2, .ws h3, .ws p { margin: 0; font-size: inherit; font-weight: inherit; }
 .ws-icon { font-family: var(--font-sans); line-height: 1; }
+
+/* Step 4 · Your video result (the .ws reset above zeroes Tailwind border/padding utilities, so
+   these are explicit). 8 px grid, flat, no shadows. */
+.ws .yv-count { border: 1px solid var(--color-line); }
+.ws .yv-row { border: 1px solid var(--color-line); }
+.ws .yv-h { font-size: 14px; font-weight: 600; color: var(--color-ink); }
+.ws .yv-btn { height: 28px; padding: 0 12px; border: 1px solid var(--color-line); border-radius: 4px; font-size: 12px; line-height: 26px; color: var(--color-mute); background: var(--color-raised); }
+.ws .yv-btn:hover { color: var(--color-ink); }
+.ws .yv-confirm { border-color: #56b4e9; color: #56b4e9; background: none; font-weight: 600; }
+.ws .yv-confirm:hover { background: rgba(86, 180, 233, 0.12); color: #56b4e9; }
+.ws .yv-undo { border-color: transparent; background: none; padding: 0 8px; }
+.ws .yv-small { height: 28px; padding: 0 8px; border: 1px solid var(--color-line); border-radius: 4px; display: inline-flex; align-items: center; font-size: 12px; color: var(--color-ink); background: none; }
+.ws .yv-small:hover { border-color: var(--color-mute); text-decoration: none; }
+.ws .yv-downloads { border-top: 1px solid var(--color-line); padding-top: 16px; }
+.ws .ptl-more.chip-btn { display: block; margin: 8px auto 0; height: 28px; padding: 0 12px; border: 1px solid var(--color-line); border-radius: 4px; font-size: 12px; color: var(--color-ink); }
+.ws .yv-time { color: #56b4e9; font-size: 13px; }
+.ws .yv-time:hover { text-decoration: underline; }

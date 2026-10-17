@@ -189,37 +189,37 @@ export function UploadResult({ result, jobId, seek, onSeek, onAgain, grab }: {
       <IdentityPlayer data={data} verify={null} seek={seek} unchecked
         watch="Each box and number is what our tracker drew. Click a box to follow a number; the bars below show when each number was on screen." />
       <section className="space-y-2" data-testid="missed-list">
-        <h3 className="text-[14px] font-semibold text-ink">Possible missed crossings ({shown.length})</h3>
+        <h3 className="yv-h">Possible missed crossings ({shown.length})</h3>
         <p className="text-[12px] text-mute">One number ended at the line and a new one began just across it. Highest pairing score first (quick, on-the-spot hand-offs). Not counted unless you confirm.</p>
         {shown.length === 0 && <div className="text-[12px] text-mute">None.</div>}
         {listed.map((x) => {
           const d = dec[x.key];
           return (
-            <Row key={x.key} testid="suggestion-item" decision={d ?? "pending"} done={d === "confirmed"} onPlay={() => onSeek(x.f, "row")}
+            <Row key={x.key} rowKey={x.key} testid="suggestion-item" decision={d ?? "pending"} done={d === "confirmed"} onPlay={() => onSeek(x.f, "row")}
               thumb={thumbs[`s:${x.key}`]?.[0]} t={x.t} onTime={() => onSeek(x.f, "time")}
               ids={[x.from, x.to]} crops={[thumbs[`a:${x.key}`]?.[0], thumbs[`b:${x.key}`]?.[0]]}
               detail={`${x.dir.toUpperCase()}${x.score !== null ? ` · pairing score ${x.score.toFixed(2)}` : ""}`}
               actions={d === "confirmed" ? (
                 <>
                   <span className="text-[13px] text-ink" aria-label="Confirmed" data-testid="suggestion-confirmed">✓</span>
-                  <button type="button" className="h-7 px-2 rounded-sm text-[12px] text-mute hover:text-ink" onClick={() => decide(x.key, null)}>Undo</button>
+                  <button type="button" className="yv-btn yv-undo" onClick={() => decide(x.key, null)}>Undo</button>
                 </>
               ) : (
                 <>
-                  <button type="button" className="h-7 px-3 rounded-sm border border-[#56B4E9] text-[#56B4E9] text-[12px] font-semibold" onClick={() => decide(x.key, "confirmed")} data-testid="suggestion-confirm">Confirm</button>
-                  <button type="button" className="h-7 px-3 rounded-sm border border-line bg-raised text-mute text-[12px]" onClick={() => decide(x.key, "dismissed")} data-testid="suggestion-dismiss">Dismiss</button>
+                  <button type="button" className="yv-btn yv-confirm" onClick={() => decide(x.key, "confirmed")} data-testid="suggestion-confirm">Confirm</button>
+                  <button type="button" className="yv-btn" onClick={() => decide(x.key, "dismissed")} data-testid="suggestion-dismiss">Dismiss</button>
                 </>
               )} />
           );
         })}
         {shown.length > TOP_N && (
-          <button type="button" className="h-7 px-3 rounded-sm border border-line text-[12px]" onClick={() => setMore((m) => !m)} aria-expanded={more} data-testid="suggestions-more">
+          <button type="button" className="yv-small" onClick={() => setMore((m) => !m)} aria-expanded={more} data-testid="suggestions-more">
             {more ? "Show top 3 only" : `Show ${shown.length - TOP_N} more`}
           </button>
         )}
       </section>
       <section className="space-y-2" data-testid="unsure-list">
-        <h3 className="text-[14px] font-semibold text-ink">Unsure crossings ({unsure.length})</h3>
+        <h3 className="yv-h">Unsure crossings ({unsure.length})</h3>
         <p className="text-[12px] text-mute">Counted crossings where the tracker was unsure (visibility or score under 0.5 in the half-second before the line). Already in the tracker count; worth a look.</p>
         {unsure.length === 0 && <div className="text-[12px] text-mute">None.</div>}
         {unsure.map((m) => {
@@ -230,12 +230,12 @@ export function UploadResult({ result, jobId, seek, onSeek, onAgain, grab }: {
           );
         })}
       </section>
-      <div className="flex flex-wrap gap-2 text-[12px] pt-2 border-t border-line" data-testid="downloads">
-        <a className="h-7 inline-flex items-center px-2 rounded-sm border border-line" href={api.csvUrl(jobId)} download data-testid="dl-csv">Boxes CSV</a>
-        <a className="h-7 inline-flex items-center px-2 rounded-sm border border-line" href={csvHref} download={`${result.clip.title}-crossings.csv`} data-testid="dl-crossings-csv">Crossings + your decisions CSV</a>
-        <a className="h-7 inline-flex items-center px-2 rounded-sm border border-line" href={api.annotatedUrl(jobId)} download data-testid="dl-annotated">Annotated clip</a>
-        <a className="h-7 inline-flex items-center px-2 rounded-sm border border-line" href={api.eventsUrl(jobId)} download>Events JSON</a>
-        {onAgain && <button type="button" className="h-7 px-2 rounded-sm border border-line" onClick={onAgain}>Try another clip</button>}
+      <div className="yv-downloads flex flex-wrap gap-2" data-testid="downloads">
+        <a className="yv-small" href={api.csvUrl(jobId)} download data-testid="dl-csv">Boxes CSV</a>
+        <a className="yv-small" href={csvHref} download={`${result.clip.title}-crossings.csv`} data-testid="dl-crossings-csv">Crossings + your decisions CSV</a>
+        <a className="yv-small" href={api.annotatedUrl(jobId)} download data-testid="dl-annotated">Annotated clip</a>
+        <a className="yv-small" href={api.eventsUrl(jobId)} download>Events JSON</a>
+        {onAgain && <button type="button" className="yv-small" onClick={onAgain}>Try another clip</button>}
       </div>
     </div>
   );
@@ -243,7 +243,7 @@ export function UploadResult({ result, jobId, seek, onSeek, onAgain, grab }: {
 
 function CountBlock({ testid, label, inN, outN, note }: { testid: string; label: string; inN: number; outN: number; note: string }) {
   return (
-    <div className="flex-1 min-w-[240px] px-4 py-3 rounded-sm border border-line bg-paper" data-testid={testid}>
+    <div className="yv-count flex-1 min-w-[240px] px-4 py-3 rounded-sm bg-paper" data-testid={testid}>
       <div className="text-[12px] text-mute">{label}</div>
       <div className="text-[32px] leading-10 font-semibold tabular text-ink">
         <span className="text-[14px] font-normal text-mute mr-1">IN</span><b data-testid={`${testid}-in`}>{inN}</b>
@@ -259,17 +259,17 @@ function IdChip({ id }: { id: number }) {
   return <span className="inline-flex items-center h-5 px-1.5 rounded-sm text-[12px] font-semibold text-[#0E1013] tabular" style={{ background: neutralColor(id) }} data-testid="id-chip">#{id}</span>;
 }
 
-function Row({ testid, decision, done, onPlay, thumb, t, onTime, ids, crops, detail, actions }: {
-  testid: string; decision?: string; done?: boolean; onPlay: () => void; thumb?: string; t: number; onTime: () => void;
+function Row({ testid, rowKey, decision, done, onPlay, thumb, t, onTime, ids, crops, detail, actions }: {
+  testid: string; rowKey?: string; decision?: string; done?: boolean; onPlay: () => void; thumb?: string; t: number; onTime: () => void;
   ids: number[]; crops: (string | undefined)[]; detail: string; actions?: React.ReactNode;
 }) {
   return (
-    <div className={`flex items-center gap-2 h-12 px-2 rounded-sm border border-line bg-paper cursor-pointer hover:bg-raised ${done ? "opacity-60" : ""}`}
-      data-testid={testid} data-decision={decision} onClick={onPlay} role="button" tabIndex={0} aria-label={`Play 2 s around ${mmss(t)}`}
+    <div className={`yv-row flex items-center gap-2 h-12 px-2 rounded-sm bg-paper cursor-pointer hover:bg-raised ${done ? "opacity-60" : ""}`}
+      data-testid={testid} data-key={rowKey} data-decision={decision} onClick={onPlay} role="button" tabIndex={0} aria-label={`Play 2 s around ${mmss(t)}`}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPlay(); } }}>
       {thumb ? <img src={thumb} alt="" width={TH_W} height={TH_H} className="rounded-sm" data-testid="row-thumb" />
         : <span className="inline-block rounded-sm bg-raised" style={{ width: TH_W, height: TH_H }} data-testid="row-thumb-pending" />}
-      <button type="button" className="text-[13px] tabular text-[#56B4E9] hover:underline" data-testid="row-time"
+      <button type="button" className="yv-time tabular" data-testid="row-time"
         onClick={(e) => { e.stopPropagation(); onTime(); }} title="Jump to 1 s before">{mmss(t)}</button>
       <span className="inline-flex items-center gap-1">
         {ids.map((id, i) => (

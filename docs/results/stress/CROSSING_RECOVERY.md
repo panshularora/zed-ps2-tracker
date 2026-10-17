@@ -100,3 +100,19 @@ The limits were **not** re-tuned on MOT17 after seeing these results, because th
 held-out check into tuning.
 
 Raw numbers: `docs/results/stress/crossing_recovery.json`.
+
+## Pairing score (order of suggestions only)
+
+Each suggestion carries `gap_s`, `distance_rel` and
+`pair_score = 1 − ½·min(1, gap_s / max_gap_s) − ½·min(1, distance_rel / max_dist_rel)`:
+1 means the new number started at once, on the spot; 0 means it sits at both limits. The score
+only orders the list an operator reviews (top 3, then "Show N more"). It never counts anything.
+
+## Operator demo on the MOT17-09 upload
+
+`operator_demo_mot17_09.json` (`python -m eval.operator_demo`, ground truth offline only). Truth
+3 IN / 10 OUT. The tracker counted 0 / 7. Of 9 suggestions, 3 match a true crossing the tracker
+missed. Confirming only those 3 in the UI gives an operator-adjusted count of 1 IN / 9 OUT. The
+real ones rank 2, 4 and 9 of 9 under the pairing-score sort, so 1 of them is in the top 3. The
+score does not reliably surface the real ones on this clip, and an operator still has to look at
+every row.
