@@ -5,6 +5,7 @@ import { PersonTimeline } from "./PersonTimeline";
 import { boxesAt, chipText, countsAt, people as peopleOf, pickFocus, placeChips, storySteps, tracksOf, watchLine, type Drawn, type Person, type Step, type XYWH } from "./story";
 import { fetchVerify, methodTooltip, verdictOf, type VerdictOf, type VerifyDoc } from "./verify";
 import { storyMoments, type StoryMoment } from "./moments";
+import { applyContent, letterbox, stageAspect, stageToSource } from "../lib/letterbox";
 
 const SWAP_FILL = "#8A929C";
 
@@ -191,7 +192,9 @@ export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data:
 
   function onClick(e: React.MouseEvent<HTMLCanvasElement>) {
     const r = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - r.left) / r.width) * data.width, y = ((e.clientY - r.top) / r.height) * data.height;
+    const p = stageToSource(letterbox(r.width, r.height, data.width, data.height), e.clientX - r.left, e.clientY - r.top);
+    if (!p) { setFollow(null); return; }
+    const [x, y] = p;
     const ff = Math.max(1, 1 + t * data.fps);
     const hitBox = boxesAt(tracks, ff, data.fps, verdict).find((d) => x >= d.box[0] && x <= d.box[0] + d.box[2] && y >= d.box[1] && y <= d.box[1] + d.box[3]);
     setFollow((cur) => (hitBox && hitBox.id !== cur ? hitBox.id : null));
@@ -212,7 +215,7 @@ export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data:
         ? `Watch ${moments.map((m) => `#${m.ev.id}`).join(" and ")}: hidden for a moment, back with the same number, and the check agrees it is the same person.`
         : watchLine(focus, steps))}</p>
       <CountBar inN={counts.in} outN={counts.out} note={hint} t={t} />
-      <div className="idp-stage" data-testid="identity-stage" data-t={t.toFixed(2)} data-playing={playing ? "1" : "0"} style={{ aspectRatio: `${data.width} / ${data.height}` }}>
+      <div className="idp-stage" data-testid="identity-stage" data-t={t.toFixed(2)} data-playing={playing ? "1" : "0"} style={{ aspectRatio: String(stageAspect(data.width, data.height)) }}>
         {src && <video key={src} ref={video} src={src} muted playsInline autoPlay className="idp-video" aria-label={data.title}
           onError={() => setSrcIdx((i) => i + 1)} onLoadedMetadata={(e) => { if (!(e.currentTarget.duration > 0)) setSrcIdx((i) => i + 1); }} />}
         <canvas ref={canvas} className="idp-canvas" onClick={onClick} aria-label={`${data.title}: ${data.runs.ours.label}. Click a person to follow.`} />
@@ -253,11 +256,14 @@ export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data:
 
 export function paintFrame(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: ReplayData, src: CanvasImageSource | null, view: XYWH, all: Drawn[], follow: number | null, focus: Set<number>, ff: number, tracks: Map<number, Map<number, XYWH>>) {
   const [vx, vy, vw, vh] = view;
-  const s = cw / vw;
+  const L = letterbox(cw, ch, vw, vh); // object-fit: contain; overlays share the content rect
+  const s = L.s;
   ctx.save();
-  ctx.fillStyle = "#13171C"; // empty frame when no video
+  ctx.fillStyle = "#0E1013"; // bars
   ctx.fillRect(0, 0, cw, ch);
-  ctx.setTransform(ctx.getTransform().scale(s, ch / vh).translate(-vx, -vy));
+  ctx.fillStyle = "#13171C"; // empty frame when no video
+  ctx.fillRect(L.x, L.y, L.w, L.h);
+  applyContent(ctx, L, vx, vy);
   if (src) ctx.drawImage(src, 0, 0, d.width, d.height);
   const px = 1 / s;
   if (d.gate) {

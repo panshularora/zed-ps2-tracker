@@ -3,6 +3,7 @@
 // (scripts/demo/precompute_scenarios.py). Kept/swap per reappearance comes from the check in
 // web/public/verify (heuristic on Pexels, ground truth on MOT17).
 import { useEffect, useMemo, useRef, useState } from "react";
+import { stageAspect } from "../lib/letterbox";
 import { Link, useSearchParams } from "react-router-dom";
 import { fromScenario, videoSources, type ReplayData } from "../guided/model";
 import { benchmarkReplay, loadBenchmarkPairs, type BenchPair } from "../guided/viewer";
@@ -161,7 +162,7 @@ export function ComparePanes({ data, doc }: { data: ReplayData; doc: VerifyDoc |
         {RUNS.map((run) => (
           <figure key={run} style={{ margin: 0 }} data-testid={`rc-pane-${run}`}>
             <figcaption className="cmp-head"><b className={run === "ours" ? "ours" : "base"}>{run === "ours" ? `Ours: ${data.runs.ours.label}` : `Baseline: ${data.runs.baseline.label}`}</b></figcaption>
-            <div className="rc-stage" style={{ aspectRatio: `${data.width} / ${data.height}` }}>
+            <div className="rc-stage" style={{ aspectRatio: String(stageAspect(data.width, data.height)) }}>
               {run === "baseline" && !hasBase ? <div className="cmp-hint">ByteTrack tracks not exported for this clip.</div> : <canvas ref={cv[run]} aria-label={`${data.title}, ${run}`} />}
             </div>
             <div className="cmp-counters tabular" data-testid={`rc-summary-${run}`}>

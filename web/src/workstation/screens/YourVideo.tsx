@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError, type Clip, type Job, type JobResult } from "../../api";
 import { IdentityPlayer } from "../../identity/IdentityPlayer";
-import { adjustedCounts, boxAt, cropRect, crossingsCsv, frameTime, fromJobResult, gateFromClicks, mmss, NO_GT_LABEL, REID_OFF_LABEL, rowSeek, suggestions, timeSeek, unsureMoments, uploadSummary, visibleSuggestions, type Decision, type Decisions, type SeekReq, type XYWH } from "../../upload/fromJob";
+import { boxAt, cropRect, crossingsCsv, frameTime, fromJobResult, gateFromClicks, mmss, NO_GT_LABEL, REID_OFF_LABEL, reviewNotesJson, rowSeek, suggestions, timeSeek, unsureKey, unsureMoments, uploadSummary, type Decision, type Decisions, type SeekReq, type XYWH } from "../../upload/fromJob";
 import { useThumbs, type Grabber, type ThumbReq } from "../../upload/thumbs";
 import { neutralColor } from "../../lib/scenarios";
 
@@ -87,7 +87,7 @@ export function YourVideo() {
             <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
             I filmed this at my own gate and the people in it agreed (turns on tailgate / hold alerts)
           </label>
-          <p className="text-[11px] text-mute">Faces are blurred before anything is shown or tracked. The original is never served back.</p>
+          <p className="text-[11px] text-mute">Faces are blurred before anything is shown or saved. The tracker reads the original in memory; it is never served back and is deleted when the job ends.</p>
         </>
       )}
       {(phase === "gate" || phase === "running") && clip && (
@@ -150,11 +150,12 @@ export function UploadResult({ result, jobId, seek, onSeek, onAgain, grab }: {
   const s = useMemo(() => uploadSummary(result), [result]);
   const sugs = useMemo(() => suggestions(result), [result]); // by crossing time
   const [dec, setDec] = useDecisions(jobId);
-  const shown = visibleSuggestions(sugs, dec);
-  const adj = adjustedCounts(s, sugs, dec);
   const decide = (k: string, d: Decision | null) => setDec((x) => { const n = { ...x }; if (d) n[k] = d; else delete n[k]; return n; });
   const csvHref = useMemo(() => (typeof URL !== "undefined" && URL.createObjectURL ? URL.createObjectURL(new Blob([crossingsCsv(result, dec)], { type: "text/csv" })) : "#"), [result, dec]);
   useEffect(() => () => { if (csvHref !== "#") URL.revokeObjectURL(csvHref); }, [csvHref]);
+  const notesHref = useMemo(() => (typeof URL !== "undefined" && URL.createObjectURL ? URL.createObjectURL(new Blob([JSON.stringify(reviewNotesJson(result, jobId, dec), null, 2)], { type: "application/json" })) : "#"), [result, jobId, dec]);
+  useEffect(() => () => { if (notesHref !== "#") URL.revokeObjectURL(notesHref); }, [notesHref]);
+  const notes = (k: string) => <ReviewNote status={dec[k]} onSet={(d) => decide(k, d)} />;
   const W = result.video.width, H = result.video.height;
   const reqs = useMemo<ThumbReq[]>(() => {
     const out: ThumbReq[] = [];
@@ -179,52 +180,41 @@ export function UploadResult({ result, jobId, seek, onSeek, onAgain, grab }: {
         <span className="text-[12px] text-mute">{result.clip.title} · {result.frames_tracked} frames · {s.ids} track IDs</span>
       </div>
       <div className="flex flex-wrap gap-4">
-        <CountBlock testid="upload-counts" label="Tracker count" inN={s.in} outN={s.out} note="What the tracker counted on its own." />
-        <CountBlock testid="adjusted-counts" label="Operator-adjusted" inN={adj.in} outN={adj.out}
-          note={`Tracker count + ${adj.confirmed} crossing${adj.confirmed === 1 ? "" : "s"} you confirmed.`} />
+        <CountBlock testid="upload-counts" label="Tracker count" inN={s.in} outN={s.out} note="What the tracker counted on its own. Review notes below do not change it." />
       </div>
       <IdentityPlayer data={data} verify={null} seek={seek} unchecked
         watch="Each box and number is what our tracker drew. Click a box to follow a number; the bars below show when each number was on screen." />
-      <section className="space-y-2" data-testid="missed-list">
-        <h3 className="yv-h">Possible missed crossings ({shown.length})</h3>
-        <p className="text-[12px] text-mute">One number ended at the line and a new one began just across it. All of them, in clip order. The grey pairing score (1 = quick, on-the-spot hand-off) is a rough hint, not a filter: check every row. Not counted unless you confirm.</p>
-        {shown.length === 0 && <div className="text-[12px] text-mute">None.</div>}
-        {shown.map((x) => {
-          const d = dec[x.key];
-          return (
-            <Row key={x.key} rowKey={x.key} testid="suggestion-item" decision={d ?? "pending"} done={d === "confirmed"} onPlay={() => onSeek(x.f, "row")}
+      <section className="space-y-3" data-testid="moments-to-check">
+        <h2 className="yv-h yv-h2" data-testid="moments-heading">Moments worth checking ({sugs.length + unsure.length})</h2>
+        <p className="text-[12px] text-mute">Places where the count may be wrong, in clip order. Confirm / Dismiss saves a review note to the exports; it changes no number on screen.</p>
+        <section className="space-y-2" data-testid="missed-list">
+          <h3 className="yv-h">Possible missed crossings ({sugs.length})</h3>
+          <p className="text-[12px] text-mute">One number ended at the line and a new one began just across it. The grey pairing score (1 = quick, on-the-spot hand-off) is a rough hint, not a filter: on the one labelled clip we have, most of these were not real.</p>
+          {sugs.length === 0 && <div className="text-[12px] text-mute">None.</div>}
+          {sugs.map((x) => (
+            <Row key={x.key} rowKey={x.key} testid="suggestion-item" decision={dec[x.key] ?? "pending"} onPlay={() => onSeek(x.f, "row")}
               thumb={thumbs[`s:${x.key}`]?.[0]} t={x.t} onTime={() => onSeek(x.f, "time")}
               ids={[x.from, x.to]} crops={[thumbs[`a:${x.key}`]?.[0], thumbs[`b:${x.key}`]?.[0]]}
-              detail={x.dir.toUpperCase()} score={x.score}
-              actions={d === "confirmed" ? (
-                <>
-                  <span className="text-[13px] text-ink" aria-label="Confirmed" data-testid="suggestion-confirmed">✓</span>
-                  <button type="button" className="yv-btn yv-undo" onClick={() => decide(x.key, null)}>Undo</button>
-                </>
-              ) : (
-                <>
-                  <button type="button" className="yv-btn yv-confirm" onClick={() => decide(x.key, "confirmed")} data-testid="suggestion-confirm">Confirm</button>
-                  <button type="button" className="yv-btn" onClick={() => decide(x.key, "dismissed")} data-testid="suggestion-dismiss">Dismiss</button>
-                </>
-              )} />
-          );
-        })}
-      </section>
-      <section className="space-y-2" data-testid="unsure-list">
-        <h3 className="yv-h">Unsure crossings ({unsure.length})</h3>
-        <p className="text-[12px] text-mute">Counted crossings where the tracker was unsure (visibility or score under 0.5 in the half-second before the line). Already in the tracker count; worth a look.</p>
-        {unsure.length === 0 && <div className="text-[12px] text-mute">None.</div>}
-        {unsure.map((m) => {
-          const k = `u:${m.f}:${m.id}`;
-          return (
-            <Row key={k} testid="unsure-item" onPlay={() => onSeek(m.f, "row")} thumb={thumbs[k]?.[0]} t={m.t} onTime={() => onSeek(m.f, "time")}
-              ids={[m.id]} crops={[thumbs[k]?.[1]]} detail={m.text.replace(/^#\d+ /, "")} />
-          );
-        })}
+              detail={x.dir.toUpperCase()} score={x.score} actions={notes(x.key)} />
+          ))}
+        </section>
+        <section className="space-y-2" data-testid="unsure-list">
+          <h3 className="yv-h">Unsure crossings ({unsure.length})</h3>
+          <p className="text-[12px] text-mute">Counted crossings where the tracker was unsure (visibility or score under 0.5 in the half-second before the line). Already in the tracker count.</p>
+          {unsure.length === 0 && <div className="text-[12px] text-mute">None.</div>}
+          {unsure.map((m) => {
+            const k = unsureKey(m);
+            return (
+              <Row key={k} rowKey={k} testid="unsure-item" decision={dec[k] ?? "pending"} onPlay={() => onSeek(m.f, "row")} thumb={thumbs[k]?.[0]} t={m.t} onTime={() => onSeek(m.f, "time")}
+                ids={[m.id]} crops={[thumbs[k]?.[1]]} detail={m.text.replace(/^#\d+ /, "")} actions={notes(k)} />
+            );
+          })}
+        </section>
       </section>
       <div className="yv-downloads flex flex-wrap gap-2" data-testid="downloads">
         <a className="yv-small" href={api.csvUrl(jobId)} download data-testid="dl-csv">Boxes CSV</a>
-        <a className="yv-small" href={csvHref} download={`${result.clip.title}-crossings.csv`} data-testid="dl-crossings-csv">Crossings + your decisions CSV</a>
+        <a className="yv-small" href={csvHref} download={`${result.clip.title}-crossings.csv`} data-testid="dl-crossings-csv">Crossings + review notes CSV</a>
+        <a className="yv-small" href={notesHref} download={`${result.clip.title}-review-notes.json`} data-testid="dl-review-json">Review notes JSON</a>
         <a className="yv-small" href={api.annotatedUrl(jobId)} download data-testid="dl-annotated">Annotated clip</a>
         <a className="yv-small" href={api.eventsUrl(jobId)} download>Events JSON</a>
         {onAgain && <button type="button" className="yv-small" onClick={onAgain}>Try another clip</button>}
@@ -247,16 +237,32 @@ function CountBlock({ testid, label, inN, outN, note }: { testid: string; label:
   );
 }
 
+/** Confirm / Dismiss as a review note (exported, never counted), with Undo. */
+function ReviewNote({ status, onSet }: { status?: Decision; onSet: (d: Decision | null) => void }) {
+  if (status) return (
+    <>
+      <span className="text-[12px] text-mute" data-testid="review-status">{status === "confirmed" ? "Noted: confirmed" : "Noted: dismissed"}</span>
+      <button type="button" className="yv-btn yv-undo" onClick={() => onSet(null)} data-testid="review-undo">Undo</button>
+    </>
+  );
+  return (
+    <>
+      <button type="button" className="yv-btn yv-confirm" onClick={() => onSet("confirmed")} data-testid="suggestion-confirm">Confirm</button>
+      <button type="button" className="yv-btn" onClick={() => onSet("dismissed")} data-testid="suggestion-dismiss">Dismiss</button>
+    </>
+  );
+}
+
 function IdChip({ id }: { id: number }) {
   return <span className="inline-flex items-center h-5 px-1.5 rounded-sm text-[12px] font-semibold text-[#0E1013] tabular" style={{ background: neutralColor(id) }} data-testid="id-chip">#{id}</span>;
 }
 
-function Row({ testid, rowKey, decision, done, onPlay, thumb, t, onTime, ids, crops, detail, score, actions }: {
-  testid: string; rowKey?: string; decision?: string; done?: boolean; onPlay: () => void; thumb?: string; t: number; onTime: () => void;
+function Row({ testid, rowKey, decision, onPlay, thumb, t, onTime, ids, crops, detail, score, actions }: {
+  testid: string; rowKey?: string; decision?: string; onPlay: () => void; thumb?: string; t: number; onTime: () => void;
   ids: number[]; crops: (string | undefined)[]; detail: string; score?: number | null; actions?: React.ReactNode;
 }) {
   return (
-    <div className={`yv-row flex items-center gap-2 h-12 px-2 rounded-sm bg-paper cursor-pointer hover:bg-raised ${done ? "opacity-60" : ""}`}
+    <div className={`yv-row flex items-center gap-2 h-12 px-2 rounded-sm bg-paper cursor-pointer hover:bg-raised`}
       data-testid={testid} data-key={rowKey} data-decision={decision} onClick={onPlay} role="button" tabIndex={0} aria-label={`Play 2 s around ${mmss(t)}`}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPlay(); } }}>
       {thumb ? <img src={thumb} alt="" width={TH_W} height={TH_H} className="rounded-sm" data-testid="row-thumb" />
@@ -283,7 +289,7 @@ function Row({ testid, rowKey, decision, done, onPlay, thumb, t, onTime, ids, cr
   );
 }
 
-/** Operator decisions on suggestions, kept on the client (localStorage per job). */
+/** Review notes on listed moments, kept on the client (localStorage per job); exported, never counted. */
 function useDecisions(jobId: string): [Decisions, (f: (d: Decisions) => Decisions) => void] {
   const key = `zed.decisions.${jobId}`;
   const [d, setD] = useState<Decisions>(() => {

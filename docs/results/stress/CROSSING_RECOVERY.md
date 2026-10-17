@@ -74,7 +74,7 @@ copy, see the operator demo below for the canonical raw-tracked run):
   improvement in the count is therefore coincidental: wrong events that happen to fill missing
   ones.
 
-## Decision: suggestions an operator confirms, never an automatic count
+## Decision: moments worth checking, never a count
 
 The method holds up on the simulator, where it was tuned, and on held-out seeds. It does **not**
 hold up on real footage: on the frozen MOT17-09 gates it makes the count worse for both trackers,
@@ -83,20 +83,24 @@ and on the MOT17-09 upload only 1 of 8 suggestions matches a true crossing the t
 box height, so the large boxes in MOT17-09 widen "near the line" to most of the frame. Box heights
 in the simulator are 46–130 px; in MOT17-09 they are up to about 400 px.
 
-Product call: a recovered crossing is a **suggestion** for an operator, never added to IN/OUT.
+Product call: a recovered crossing is a **moment worth checking**, never added to IN/OUT, and
+there is no "adjusted" count on screen.
 - The API emits `recovered_crossing` events with `from_track_id`. The job metrics report
   `possible_missed_crossings`, separate from `crossings_in` / `crossings_out`. There is no option
   to count them automatically.
-- Studio step 4 lists every one, in crossing-time order with no cap, under "Possible missed
-  crossings (N)" (the "Unsure crossings (N)" list follows). Each row has a still, an mm:ss link,
-  `#a → #b` chips, crops of both IDs, the pairing score in grey and Confirm / Dismiss. Clicking
-  the row plays the 2 s around the moment.
-- IN/OUT stays the tracker's plain count. Confirmed suggestions go into a separate,
-  labelled **Operator-adjusted** count. Dismissed suggestions disappear from the list.
-- Decisions are kept on the client (localStorage per job).
-- "Crossings + your decisions CSV" lists every crossing and every suggestion, with an
-  `operator_decision` column (confirmed / dismissed / pending) and whether the row is in the plain
-  count and in the operator-adjusted count.
+- Studio step 4 shows one 32 px **Tracker count** card. Below the player, **"Moments worth
+  checking (N)"** holds two groups, both in crossing-time order with no cap: "Possible missed
+  crossings (n)" and "Unsure crossings (n)". Each row has a still, an mm:ss link, ID chips,
+  crops, and Confirm / Dismiss; suggestion rows also show the pairing score in grey. Clicking the
+  row plays the 2 s around the moment.
+- Confirm / Dismiss / Undo are **review notes**: they change no number on screen and no row
+  disappears. They are kept on the client (localStorage per job) and saved to the exports:
+  "Crossings + review notes CSV" (`in_tracker_count`, `unsure`, `review_status` = pending /
+  confirmed / dismissed) and "Review notes JSON" (every listed moment with its status).
+- Why no adjusted count: suggestions can only add crossings, and false counted crossings stay in.
+  On the canonical MOT17-09 run, confirming the one real suggestion moved IN 4 → 5, away from
+  the true 3 (below). An earlier version of this branch showed an "Operator-adjusted" card; it
+  was removed.
 - A double-count guard is out of scope.
 
 The limits were **not** re-tuned on MOT17 after seeing these results, because that would turn the
@@ -129,19 +133,21 @@ ended):
 | True crossings the tracker missed | 4 |
 | Possible missed crossings (suggestions) | 8 |
 | Real suggestions | 1 (pairing-score rank 2 of 8) |
-| Operator-adjusted, only the real one confirmed | 5 IN / 11 OUT |
+| Adjusted count if the real one is added (recorded experiment, not shown in the UI) | 5 IN / 11 OUT |
 
-Confirming the one real suggestion (an IN) moves IN further from the truth, because the tracker
-already over-counts (6 of its 15 crossings are not real). Suggestions can only add; they cannot
-remove a false count.
+Confirming the real suggestion moved IN 4 → 5, away from the true 3, because the tracker already
+over-counts (6 of its 15 counted crossings are not real) and suggestions can only add. Adjusted
+counts are not shown in the UI; the result is kept here only as a recorded experiment
+(`adjusted_count_experiment` in the JSON). By crossing: 9 of the 15 counted crossings are real
+and 4 true crossings are missed; of the 8 suggestions, 1 is one of those 4.
 
 **Superseded** (both tracked on the *blurred* copy, so the blur changed the counts; kept in the
 JSON under `superseded`, not to be quoted): head-square blur, job 367de74b7ea3: tracker 0 / 7,
-9 suggestions, 3 real (score ranks 2, 4, 9), adjusted 1 / 9. Face-oval blur, job
-d90a457d1cab: tracker 3 / 9, 6 suggestions, 1 real (rank 1), adjusted 4 / 9.
+9 suggestions, 3 real (score ranks 2, 4, 9), adjusted then 1 / 9. Face-oval blur, job
+d90a457d1cab: tracker 3 / 9, 6 suggestions, 1 real (rank 1), adjusted then 4 / 9.
 
 Why the list shows every suggestion in clip order, with no top-3 cap and no score sort: in the
 superseded head-blur run the real ones ranked 2, 4 and 9 of 9 by score, so a top-3 cap would
 have hidden two of three, and in the canonical run the top-scored suggestion is not real. The
-score is a hint, not a filter; an operator still has to look at every row. (An earlier version
+score is a hint, not a filter; a reviewer still has to look at every row. (An earlier version
 of this branch had the cap and the score order.)

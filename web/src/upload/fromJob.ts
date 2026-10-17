@@ -92,10 +92,12 @@ export function gateFromClicks(a: [number, number], b: [number, number], w: numb
   return [n(a[0], w), n(a[1], h), n(b[0], w), n(b[1], h)];
 }
 
-// ---- possible missed crossings: suggestions an operator confirms or dismisses -----------------
+// ---- moments worth checking: possible missed crossings + unsure crossings ---------------------
 // A recovered_crossing event (one number ended at the line, a new one began just across it) is
-// never counted automatically. IN/OUT stays the tracker's plain count; only crossings an operator
-// confirms go into a separate, labelled "operator-adjusted" count. State lives on the client.
+// never counted. Confirm / Dismiss on any listed moment is a review note only: it is saved to the
+// exports (review_status) and changes no number on screen. There is no "adjusted" count: on the
+// MOT17-09 run, confirming the one real suggestion moved IN 4 -> 5, away from the true 3, because
+// the false counted crossings stay in. State lives on the client.
 
 export type Decision = "confirmed" | "dismissed";
 export type Decisions = Record<string, Decision>;
@@ -164,30 +166,44 @@ export interface SeekReq { f: number; n: number; leadS?: number; playS?: number 
 export const rowSeek = (f: number, n: number): SeekReq => ({ f, n, leadS: 1, playS: 2 });
 export const timeSeek = (f: number, n: number): SeekReq => ({ f, n, leadS: 1, playS: 0 });
 
-/** Suggestions still on screen: dismissed ones disappear. */
-export const visibleSuggestions = (s: Suggestion[], d: Decisions) => s.filter((x) => d[x.key] !== "dismissed");
-
-/** Plain IN/OUT plus confirmed suggestions. The plain count itself is never changed. */
-export function adjustedCounts(plain: { in: number; out: number }, s: Suggestion[], d: Decisions) {
-  const ok = s.filter((x) => d[x.key] === "confirmed");
-  return { in: plain.in + ok.filter((x) => x.dir === "in").length, out: plain.out + ok.filter((x) => x.dir === "out").length, confirmed: ok.length };
-}
+/** Review-note key of an unsure crossing (suggestions use their own key). */
+export const unsureKey = (m: Pick<UnsureMoment, "f" | "id">) => `u:${m.f}:${m.id}`;
 
 const csvCell = (v: string | number) => (/[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
 
-/** Crossings CSV: every plain crossing and every suggestion, with the operator's decision. */
+/** Crossings CSV: every counted crossing and every suggestion. review_status is the operator's note
+ * (pending / confirmed / dismissed) on a listed moment, blank on crossings that are not listed. */
 export function crossingsCsv(r: Pick<JobResult, "events" | "video" | "tracks">, d: Decisions): string {
-  const head = ["frame", "time_s", "time", "kind", "track_id", "from_track_id", "direction", "operator_decision", "in_plain_count", "in_operator_adjusted_count", "pair_score"];
+  const head = ["frame", "time_s", "time", "kind", "track_id", "from_track_id", "direction", "in_tracker_count", "unsure", "review_status", "pair_score"];
   const rows: (string | number)[][] = [];
+  const unsure = new Set(unsureMoments(r).map(unsureKey));
   for (const e of r.events) {
     if (e.kind !== "gate" || (e.type !== "crossing" && e.type !== "ambiguous_hold")) continue;
     const t = ((e.frame - 1) * r.video.stride) / r.video.fps;
-    rows.push([e.frame, t.toFixed(2), mmss(t), e.type, e.track_id, "", e.direction, "", "yes", "yes", ""]);
+    const k = unsureKey({ f: e.frame, id: e.track_id });
+    const listed = unsure.has(k);
+    rows.push([e.frame, t.toFixed(2), mmss(t), e.type, e.track_id, "", e.direction, "yes", listed ? "yes" : "no", listed ? d[k] ?? "pending" : "", ""]);
   }
   for (const s of suggestions(r)) {
-    const dec = d[s.key] ?? "pending";
-    rows.push([s.f, s.t.toFixed(2), mmss(s.t), "possible_missed_crossing", s.to, s.from, s.dir, dec, "no", dec === "confirmed" ? "yes" : "no", s.score ?? ""]);
+    rows.push([s.f, s.t.toFixed(2), mmss(s.t), "possible_missed_crossing", s.to, s.from, s.dir, "no", "", d[s.key] ?? "pending", s.score ?? ""]);
   }
   rows.sort((a, b) => Number(a[0]) - Number(b[0]));
   return [head, ...rows].map((r) => r.map(csvCell).join(",")).join("\n") + "\n";
+}
+
+/** Review notes JSON: every listed moment with its status. Notes only; no count is derived from them. */
+export function reviewNotesJson(r: Pick<JobResult, "events" | "video" | "tracks" | "clip">, jobId: string, d: Decisions) {
+  const sug = suggestions(r).map((s) => ({
+    key: s.key, kind: "possible_missed_crossing" as const, frame: s.f, time_s: +s.t.toFixed(2), direction: s.dir,
+    from_track_id: s.from, track_id: s.to, pair_score: s.score, status: d[s.key] ?? "pending",
+  }));
+  const uns = unsureMoments(r).map((m) => ({
+    key: unsureKey(m), kind: "unsure_crossing" as const, frame: m.f, time_s: +m.t.toFixed(2), direction: m.dir,
+    from_track_id: null, track_id: m.id, pair_score: null, status: d[unsureKey(m)] ?? "pending",
+  }));
+  return {
+    job: jobId, clip: r.clip.id,
+    note: "Review notes only. Confirm / Dismiss change no count; the tracker count is the only number shown.",
+    moments: [...sug, ...uns].sort((a, b) => a.frame - b.frame),
+  };
 }

@@ -1,6 +1,7 @@
 // Canvas painting for the guided replay (video px coordinates, view rect = zoom).
 import type { Box, RunKey } from "../lib/scenarios";
 import { neutralColor } from "../lib/scenarios";
+import { applyContent, letterbox } from "../lib/letterbox";
 import { chipText, lastSeen, trailOf, type ReplayData } from "./model";
 
 export interface Paint {
@@ -16,16 +17,17 @@ const GATE = "#F5A524"; // theme gate amber, not red
 
 export function paint(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: ReplayData, src: CanvasImageSource | null, p: Paint) {
   const [vx, vy, vw, vh] = p.view;
-  const s = cw / vw; // css px per video px
+  const L = letterbox(cw, ch, vw, vh); // object-fit: contain; overlays share the content rect
+  const s = L.s; // css px per video px
   ctx.save();
   ctx.fillStyle = "#0E1013";
   ctx.fillRect(0, 0, cw, ch);
   if (!src) {
     // schematic fallback: a #13171C clip-shaped rectangle, overlays drawn on top as usual
     ctx.fillStyle = "#13171C";
-    ctx.fillRect(0, 0, cw, ch);
+    ctx.fillRect(L.x, L.y, L.w, L.h);
   }
-  ctx.setTransform(ctx.getTransform().scale(s, ch / vh).translate(-vx, -vy));
+  applyContent(ctx, L, vx, vy);
   if (src) ctx.drawImage(src, 0, 0, d.width, d.height);
   const boxes: Box[] = p.f != null ? d.runs[p.run].frames[String(p.f)] ?? [] : [];
   const spotBoxes = boxes.filter((b) => p.spot.has(b[0]));

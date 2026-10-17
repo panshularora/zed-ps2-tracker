@@ -1,5 +1,5 @@
 {
- "what": "Operator demo on the MOT17-09 upload: confirm only the possible missed crossings that ground truth (checked offline, never shown in the UI) says are real, and record the operator-adjusted count the UI shows.",
+ "what": "Recorded experiment on the MOT17-09 upload: confirm only the possible missed crossings that ground truth (checked offline, never shown in the UI) says are real, and see what an adjusted count would have been. Confirming the real suggestion moved IN 4->5, away from the true 3; adjusted counts are not shown in the UI.",
  "canonical": true,
  "job": "03bcd2ab3ace",
  "tracked_on": "raw",
@@ -25,9 +25,10 @@
  "confirmed_in_ui": [
   "319:26:27"
  ],
- "operator_adjusted_ui": {
+ "adjusted_count_experiment": {
   "in": 5,
-  "out": 11
+  "out": 11,
+  "note": "Tracker count + the one confirmed real suggestion, computed when the UI still had an 'Operator-adjusted' card. Confirming the real suggestion moved IN 4->5, away from the true 3, because 6 of the 15 counted crossings are false and stay in. Adjusted counts are not shown in the UI: Studio step 4 now shows only the tracker count, and Confirm / Dismiss are review notes saved to the exports."
  },
  "tracker_count_ui_after_confirming": {
   "in": 4,
@@ -175,15 +176,15 @@
     "357:30:32",
     "403:21:34"
    ],
-   "operator_adjusted_ui": {
-    "in": 1,
-    "out": 9
-   },
    "real_ranks_under_pair_score_sort": [
     2,
     4,
     9
-   ]
+   ],
+   "operator_adjusted_ui_then": {
+    "in": 1,
+    "out": 9
+   }
   },
   {
    "why": "tracked on the face-oval blurred copy (detection read blurred frames)",
@@ -197,13 +198,14 @@
    "real_suggestions": [
     "365:13:26"
    ],
-   "operator_adjusted_ui": {
-    "in": 4,
-    "out": 9
-   },
    "real_ranks_under_pair_score": [
     1
-   ]
+   ],
+   "operator_adjusted_ui_then": {
+    "in": 4,
+    "out": 9
+   }
   }
- ]
+ ],
+ "ui_now": "One 'Tracker count' card. 'Moments worth checking (N)' lists the possible missed crossings and the unsure crossings; Confirm / Dismiss / Undo save a review_status in the crossings CSV and the review notes JSON and change no number on screen."
 }

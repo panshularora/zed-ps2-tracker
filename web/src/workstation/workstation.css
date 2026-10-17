@@ -47,6 +47,7 @@
 .ws .yv-count { border: 1px solid var(--color-line); }
 .ws .yv-row { border: 1px solid var(--color-line); }
 .ws .yv-h { font-size: 14px; font-weight: 600; color: var(--color-ink); }
+.ws .yv-h2 { font-size: 16px; line-height: 24px; }
 .ws .yv-btn { height: 28px; padding: 0 12px; border: 1px solid var(--color-line); border-radius: 4px; font-size: 12px; line-height: 26px; color: var(--color-mute); background: var(--color-raised); }
 .ws .yv-btn:hover { color: var(--color-ink); }
 .ws .yv-confirm { border-color: #56b4e9; color: #56b4e9; background: none; font-weight: 600; }

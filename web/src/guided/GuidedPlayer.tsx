@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { RunKey } from "../lib/scenarios";
 import { paint, paintStill } from "./draw";
+import { stageAspect } from "../lib/letterbox";
 import {
   activeMoment, answerFor, askText, countsAt, eventLog, extraCountsAt, frameAtTime, recentCrossers,
   resultText, schedule, spotlightIds, STAKE_TEXT, stopCrossed, stopKey, timeOfFrame, viewRect, zoomAt,
@@ -228,7 +229,7 @@ export function GuidedPlayer({ data, initialRun = "ours" }: { data: ReplayData; 
               <span className="g-count"><b>OUT</b> {counts.out}</span>
               {extra > 0 && <span className="g-extra" data-testid="extra-count">+{extra} extra (counted twice)</span>}
           </div>
-          <div className="g-stage" style={{ aspectRatio: `${data.width} / ${data.height}`, width: "100%" }}>
+          <div className="g-stage" style={{ aspectRatio: String(stageAspect(data.width, data.height)), width: "100%" }}>
             {src && (
               <video key={src} ref={video} src={src} muted playsInline autoPlay aria-label={data.title} className="g-video"
                 onError={onVideoError} onLoadedMetadata={(e) => { if (!(e.currentTarget.duration > 0)) onVideoError(); }} />

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Box, RunKey } from "../lib/scenarios";
 import { neutralColor } from "../lib/scenarios";
+import { letterbox, stageAspect, stageToSource } from "../lib/letterbox";
 import { countsAt, frameAtTime, timeOfFrame, videoSources, fallbackText, type GEvent, type ReplayData } from "../guided/model";
 import { boxesAt, focusIds, hiddenNow, layoutChips, liveCaption, liveRate, momentAt, runStats } from "./model";
 
@@ -12,13 +13,19 @@ const RUNS: RunKey[] = ["baseline", "ours"];
 interface PaneState { hover: number | null }
 
 function drawPane(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: ReplayData, run: RunKey, t: number, src: CanvasImageSource | null, st: PaneState) {
-  const sx = cw / d.width, sy = ch / d.height;
-  ctx.fillStyle = "#13171C";
+  // object-fit: contain; every overlay goes through the same content rect (ox, oy, sx = sy)
+  const L = letterbox(cw, ch, d.width, d.height);
+  const sx = L.s, sy = L.s;
+  ctx.fillStyle = "#0E1013"; // bars
   ctx.fillRect(0, 0, cw, ch);
+  ctx.fillStyle = "#13171C";
+  ctx.fillRect(L.x, L.y, L.w, L.h);
+  ctx.save();
+  ctx.translate(L.x, L.y);
   if (src) {
-    ctx.drawImage(src, 0, 0, cw, ch);
+    ctx.drawImage(src, 0, 0, L.w, L.h);
     ctx.fillStyle = "rgba(14,16,19,0.35)"; // calm the footage so boxes read first
-    ctx.fillRect(0, 0, cw, ch);
+    ctx.fillRect(0, 0, L.w, L.h);
   }
   const frames = d.runs[run].frames;
   const { f, boxes } = boxesAt(frames, d.fps, d.frames, t);
@@ -83,7 +90,7 @@ function drawPane(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: Repl
     chips.push({ id, text, cx: (x + w / 2) * sx, top: y * sy, w: chipW(text) });
   }
   const hiddenIds = new Set(hidden.map((h) => h.id));
-  for (const c of layoutChips(chips, 20, cw)) {
+  for (const c of layoutChips(chips, 20, L.w)) {
     const col = neutralColor(c.id);
     if (Math.abs(c.y + 20 - c.anchorY) > 8) { ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(c.anchorX, c.anchorY); ctx.lineTo(c.x + c.w / 2, c.y + 20); ctx.stroke(); }
     ctx.globalAlpha = hiddenIds.has(c.id) ? 0.7 : 1;
@@ -92,6 +99,7 @@ function drawPane(ctx: CanvasRenderingContext2D, cw: number, ch: number, d: Repl
     ctx.fillText(c.text, c.x + c.w / 2, c.y + 11);
     ctx.globalAlpha = 1;
   }
+  ctx.restore();
   return { f, n: boxes.length, hidden: hidden.map((h) => h.id) };
 }
 
@@ -163,7 +171,9 @@ export function ComparePlayer({ data, truth }: { data: ReplayData; truth?: Truth
 
   function onMove(r: RunKey, e: React.MouseEvent<HTMLCanvasElement>) {
     const c = e.currentTarget, rect = c.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * data.width, y = ((e.clientY - rect.top) / rect.height) * data.height;
+    const p = stageToSource(letterbox(rect.width, rect.height, data.width, data.height), e.clientX - rect.left, e.clientY - rect.top);
+    if (!p) { hover.current = { baseline: null, ours: null }; return; }
+    const [x, y] = p;
     const { boxes } = boxesAt(data.runs[r].frames, data.fps, data.frames, clock.current);
     const hit = boxes.filter((b) => x >= b[1] && x <= b[1] + b[3] && y >= b[2] && y <= b[2] + b[4]).sort((a, b) => a[3] * a[4] - b[3] * b[4])[0];
     hover.current = { baseline: null, ours: null, [r]: hit ? hit[0] : null };
@@ -187,7 +197,7 @@ export function ComparePlayer({ data, truth }: { data: ReplayData; truth?: Truth
                 <b className={r === "ours" ? "ours" : "base"}>{data.runs[r].label}</b>
                 <span className="muted">{r === "baseline" ? "baseline" : "our tracker"}</span>
               </figcaption>
-              <div className="cmp-stage" style={{ aspectRatio: `${data.width} / ${data.height}`, width: `min(100%, calc((100vh - 300px) * ${(data.width / data.height).toFixed(4)}))` }}>
+              <div className="cmp-stage" style={{ aspectRatio: String(stageAspect(data.width, data.height)), width: `min(100%, calc((100vh - 300px) * ${stageAspect(data.width, data.height).toFixed(4)}))` }}>
                 <canvas ref={canvases[r]} onMouseMove={(e) => onMove(r, e)} onMouseLeave={() => { hover.current = { baseline: null, ours: null }; }}
                   aria-label={`${data.title}, ${data.runs[r].label}`} />
                 {hint && <div className="cmp-hint" role="status">{hint}</div>}

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { JobResult } from "../src/api";
-import { adjustedCounts, cropRect, crossingsCsv, rankSuggestions, rowSeek, suggestions, timeSeek, uploadSummary, visibleSuggestions, type Decisions } from "../src/upload/fromJob";
+import { cropRect, crossingsCsv, rankSuggestions, reviewNotesJson, rowSeek, suggestions, timeSeek, uploadSummary } from "../src/upload/fromJob";
 import type { ThumbReq } from "../src/upload/thumbs";
 import { neutralColor } from "../src/lib/scenarios";
 import { UploadResult } from "../src/workstation/screens/YourVideo";
@@ -29,23 +29,25 @@ describe("possible missed crossings (pure)", () => {
   it("one suggestion per recovered_crossing, with time and both numbers", () => {
     expect(s.map((x) => x.text)).toEqual(["Possible missed crossing at 00:14 · #7 → #12", "Possible missed crossing at 00:16 · #9 → #14"]);
   });
-  it("confirming changes only the operator-adjusted count; dismissing removes the row", () => {
-    const plain = uploadSummary(res);
-    const d: Decisions = { [s[0].key]: "confirmed" };
-    expect(adjustedCounts(plain, s, d)).toEqual({ in: plain.in + 1, out: plain.out, confirmed: 1 });
-    expect(uploadSummary(res)).toEqual(plain);
-    const d2: Decisions = { ...d, [s[1].key]: "dismissed" };
-    expect(visibleSuggestions(s, d2).map((x) => x.key)).toEqual([s[0].key]);
-    expect(adjustedCounts(plain, s, d2)).toEqual({ in: plain.in + 1, out: plain.out, confirmed: 1 });
-  });
-  it("CSV has every crossing, every suggestion and a column for the operator's decision", () => {
-    const csv = crossingsCsv(res, { [s[0].key]: "confirmed", [s[1].key]: "dismissed" });
+  it("CSV has every crossing and every suggestion, with a review_status column for listed moments", () => {
+    const csv = crossingsCsv(res, { [s[0].key]: "confirmed", [s[1].key]: "dismissed", "u:11:3": "dismissed" });
     const lines = csv.trim().split("\n");
-    expect(lines[0]).toBe("frame,time_s,time,kind,track_id,from_track_id,direction,operator_decision,in_plain_count,in_operator_adjusted_count,pair_score");
-    expect(lines).toContain("421,14.00,00:14,possible_missed_crossing,12,7,in,confirmed,no,yes,");
-    expect(lines).toContain("500,16.63,00:16,possible_missed_crossing,14,9,out,dismissed,no,no,");
-    expect(lines).toContain("5,0.13,00:00,crossing,3,,in,,yes,yes,");
-    expect(crossingsCsv(res, {})).toContain(",pending,no,no,");
+    expect(lines[0]).toBe("frame,time_s,time,kind,track_id,from_track_id,direction,in_tracker_count,unsure,review_status,pair_score");
+    expect(lines[0]).not.toMatch(/adjusted/);
+    expect(lines).toContain("421,14.00,00:14,possible_missed_crossing,12,7,in,no,,confirmed,");
+    expect(lines).toContain("500,16.63,00:16,possible_missed_crossing,14,9,out,no,,dismissed,");
+    expect(lines).toContain("5,0.13,00:00,crossing,3,,in,yes,no,,");
+    expect(lines).toContain("11,0.33,00:00,crossing,3,,out,yes,yes,dismissed,");
+    expect(crossingsCsv(res, {})).toContain("11,0.33,00:00,crossing,3,,out,yes,yes,pending,");
+    // notes never change the tracker count
+    expect(uploadSummary(res)).toEqual(uploadSummary(res));
+  });
+  it("review notes JSON lists every moment with its status and derives no count", () => {
+    const j = reviewNotesJson(res, "j9", { [s[0].key]: "confirmed" });
+    expect(j.moments.map((m) => [m.kind, m.frame, m.status])).toEqual([
+      ["unsure_crossing", 11, "pending"], ["possible_missed_crossing", 421, "confirmed"], ["possible_missed_crossing", 500, "pending"],
+    ]);
+    expect(JSON.stringify(j)).not.toMatch(/adjusted|"in":|"out":/);
   });
 });
 
@@ -61,35 +63,36 @@ const ranked = {
   ],
 } as unknown as JobResult;
 
-describe("upload result: Confirm / Dismiss", () => {
-  it("Confirm changes only the operator-adjusted count (live), never the tracker count; Dismiss hides the row", () => {
+describe("upload result: Confirm / Dismiss are review notes", () => {
+  it("one Tracker count card; Confirm / Dismiss / Undo change no number and no row disappears", () => {
     render(<UploadResult result={res} jobId="j1" seek={null} onSeek={() => {}} grab={fakeGrab} />);
     const tin = () => screen.getByTestId("upload-counts-in").textContent;
     const tout = () => screen.getByTestId("upload-counts-out").textContent;
-    const ain = () => screen.getByTestId("adjusted-counts-in").textContent;
-    const aout = () => screen.getByTestId("adjusted-counts-out").textContent;
-    expect([tin(), tout(), ain(), aout()]).toEqual(["1", "1", "1", "1"]);
+    const numbers = () => [tin(), tout(), screen.getByTestId("moments-heading").textContent];
+    expect(numbers()).toEqual(["1", "1", "Moments worth checking (3)"]);
     expect(screen.getByTestId("upload-counts").textContent).toMatch(/^Tracker count/);
-    expect(screen.getByTestId("adjusted-counts").textContent).toMatch(/^Operator-adjusted.*0 crossings you confirmed/);
-    expect(screen.getByTestId("upload-counts").textContent).not.toMatch(/Recovered/);
+    expect(screen.queryByTestId("adjusted-counts")).toBeNull();
+    expect(screen.getByTestId("upload-result").textContent).not.toMatch(/adjusted/i);
     const rows = screen.getAllByTestId("suggestion-item");
     expect(rows).toHaveLength(2);
     fireEvent.click(within(rows[0]).getByTestId("suggestion-confirm"));
-    expect([tin(), tout(), ain(), aout()]).toEqual(["1", "1", "2", "1"]);
-    const done = screen.getAllByTestId("suggestion-item")[0];
-    expect(done.className).toContain("opacity-60");
-    expect(within(done).getByTestId("suggestion-confirmed").textContent).toBe("✓");
+    expect(numbers()).toEqual(["1", "1", "Moments worth checking (3)"]);
+    expect(within(screen.getAllByTestId("suggestion-item")[0]).getByTestId("review-status").textContent).toBe("Noted: confirmed");
     fireEvent.click(within(screen.getAllByTestId("suggestion-item")[1]).getByTestId("suggestion-dismiss"));
-    expect(screen.getAllByTestId("suggestion-item")).toHaveLength(1);
-    expect([tin(), tout(), ain(), aout()]).toEqual(["1", "1", "2", "1"]);
-    fireEvent.click(within(done).getByText("Undo"));
-    expect([ain(), aout()]).toEqual(["1", "1"]);
-    expect(JSON.parse(window.localStorage.getItem("zed.decisions.j1")!)).toEqual({ "500:9:14": "dismissed" });
+    expect(screen.getAllByTestId("suggestion-item")).toHaveLength(2);
+    expect(within(screen.getAllByTestId("suggestion-item")[1]).getByTestId("review-status").textContent).toBe("Noted: dismissed");
+    fireEvent.click(within(screen.getByTestId("unsure-item")).getByTestId("suggestion-confirm"));
+    expect(numbers()).toEqual(["1", "1", "Moments worth checking (3)"]);
+    fireEvent.click(within(screen.getAllByTestId("suggestion-item")[0]).getByTestId("review-undo"));
+    expect(within(screen.getAllByTestId("suggestion-item")[0]).getByTestId("suggestion-confirm")).toBeTruthy();
+    expect(screen.getAllByTestId("suggestion-item").map((r) => r.dataset.decision)).toEqual(["pending", "dismissed"]);
+    expect(JSON.parse(window.localStorage.getItem("zed.decisions.j1")!)).toEqual({ "500:9:14": "dismissed", "u:11:3": "confirmed" });
   });
 
-  it("two separate lists: possible missed crossings first, then unsure crossings, same row style", () => {
+  it("'Moments worth checking (N)' holds both groups: possible missed crossings first, then unsure crossings, same row style", () => {
     render(<UploadResult result={res} jobId="j3" seek={null} onSeek={() => {}} grab={fakeGrab} />);
-    const missed = screen.getByTestId("missed-list"), unsure = screen.getByTestId("unsure-list");
+    const box = screen.getByTestId("moments-to-check");
+    const missed = within(box).getByTestId("missed-list"), unsure = within(box).getByTestId("unsure-list");
     expect(within(missed).getByRole("heading").textContent).toBe("Possible missed crossings (2)");
     expect(within(unsure).getByRole("heading").textContent).toBe("Unsure crossings (1)");
     expect(within(missed).queryAllByTestId("unsure-item")).toHaveLength(0);
@@ -98,10 +101,11 @@ describe("upload result: Confirm / Dismiss", () => {
     expect(missed.compareDocumentPosition(unsure) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const a = within(missed).getAllByTestId("suggestion-item")[0], b = within(unsure).getAllByTestId("unsure-item")[0];
     expect(a.className).toBe(b.className);
-    // downloads sit in one row below both lists
+    // downloads sit in one row below both lists, including the review notes
     const dl = screen.getByTestId("downloads");
     expect(unsure.compareDocumentPosition(dl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(within(dl).getAllByRole("link").length).toBe(4);
+    expect(within(dl).getAllByRole("link").length).toBe(5);
+    expect(within(dl).getByTestId("dl-review-json").textContent).toBe("Review notes JSON");
   });
 
   it("each row: 64x36 still of that frame, ID chips in their colours, crops of both IDs; row click plays 2 s, time link seeks 1 s before", async () => {
@@ -159,14 +163,11 @@ describe("upload result: Confirm / Dismiss", () => {
     expect(rankSuggestions(suggestions(ranked)).map((x) => x.score)).toEqual([0.9, 0.7, 0.55, 0.4, 0.1]);
   });
 
-  it("top counts are two 32px blocks; the strip above the player shows the clip time ('So far at mm:ss:')", () => {
+  it("the top count is one 32px 'Tracker count' block; the strip above the player shows the clip time ('So far at mm:ss:')", () => {
     const { rerender } = render(<UploadResult result={res} jobId="j6" seek={null} onSeek={() => {}} grab={fakeGrab} />);
-    for (const id of ["upload-counts", "adjusted-counts"]) {
-      const big = screen.getByTestId(`${id}-in`).parentElement!;
-      expect(big.className).toContain("text-[32px]");
-    }
+    expect(screen.getByTestId("upload-counts-in").parentElement!.className).toContain("text-[32px]");
     expect(screen.getByTestId("upload-counts").textContent).toMatch(/^Tracker count/);
-    expect(screen.getByTestId("adjusted-counts").textContent).toMatch(/^Operator-adjusted/);
+    expect(screen.queryByTestId("adjusted-counts")).toBeNull();
     expect(screen.getByTestId("count-bar-label").textContent).toBe("So far at 00:00:");
     // follows the player: a seek to 1 s before the crossing at 14.0 s
     rerender(<UploadResult result={res} jobId="j6" seek={timeSeek(421, 1)} onSeek={() => {}} grab={fakeGrab} />);
