@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPEC, STRIP_STEPS, settingsRow, stripRows, type HarderStep } from "../src/stress/breakit";
+import { DEFAULT_SPEC, STRIP_STEPS, settingsRow, stripRows, type HarderStep } from "../src/stress/breakSpec";
 import { cropAt, cropFollow, cropWalkingArea, lostLine, personHeight, replaySentence, wholeSceneText, type SceneData, type Verdict } from "../src/stress/scene";
 import { flagOn } from "../src/lib/flags";
 

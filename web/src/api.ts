@@ -1,6 +1,6 @@
 import type { StressMapData } from "./stress/model";
 import type { SceneData } from "./stress/scene";
-import type { BreakSpec } from "./stress/breakit";
+import type { BreakSpec } from "./stress/breakSpec";
 // Typed client for the FastAPI service (serve/api.py). Every number the UI shows comes from here.
 
 export type Styling = "neutral" | "alert";

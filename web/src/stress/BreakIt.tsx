@@ -5,7 +5,7 @@ import { api } from "../api";
 import { AMBER } from "./model";
 import { verdict, personHeight, type PaneKey, type SceneData } from "./scene";
 import { ScenePlayer } from "./ScenePlayer";
-import { DEFAULT_SPEC, STRIP_STEPS, fromQuery, settingsRow, simplifyPath, stripRows, toQuery, type BreakSpec, type HarderStep } from "./breakit";
+import { DEFAULT_SPEC, STRIP_STEPS, fromQuery, settingsRow, simplifyPath, stripRows, toQuery, type BreakSpec, type HarderStep } from "./breakSpec";
 import { flag } from "../lib/flags";
 import { PANE_ORDER } from "./scene";
 

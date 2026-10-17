@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPEC, fromQuery, harderDone, harderText, heldUntil, simplifyPath, toQuery, type BreakSpec, type HarderStep } from "../src/stress/breakit";
+import { DEFAULT_SPEC, fromQuery, harderDone, harderText, heldUntil, simplifyPath, toQuery, type BreakSpec, type HarderStep } from "../src/stress/breakSpec";
 import { countsAt, hideWindow, verdict, type SceneData } from "../src/stress/scene";
 
 describe("shareable URL", () => {
