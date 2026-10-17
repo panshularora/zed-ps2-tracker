@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPEC, STRIP_STEPS, settingsRow, stripRows, type HarderStep } from "../src/stress/breakit";
-import { cropFollow, cropWalkingArea, personHeight, replaySentence, type SceneData, type Verdict } from "../src/stress/scene";
+import { cropAt, cropFollow, cropWalkingArea, lostLine, personHeight, replaySentence, wholeSceneText, type SceneData, type Verdict } from "../src/stress/scene";
 import { flagOn } from "../src/lib/flags";
 
 const kept = (id: number): Verdict => ({ kind: "kept", id, frame: 10, text: `Kept #${id}` });
@@ -33,19 +33,46 @@ describe("pane crops", () => {
     expect(edge.x + edge.w).toBeLessThanOrEqual(960);
     expect(edge.y + edge.h).toBeLessThanOrEqual(540);
   });
-  it("walking area: covers path and pillars, and a person on the gate line is >= 90 CSS px", () => {
-    const d = scene([[150, 40], [330, 200], [480, 300], [620, 420], [760, 560]], [[227, 320, 46, 150]]);
-    const paneW = 600;
-    const c = cropWalkingArea(d, 1, paneW);
-    expect((personHeight(300) * paneW) / c.w).toBeGreaterThanOrEqual(90 - 1e-9);
+  it("walking area: every path (whole bodies) and pillar inside, plus 10 % padding", () => {
+    const d = scene([[150, 40], [330, 200], [480, 300], [620, 420], [830, 240]], [[227, 320, 46, 150]]);
+    const c = cropWalkingArea(d);
     expect(c.w / c.h).toBeCloseTo(960 / 540);
-    // the hide point (person at the gate, x 480) and the gate line are inside the crop
-    expect(c.x).toBeLessThan(480);
-    expect(c.x + c.w).toBeGreaterThan(480);
-    expect(c.y).toBeLessThan(300);
-    expect(c.y + c.h).toBeGreaterThan(300);
-    // a wide pane does not need to cut the walking area down as much
-    expect(cropWalkingArea(d, 1, 2000).w).toBeGreaterThan(c.w);
+    for (const t of d.truth) for (const [, x, y] of t.p) {
+      expect(x).toBeGreaterThan(c.x); expect(x).toBeLessThan(c.x + c.w);
+      expect(Math.max(0, y - personHeight(y))).toBeGreaterThanOrEqual(c.y); expect(y).toBeLessThanOrEqual(c.y + c.h);
+    }
+    expect(c.x).toBeLessThan(227); expect(c.y + c.h).toBeGreaterThan(470);
+    // paths over the whole frame: the crop is the whole scene, never bigger
+    const big = cropWalkingArea(scene([[10, 20], [950, 535], [500, 300], [500, 300], [500, 300]]));
+    expect(big).toEqual({ x: 0, y: 0, w: 960, h: 540 });
+    // a small walking area zooms in
+    const small = cropWalkingArea(scene([[400, 280], [430, 300], [460, 320], [480, 330], [500, 340]]));
+    expect(small.w).toBeLessThan(960);
+  });
+  it("pause crop: 1.5x on the person, not clamped (padding past the scene edge)", () => {
+    const d = scene([[30, 520], [30, 520], [30, 520], [30, 520], [30, 520]]);
+    const c = cropAt(d, 1, 3, 1.5);
+    expect([c.w, c.h]).toEqual([640, 360]);
+    expect(c.x + c.w / 2).toBeCloseTo(30);
+    expect(c.x).toBeLessThan(0);
+    expect(c.y + c.h).toBeGreaterThan(540);
+  });
+});
+
+describe("whole-scene counts", () => {
+  const base = scene([[480, 300], [480, 300], [480, 300], [480, 300], [480, 300]]);
+  const withPane = (missed: [number, number, number][], extra = 0): SceneData => ({
+    ...base,
+    true_crossings_by: [[50, 2, 1], [120, 1, 1], [300, 3, -1]],
+    panes: { ...base.panes, bytetrack: { ...base.panes.bytetrack, missed, extra, count: 3 - missed.length + extra, true_count: 3 } },
+  });
+  it("label and computed line with the focus crossing's place among the lost ones", () => {
+    expect(wholeSceneText({ count: 2, true_count: 10 })).toBe("Whole scene: counted 2 of 10");
+    expect(lostLine(withPane([[120, 1, 1], [300, 3, -1]]), "bytetrack", 1, 118)).toBe("ByteTrack lost 2 crossings across the scene; this is the first.");
+    expect(lostLine(withPane([[50, 2, 1], [120, 1, 1]]), "bytetrack", 1, 118)).toBe("ByteTrack lost 2 crossings across the scene; this is the second.");
+    expect(lostLine(withPane([[300, 3, -1]]), "bytetrack", 1, 118)).toBe("ByteTrack lost 1 crossing across the scene; it counted this one.");
+    expect(lostLine(withPane([], 1), "bytetrack", 1, 118)).toBe("ByteTrack counted every real crossing in the scene. 1 of its counts matches no one's real crossing.");
+    expect(lostLine(base, "bytetrack", 1, 118)).toBeNull(); // no per-person data: say nothing
   });
 });
 

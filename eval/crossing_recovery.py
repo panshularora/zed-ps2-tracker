@@ -125,8 +125,14 @@ def recover_crossings(
         used_a.add(e.tid)
         used_b.add(b.tid)
         out.append(
-            RecoveredCrossing(
-                b.frame, b.tid, e.tid, gate.name, "in" if b.side > 0 else "out", gap, round(dist, 3)
+            RecoveredCrossing(  # plain Python numbers: these go straight into job JSON
+                int(b.frame),
+                int(b.tid),
+                int(e.tid),
+                gate.name,
+                "in" if b.side > 0 else "out",
+                int(gap),
+                round(float(dist), 3),
             )
         )
     return sorted(out, key=lambda x: (x.frame, x.track_id))

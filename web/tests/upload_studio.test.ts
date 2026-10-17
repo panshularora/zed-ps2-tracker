@@ -38,15 +38,15 @@ describe("upload -> Studio player", () => {
   });
   it("summary is counts and IDs only; never a kept-per-person number that can exceed people", () => {
     const s = uploadSummary(res);
-    expect(s).toEqual({ ids: 2, in: 1, out: 2, unsure: 2, possibleBreaks: 1, recovered: 0, recoveredIn: 0, recoveredOut: 0 });
+    expect(s).toEqual({ ids: 2, in: 1, out: 2, unsure: 2, possibleBreaks: 1 });
     expect(Object.keys(s)).not.toContain("kept");
     // three recovery events on one track: per-event counts must not be shown as people
     expect(res.events.filter((e) => e.kind === "recovery").length).toBeGreaterThan(s.ids);
   });
-  it("recovered crossings get their own row and stay out of IN/OUT", () => {
+  it("possible missed crossings are not in IN/OUT nor in the player's crossings", () => {
     const r = { ...res, events: [...res.events, { kind: "gate" as const, type: "recovered_crossing" as const, frame: 18, track_id: 9, from_track_id: 7, direction: "in" as const, timestamp: "", recovered: true as const }] };
     const s = uploadSummary(r);
-    expect([s.in, s.out, s.recovered, s.recoveredIn, s.recoveredOut]).toEqual([1, 2, 1, 1, 0]);
+    expect([s.in, s.out]).toEqual([1, 2]);
     expect(fromJobResult(r, null).events.ours.some((e) => e.f === 18)).toBe(false);
   });
   it("gate from two clicks is normalised and clamped", () => {

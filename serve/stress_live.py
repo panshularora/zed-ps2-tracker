@@ -12,6 +12,7 @@ REAL trackers, served to the web app.
 from __future__ import annotations
 
 import json
+from collections import Counter
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
@@ -139,6 +140,33 @@ def _crossing_frames(seq: list[tuple[int, float]]) -> list[tuple[int, int]]:
     return out
 
 
+def match_crossings(
+    true_by: list[tuple[int, int, int]],
+    trk_by: list[tuple[int, int, int]],
+    fps: float,
+    window_s: float = 2.0,
+) -> tuple[list[tuple[int, int, int]], int]:
+    """Which true crossings a tracker missed. ``true_by``: (frame, person, direction);
+    ``trk_by``: (frame, owner person, direction), owner = the person the track matched most often.
+    A true crossing is counted when an unused tracker crossing by the same person, in the same
+    direction, lies within ``window_s``. Returns (missed true crossings, tracker crossings left
+    over, i.e. counted crossings that match no true one)."""
+    used = [False] * len(trk_by)
+    missed = []
+    for f, p, d in sorted(true_by):
+        best = None
+        for i, (g, q, e) in enumerate(trk_by):
+            if used[i] or q != p or e != d or abs(g - f) > window_s * fps:
+                continue
+            if best is None or abs(g - f) < abs(trk_by[best][0] - f):
+                best = i
+        if best is None:
+            missed.append((f, p, d))
+        else:
+            used[best] = True
+    return missed, used.count(False)
+
+
 def track_scene(
     frames: list[Frame], ours_cfg: str, seed: int, settings: dict[str, Any]
 ) -> dict[str, Any]:
@@ -168,6 +196,8 @@ def track_scene(
         for p, _x, y, _w, h, _v in fr.truth:
             tru.setdefault(p, []).append((fr.f, y + h))
     out["true_crossings"] = sorted(f for s in tru.values() for f, _ in _crossing_frames(s))
+    true_by = sorted((f, p, d) for p, s in tru.items() for f, d in _crossing_frames(s))
+    out["true_crossings_by"] = [list(x) for x in true_by]  # [frame, person, direction]
     panes: dict[str, Any] = {}
     for name, path in trackers.items():
         cfg = sr.config(path)
@@ -193,6 +223,13 @@ def track_scene(
                 trk.setdefault(t, []).append((k + 1, b[1] + b[3]))
         true_n, trk_n = gate_counts(frames, rows)
         inv = [{t: p for p, t in mm.items()} for mm in m]
+        votes: dict[int, Counter[int]] = {}
+        for mm in m:
+            for p, t in mm.items():
+                votes.setdefault(t, Counter())[p] += 1
+        owner = {t: c.most_common(1)[0][0] for t, c in votes.items()}
+        trk_by = [(f, owner.get(t, -1), d) for t, s in trk.items() for f, d in _crossing_frames(s)]
+        missed, extra = match_crossings(true_by, trk_by, FPS)
         panes[name] = {
             "label": LABEL[name],
             "config": path,
@@ -209,6 +246,9 @@ def track_scene(
             "crossings": sorted(f for s in trk.values() for f, _ in _crossing_frames(s)),
             "count": trk_n,
             "true_count": true_n,
+            # true crossings this tracker did not count: [frame, person, +1 down / -1 up]
+            "missed": [list(x) for x in missed],
+            "extra": extra,
         }
     out["panes"] = panes
     return out

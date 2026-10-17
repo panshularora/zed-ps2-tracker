@@ -59,14 +59,23 @@ function Replay({ cell, cfg }: { cell: MapCell; cfg: Cfg }) {
           A re-run of one of this cell's {cell.seeds.length} seeds: seed {cell.replay_seed}, the one with the cell's median gap ({fmtGap(cell.replay_diff)} ID changes).
           {" "}{cell.people} people, each hidden {cell.hide_s} s, detector noise 0.15. Ours runs on {cfg === "mem6" ? "the longer-memory (opt-in)" : "default"} settings.
           {" "}{fd ? `It opens paused at frame ${fd.frame}, the first frame where the two trackers disagree (person ${fd.pid}; ${fd.changed === "ours" ? "ours" : "ByteTrack"} changed the number).` : "The two trackers never disagree on this seed."}
-          {" "}Both panes are zoomed 2× on that person. Figures drawn grey with a dashed outline are hidden from the camera.
+          {" "}Both panes are zoomed 1.5× on that person where the replay opens; past the scene edge the panes show padding. Figures drawn grey with a dashed outline are hidden from the camera.
         </p>
       </details>
       {err && <p className="muted" data-testid="replay-error">Replay needs the local service (it re-runs both trackers): {err}</p>}
       {!data && !err && <p className="muted">Re-running both trackers on this seed…</p>}
-      {data && <ScenePlayer data={data} startFrame={fd?.frame ?? 1} focus={pid} view="follow" reveal="always" />}
+      {data && <ScenePlayer data={data} startFrame={fd?.frame ?? 1} focus={pid} view="pause" reveal="always" />}
     </div>
   );
+}
+
+/** The amber step the cells of this map actually show most (ties go to the stronger step). */
+function amberSwatch(d: StressMapData): string {
+  const n = new Map<string, number>();
+  for (const c of d.cells) { const f = cellFill(c); if (f.side === "baseline") n.set(f.fill, (n.get(f.fill) ?? 0) + 1); }
+  let best: string = AMBER_STEPS[1], bn = -1;
+  for (const a of AMBER_STEPS) { const k = n.get(a) ?? 0; if (k > 0 && k >= bn) { best = a; bn = k; } }
+  return best;
 }
 
 export default function StressMap() {
@@ -144,7 +153,7 @@ export default function StressMap() {
         </div>
         <div className="stress-legend small" data-testid="stress-legend">
           <div><span className="sw" style={{ background: BLUE }} /> ours fewer ID changes</div>
-          <div><span className="sw" style={{ background: AMBER_STEPS[1] }} /> ours more</div>
+          <div><span className="sw" style={{ background: amberSwatch(d) }} /> ours more</div>
           <div><span className="sw" style={{ background: NEUTRAL }} /> tie</div>
           <div><span className="sw" style={{ backgroundColor: NEUTRAL, backgroundImage: HATCH }} /> not clear</div>
           <div className="sm-line"><svg width="16" height="16"><line x1="8" y1="0" x2="8" y2="16" stroke="#E6E8EB" strokeWidth="2" /></svg> <span data-testid="label-start">{b.startLabel}</span></div>

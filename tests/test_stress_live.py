@@ -108,3 +108,16 @@ def test_path_walker_reaches_the_gate_inside_its_hide() -> None:
     assert hid
     assert min(abs(ys[f] - 300) for f in hid) < 10
     assert np.isfinite(list(ys.values())).all()
+
+
+def test_match_crossings_missed_and_extra() -> None:
+    from serve.stress_live import match_crossings
+
+    true_by = [(100, 1, 1), (200, 2, 1), (300, 3, -1)]
+    # person 1 counted on time, person 2 counted by a track owned by someone else, person 3 missed;
+    # plus one crossing that matches nothing
+    trk_by = [(104, 1, 1), (201, 5, 1), (305, 3, 1)]
+    missed, extra = match_crossings(true_by, trk_by, 30.0)
+    assert missed == [(200, 2, 1), (300, 3, -1)]
+    assert extra == 2
+    assert match_crossings(true_by, [(100 + 61, 1, 1)], 30.0)[0][0] == (100, 1, 1)  # > 2 s late

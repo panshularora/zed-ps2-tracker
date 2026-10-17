@@ -13,6 +13,10 @@ export interface Pane {
   crossings: number[];
   count: number;
   true_count: number;
+  /** true crossings this tracker did not count: [frame, person, direction] */
+  missed?: [number, number, number][];
+  /** counted crossings that match no person's real crossing */
+  extra?: number;
 }
 export interface TruthFrame { f: number; p: [number, number, number, number][]; hidden: number[] }
 export interface SceneData {
@@ -24,6 +28,7 @@ export interface SceneData {
   fps: number;
   truth: TruthFrame[];
   true_crossings: number[];
+  true_crossings_by?: [number, number, number][];
   panes: Record<PaneKey, Pane>;
   pillars?: [number, number, number, number][];
   people?: { pid: number; kind: string }[];
@@ -114,29 +119,31 @@ export function cropFollow(d: SceneData, pid: number | null, f: number, zoom = 2
   return clampCrop(d, cx, cy, d.width / zoom);
 }
 
-/**
- * Break-it pane crop: the walking area (every person's path, the pillars, the gate line), cut down
- * just enough that a person standing on the gate line is at least `minFigPx` CSS pixels tall in a
- * pane `paneCssW` wide, centred on the hidden person's hide point.
- */
-export function cropWalkingArea(d: SceneData, focus: number | null, paneCssW: number, minFigPx = 90): Crop {
+/** Crop of fixed zoom centred on person pid at frame f, NOT clamped: past the scene edge the
+ * pane shows padding, so the camera never moves off the person and their neighbours stay in view. */
+export function cropAt(d: SceneData, pid: number | null, f: number, zoom = 1.5): Crop {
+  const p = pid == null ? null : personAt(d, pid, f);
+  const [cx, cy] = p ? [p[0], p[1] - personHeight(p[1]) / 2] : [d.width / 2, d.gate_y];
+  const w = d.width / zoom, h = d.height / zoom;
+  return { x: cx - w / 2, y: cy - h / 2, w, h };
+}
+
+/** Break-it pane crop: a box around every walking path (whole bodies), the pillars and the gate
+ * line, plus 10 % padding, widened to the scene's aspect ratio and capped at the whole scene. */
+export function cropWalkingArea(d: SceneData, pad = 0.1): Crop {
   let x0 = Infinity, x1 = -Infinity, y0 = d.gate_y, y1 = d.gate_y;
   for (const t of d.truth) for (const [, x, y] of t.p) {
-    x0 = Math.min(x0, x - 30); x1 = Math.max(x1, x + 30); y0 = Math.min(y0, y - personHeight(y)); y1 = Math.max(y1, y + 8);
+    const h = personHeight(y);
+    x0 = Math.min(x0, x - h * 0.3); x1 = Math.max(x1, x + h * 0.3); y0 = Math.min(y0, y - h); y1 = Math.max(y1, y);
   }
-  for (const [px, py, pw, ph] of d.pillars ?? []) { x0 = Math.min(x0, px - 16); x1 = Math.max(x1, px + pw + 16); y0 = Math.min(y0, py - 16); y1 = Math.max(y1, py + ph + 16); }
+  for (const [px, py, pw, ph] of d.pillars ?? []) { x0 = Math.min(x0, px); x1 = Math.max(x1, px + pw); y0 = Math.min(y0, py); y1 = Math.max(y1, py + ph); }
   if (!Number.isFinite(x0)) return { x: 0, y: 0, w: d.width, h: d.height };
+  const pw = (x1 - x0) * (1 + 2 * pad), ph = (y1 - y0) * (1 + 2 * pad);
   const aspect = d.width / d.height;
-  const fitW = Math.max(x1 - x0, (y1 - y0) * aspect);
-  const maxW = (paneCssW * personHeight(d.gate_y)) / minFigPx;
-  const w = Math.min(fitW, maxW);
-  let cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-  if (w < fitW && focus != null) {
-    const win = hideWindow(d, focus);
-    const p = win ? personAt(d, focus, Math.round((win[0] + win[1]) / 2)) : null;
-    if (p) { cx = p[0]; cy = d.gate_y; }
-  }
-  return clampCrop(d, cx, cy, w);
+  // never wider than the scene itself: a crop past that would only shrink the figures
+  const w = Math.min(d.width, Math.max(pw, ph * aspect)), h = w / aspect;
+  if (w >= d.width) return { x: 0, y: 0, w: d.width, h: d.height };
+  return { x: (x0 + x1) / 2 - w / 2, y: (y0 + y1) / 2 - h / 2, w, h };
 }
 
 /** One plain sentence for a replay: who was hidden and which tracker gave them a new number. */
@@ -152,4 +159,33 @@ export function replaySentence(people: number, pid: number, hideS: number | null
   }
   if (firstChanged) return `${head} ${firstChanged === "ours" ? "Ours" : "ByteTrack"} changed their number first.`;
   return head;
+}
+
+const ORD = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth"];
+const PANE_NAME: Record<PaneKey, string> = { bytetrack: "ByteTrack", ours: "Ours" };
+
+/** 'Whole scene: counted N of M'. */
+export const wholeSceneText = (p: Pick<Pane, "count" | "true_count">) => `Whole scene: counted ${p.count} of ${p.true_count}`;
+
+/**
+ * One line under a pane's verdict: how many real crossings this tracker lost over the whole scene,
+ * and where the focus person's crossing (the one nearest frame `at`) sits among them.
+ */
+export function lostLine(d: SceneData, pane: PaneKey, focus: number | null, at: number): string | null {
+  const p = d.panes[pane];
+  if (!p.missed) return null;
+  const name = PANE_NAME[pane];
+  const missed = [...p.missed].sort((a, b) => a[0] - b[0]);
+  const extra = p.extra ?? 0;
+  const tail = extra ? ` ${extra} of its counts ${extra === 1 ? "matches" : "match"} no one's real crossing.` : "";
+  const mine = focus == null ? [] : (d.true_crossings_by ?? []).filter((c) => c[1] === focus);
+  const fc = mine.length ? mine.reduce((a, b) => (Math.abs(b[0] - at) < Math.abs(a[0] - at) ? b : a)) : null;
+  if (!missed.length) return `${name} counted every real crossing in the scene.${tail}`;
+  const n = missed.length;
+  let where = ".";
+  if (fc) {
+    const k = missed.findIndex((m) => m[0] === fc[0] && m[1] === fc[1]);
+    where = k >= 0 ? `; this is the ${ORD[k] ?? `#${k + 1}`}.` : "; it counted this one.";
+  }
+  return `${name} lost ${n} crossing${n === 1 ? "" : "s"} across the scene${where}${tail}`;
 }

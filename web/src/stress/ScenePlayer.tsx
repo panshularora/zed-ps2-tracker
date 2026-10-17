@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AMBER, BLUE } from "./model";
 import {
-  PANE_ORDER, cropFollow, cropWalkingArea, latestChange, personHeight, verdict, whyQuestion,
+  PANE_ORDER, cropAt, cropFollow, cropWalkingArea, latestChange, lostLine, wholeSceneText, personHeight, verdict, whyQuestion,
   type Crop, type PaneKey, type SceneData, type Verdict,
 } from "./scene";
 
@@ -74,14 +74,16 @@ function drawPane(c: HTMLCanvasElement, d: SceneData, pane: PaneKey, f: number, 
   const sx = (x: number) => (x - crop.x) * k;
   const sy = (y: number) => (y - crop.y) * k;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = "#161A1F";
+  ctx.fillStyle = "#0E1013"; // padding past the scene edge
   ctx.fillRect(0, 0, c.width, c.height);
+  ctx.fillStyle = "#161A1F";
+  ctx.fillRect(sx(0), sy(0), d.width * k, d.height * k);
   ctx.strokeStyle = AMBER;
   ctx.lineWidth = 2 * r;
   ctx.setLineDash([10 * r, 6 * r]);
   ctx.beginPath();
-  ctx.moveTo(0, sy(d.gate_y));
-  ctx.lineTo(c.width, sy(d.gate_y));
+  ctx.moveTo(Math.max(0, sx(0)), sy(d.gate_y));
+  ctx.lineTo(Math.min(c.width, sx(d.width)), sy(d.gate_y));
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.setTransform(k, 0, 0, k, -crop.x * k, -crop.y * k);
@@ -124,8 +126,9 @@ export interface ScenePlayerProps {
   startFrame?: number;
   /** person to follow (white ring) and whose hide gets the verdict under each pane */
   focus?: number | null;
-  /** "follow": zoom 2× on the focus person; "walking": crop to the walking area (Break-it) */
-  view?: "follow" | "walking" | "full";
+  /** "pause": 1.5× on the focus person where the replay opens (cell replay); "follow": 2× and
+   * track them; "walking": box around all walking paths + 10 % (Break-it) */
+  view?: "pause" | "follow" | "walking" | "full";
   /** "reappearance": the verdict shows once the person is back (Break-it, live);
    * "always": a replay of a finished run, the outcome is shown from the start */
   reveal?: "reappearance" | "always";
@@ -137,19 +140,11 @@ export function ScenePlayer({ data, startFrame = 1, focus = null, view = "full",
   const n = data.truth.length;
   const [f, setF] = useState(Math.min(Math.max(1, startFrame), n));
   const [playing, setPlaying] = useState(false);
-  const [paneW, setPaneW] = useState(600);
   const refs = { bytetrack: useRef<HTMLCanvasElement>(null), ours: useRef<HTMLCanvasElement>(null) };
   useEffect(() => { setF(Math.min(Math.max(1, startFrame), n)); setPlaying(false); }, [data, startFrame, n]);
   useEffect(() => { onFrame?.(f); }, [f, onFrame]);
-  useEffect(() => {
-    const el = refs.bytetrack.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => setPaneW(el.clientWidth || 600));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [refs.bytetrack]);
-  const walking = useMemo(() => cropWalkingArea(data, focus, paneW), [data, focus, paneW]);
-  const crop: Crop = view === "follow" ? cropFollow(data, focus, f, 2) : view === "walking" ? walking : { x: 0, y: 0, w: data.width, h: data.height };
+  const fixed = useMemo(() => (view === "walking" ? cropWalkingArea(data) : view === "pause" ? cropAt(data, focus, startFrame, 1.5) : null), [view, data, focus, startFrame]);
+  const crop: Crop = fixed ?? (view === "follow" ? cropFollow(data, focus, f, 2) : { x: 0, y: 0, w: data.width, h: data.height });
   useEffect(() => {
     for (const k of PANE_ORDER) if (refs[k].current) drawPane(refs[k].current!, data, k, f, focus, crop);
   });
@@ -200,10 +195,11 @@ export function ScenePlayer({ data, startFrame = 1, focus = null, view = "full",
                     {shown ? v.text : `#${v.kind === "kept" ? v.id : v.from} hidden…`}
                   </span>
                 ) : <span className="verdict-big pending">{focus == null ? "Nobody hidden" : "No verdict"}</span>}
-                <span className="counted" data-testid={`counted-${k}`} title="Gate crossings this tracker counted over the whole scene, out of the true number">
-                  Counted <b>{p.count}</b> of <b>{p.true_count}</b>
+                <span className="counted" data-testid={`counted-${k}`} aria-label={wholeSceneText(p)} title="Gate crossings this tracker counted over the whole scene, out of the real number">
+                  Whole scene: counted <b>{p.count}</b> of <b>{p.true_count}</b>
                 </span>
               </div>
+              {(() => { const l = lostLine(data, k, focus, v?.frame ?? startFrame); return l ? <p className="lost-line" data-testid={`lost-${k}`}>{l}</p> : null; })()}
               <p className="why-line" data-testid={`why-${k}`}>
                 {last ? <><strong>{whyQuestion(last)}</strong> {last.line}</> : <span className="muted">No ID change in the last 4 s.</span>}
               </p>

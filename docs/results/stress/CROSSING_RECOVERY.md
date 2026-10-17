@@ -73,22 +73,30 @@ the hide plus the ramp is longer than `max_gap_s`.
   improvement in the count is therefore coincidental: wrong events that happen to fill missing
   ones.
 
-## Decision
+## Decision: suggestions an operator confirms, never an automatic count
 
 The method holds up on the simulator, where it was tuned, and on held-out seeds. It does **not**
-hold up on real footage: on the frozen MOT17-09 gates it makes the count worse for both trackers.
-On MOT17-04 it does nothing.
+hold up on real footage: on the frozen MOT17-09 gates it makes the count worse for both trackers,
+and on the MOT17-09 upload only 3 of 9 recoveries match a true crossing. The limits are relative to
+box height, so the large boxes in MOT17-09 widen "near the line" to most of the frame. Box heights
+in the simulator are 46–130 px; in MOT17-09 they are up to about 400 px.
 
-The limits are relative to box height, so the large boxes in MOT17-09 widen "near the line" to most
-of the frame. Box heights in the simulator are 46–130 px; in MOT17-09 they are up to about 400 px.
+Product call: a recovered crossing is a **suggestion** for an operator, never added to IN/OUT.
+- The API emits `recovered_crossing` events with `from_track_id`. The job metrics report
+  `possible_missed_crossings`, separate from `crossings_in` / `crossings_out`. There is no option
+  to count them automatically.
+- The upload result lists each one in the unsure-moments list:
+  "Possible missed crossing at mm:ss · #a → #b · Confirm / Dismiss". Clicking the row jumps the
+  player to that moment.
+- IN/OUT stays the tracker's plain count. Confirmed suggestions go into a separate,
+  labelled **Operator-adjusted** count. Dismissed suggestions disappear from the list.
+- Decisions are kept on the client (localStorage per job).
+- "Download CSV (crossings + your decisions)" lists every crossing and every suggestion, with an
+  `operator_decision` column (confirmed / dismissed / pending) and whether the row is in the plain
+  count and in the operator-adjusted count.
+- A double-count guard is out of scope.
 
-So, by default, recovered crossings are **listed, not counted**:
-- the API emits `recovered_crossing` events with `from_track_id`, and the metrics include
-  `recovered_crossings` and `crossings_{in,out}_with_recovered`;
-- the upload ledger shows a **Recovered crossings** row next to *Unsure crossings*, and IN/OUT
-  stays the plain count.
-
-`gate_output(..., count_recovered=True)` makes them count. The limits were **not** re-tuned on
-MOT17 after seeing these results, because that would turn the held-out check into tuning.
+The limits were **not** re-tuned on MOT17 after seeing these results, because that would turn the
+held-out check into tuning.
 
 Raw numbers: `docs/results/stress/crossing_recovery.json`.

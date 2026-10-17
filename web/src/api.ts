@@ -44,9 +44,8 @@ export interface JobMetrics {
   crossings_out: number;
   tailgates: number;
   ambiguous_holds: number;
-  recovered_crossings?: number;
-  crossings_in_with_recovered?: number;
-  crossings_out_with_recovered?: number;
+  /** suggestions for an operator to confirm, never part of crossings_in / crossings_out */
+  possible_missed_crossings?: number;
 }
 
 export interface JobTiming {

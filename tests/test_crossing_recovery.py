@@ -84,7 +84,7 @@ def test_tuned_defaults_are_the_documented_ones() -> None:
     assert RecoveryParams() == RecoveryParams(**doc["tuning"]["chosen"]["params"])
 
 
-def test_recovered_crossings_are_listed_not_counted_by_default() -> None:
+def test_recovered_crossings_are_suggestions_never_counts() -> None:
     from serve.analysis import metrics
 
     ev = [
@@ -93,5 +93,16 @@ def test_recovered_crossings_are_listed_not_counted_by_default() -> None:
          "frame": 9, "recovered": True},
     ]  # fmt: skip
     m = metrics(np.zeros((0, 8)), 30.0, 10, ev, [], [])
-    assert (m["crossings_in"], m["crossings_out"], m["recovered_crossings"]) == (1, 0, 1)
-    assert (m["crossings_in_with_recovered"], m["crossings_out_with_recovered"]) == (1, 1)
+    assert (m["crossings_in"], m["crossings_out"], m["possible_missed_crossings"]) == (1, 0, 1)
+    assert not any("with_recovered" in k for k in m)
+
+
+def test_recovered_events_are_json_serialisable() -> None:
+    import json
+    from dataclasses import asdict
+
+    r = rows(walk(1, 1, 500, 150, 280, 20), walk(2, 40, 505, 320, 450, 20))
+    ev = recover_crossings(r, GATE, H, 30.0, P)
+    assert ev
+    json.dumps([asdict(e) for e in ev])  # numpy ints here once broke upload jobs
+    assert all(type(e.track_id) is int and type(e.from_track_id) is int for e in ev)

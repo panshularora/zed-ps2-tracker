@@ -171,16 +171,13 @@ def gate_output(
     styling: str,
     hysteresis_px: float = 10.0,
     recovery: RecoveryParams | None = DEFAULT_RECOVERY,
-    count_recovered: bool = False,
 ) -> list[dict[str, Any]]:
     """``alert`` (consented clips): the full ZIG contract; ``neutral``: crossings only.
 
-    Both then get **recovered crossings** (``eval.crossing_recovery``; ``recovery=None`` turns it
-    off) when one number ended at the line and a new one began just across it, with
-    ``recovered: true`` and ``from_track_id``. Track numbers are not changed. By default they
-    are listed as ``recovered_crossing`` events and NOT added to IN/OUT, because the held-out
-    MOT17 check did not support counting them (``docs/results/stress/CROSSING_RECOVERY.md``);
-    ``count_recovered=True`` emits them as ``crossing`` events so they count.
+    Both then get **suggested crossings** (``eval.crossing_recovery``; ``recovery=None`` turns it
+    off): a ``recovered_crossing`` event, with ``from_track_id``, when one number ended at the
+    line and a new one began just across it. It is a suggestion for an operator to confirm or
+    dismiss, never part of IN/OUT; track numbers are not changed.
 
     Neutral crossings still say when the tracker was unsure of that track (the same rule that makes
     an ``ambiguous_hold`` on consented footage): ``unsure`` + ``reasons``. That is a statement about
@@ -191,7 +188,7 @@ def gate_output(
         return plain
     rec = [
         {
-            "type": "crossing" if count_recovered else "recovered_crossing",
+            "type": "recovered_crossing",
             "track_id": e.track_id,
             "from_track_id": e.from_track_id,
             "direction": e.direction,
@@ -265,13 +262,8 @@ def metrics(
         "suspected_id_switches": len(sus),
         "crossings_in": sum(e["direction"] == "in" for e in counted),
         "crossings_out": sum(e["direction"] == "out" for e in counted),
-        "recovered_crossings": sum(bool(e.get("recovered")) for e in gate_ev),
-        "crossings_in_with_recovered": sum(
-            e["direction"] == "in" for e in gate_ev if e in counted or e.get("recovered")
-        ),
-        "crossings_out_with_recovered": sum(
-            e["direction"] == "out" for e in gate_ev if e in counted or e.get("recovered")
-        ),
+        # suggestions for an operator, not counts: never added to crossings_in / crossings_out
+        "possible_missed_crossings": sum(e["type"] == "recovered_crossing" for e in gate_ev),
         "tailgates": sum(e["type"] == "tailgate" for e in gate_ev),
         "ambiguous_holds": sum(e["type"] == "ambiguous_hold" for e in gate_ev),
         "unsure_crossings": sum(

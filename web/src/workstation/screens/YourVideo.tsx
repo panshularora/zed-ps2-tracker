@@ -1,10 +1,10 @@
 // Studio step 4 · "Your video": upload a clip, draw the gate on its (face-blurred) first frame, run
 // our tracker on the CPU backend, then watch the result in the Studio player. Uploads have no
 // ground truth, so the page reports counts, IDs and events only, never accuracy.
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError, type Clip, type Job, type JobResult } from "../../api";
 import { IdentityPlayer } from "../../identity/IdentityPlayer";
-import { fromJobResult, gateFromClicks, NO_GT_LABEL, REID_OFF_LABEL, unsureMoments, uploadSummary } from "../../upload/fromJob";
+import { adjustedCounts, crossingsCsv, fromJobResult, gateFromClicks, NO_GT_LABEL, REID_OFF_LABEL, suggestions, unsureMoments, uploadSummary, visibleSuggestions, type Decision, type Decisions } from "../../upload/fromJob";
 
 type Phase = "pick" | "uploading" | "gate" | "running" | "done";
 type Pt = [number, number];
@@ -138,6 +138,17 @@ export function UploadResult({ result, jobId, seek, onSeek, onAgain }: { result:
   const data = useMemo(() => fromJobResult(result, `/api/clips/${encodeURIComponent(result.clip.id)}/video`), [result]);
   const unsure = useMemo(() => unsureMoments(result), [result]);
   const s = useMemo(() => uploadSummary(result), [result]);
+  const sugs = useMemo(() => suggestions(result), [result]);
+  const [dec, setDec] = useDecisions(jobId);
+  const shown = visibleSuggestions(sugs, dec);
+  const adj = adjustedCounts(s, sugs, dec);
+  const decide = (k: string, d: Decision | null) => setDec((x) => { const n = { ...x }; if (d) n[k] = d; else delete n[k]; return n; });
+  const csvHref = useMemo(() => (typeof URL !== "undefined" && URL.createObjectURL ? URL.createObjectURL(new Blob([crossingsCsv(result, dec)], { type: "text/csv" })) : "#"), [result, dec]);
+  useEffect(() => () => { if (csvHref !== "#") URL.revokeObjectURL(csvHref); }, [csvHref]);
+  const rows = [
+    ...unsure.map((m) => ({ f: m.f, key: `u${m.f}:${m.id}`, sug: null as null | (typeof sugs)[number], m })),
+    ...shown.map((x) => ({ f: x.f, key: `s${x.key}`, sug: x, m: null as null | (typeof unsure)[number] })),
+  ].sort((a, b) => a.f - b.f);
   return (
     <div className="space-y-3" data-testid="upload-result">
       <div className="flex flex-wrap items-center gap-2">
@@ -150,25 +161,59 @@ export function UploadResult({ result, jobId, seek, onSeek, onAgain }: { result:
         <span>IN <b>{s.in}</b></span>
         <span>OUT <b>{s.out}</b></span>
         <span>Unsure crossings <b>{s.unsure}</b></span>
-        <span data-testid="recovered-crossings" title={`A number ended at the line and a new one began just across it. Not added to IN/OUT: the held-out MOT17 check did not support it. With them: IN ${s.in + s.recoveredIn} · OUT ${s.out + s.recoveredOut}.`}>Recovered crossings <b>{s.recovered}</b></span>
         <span title="Heuristic: a new number started next to where another vanished. Not checked against labels.">Possible ID breaks <b>{s.possibleBreaks}</b></span>
+      </div>
+      <div className="flex flex-wrap gap-4 text-[13px] tabular text-mute" data-testid="adjusted-counts">
+        <span>Operator-adjusted (plain count + {adj.confirmed} confirmed by you): IN <b className="text-ink">{adj.in}</b> · OUT <b className="text-ink">{adj.out}</b></span>
       </div>
       <IdentityPlayer data={data} verify={null} seek={seek} unchecked
         watch="Each box and number is what our tracker drew. Click a box to follow a number; the bars below show when each number was on screen." />
       <div className="space-y-1" data-testid="unsure-list">
-        <div className="text-[12px] font-semibold text-ink">Unsure moments ({unsure.length})</div>
-        {unsure.length === 0 && <div className="text-[12px] text-mute">No crossing where the tracker was unsure (ambiguous_hold rule: visibility under 0.5 or score under 0.5 in the half-second before the line).</div>}
-        {unsure.map((m) => (
-          <button key={`${m.f}:${m.id}`} type="button" onClick={() => onSeek(m.f)} data-testid="unsure-item"
-            className="block text-left text-[12px] font-mono px-2 py-1 rounded-sm border border-line bg-paper hover:bg-raised">{m.text}</button>
+        <div className="text-[12px] font-semibold text-ink">Unsure moments ({unsure.length}) · possible missed crossings to check ({shown.length})</div>
+        {rows.length === 0 && <div className="text-[12px] text-mute">No crossing where the tracker was unsure (ambiguous_hold rule: visibility under 0.5 or score under 0.5 in the half-second before the line) and no possible missed crossing.</div>}
+        {rows.map((r) => r.m ? (
+          <button key={r.key} type="button" onClick={() => onSeek(r.m!.f)} data-testid="unsure-item"
+            className="block text-left text-[12px] px-2 py-1 rounded-sm border border-line bg-paper hover:bg-raised">{r.m.text}</button>
+        ) : (
+          <div key={r.key} className="flex items-center gap-2 text-[12px] px-2 py-1 rounded-sm border border-line bg-paper" data-testid="suggestion-item" data-decision={dec[r.sug!.key] ?? "pending"}>
+            <button type="button" className="text-left hover:underline" onClick={() => onSeek(r.sug!.f)} data-testid="suggestion-seek"
+              title="One number ended at the line and a new one began just across it. Not in IN/OUT unless you confirm it.">{r.sug!.text}</button>
+            <span className="flex-1" />
+            {dec[r.sug!.key] === "confirmed" ? (
+              <>
+                <span className="font-semibold" data-testid="suggestion-confirmed">Confirmed</span>
+                <button type="button" className="px-2 py-0.5 rounded-sm border border-line" onClick={() => decide(r.sug!.key, null)}>Undo</button>
+              </>
+            ) : (
+              <>
+                <button type="button" className="px-2 py-0.5 rounded-sm border border-line" onClick={() => decide(r.sug!.key, "confirmed")} data-testid="suggestion-confirm">Confirm</button>
+                <button type="button" className="px-2 py-0.5 rounded-sm border border-line" onClick={() => decide(r.sug!.key, "dismissed")} data-testid="suggestion-dismiss">Dismiss</button>
+              </>
+            )}
+          </div>
         ))}
       </div>
       <div className="flex flex-wrap gap-2 text-[12px]">
         <a className="px-3 py-1.5 rounded-sm border border-line" href={api.csvUrl(jobId)} download data-testid="dl-csv">Download CSV (boxes)</a>
+        <a className="px-3 py-1.5 rounded-sm border border-line" href={csvHref} download={`${result.clip.title}-crossings.csv`} data-testid="dl-crossings-csv">Download CSV (crossings + your decisions)</a>
         <a className="px-3 py-1.5 rounded-sm border border-line" href={api.annotatedUrl(jobId)} download data-testid="dl-annotated">Download annotated clip</a>
         <a className="px-3 py-1.5 rounded-sm border border-line" href={api.eventsUrl(jobId)} download>Events (JSON)</a>
         {onAgain && <button type="button" className="px-3 py-1.5 rounded-sm border border-line" onClick={onAgain}>Try another clip</button>}
       </div>
     </div>
   );
+}
+
+/** Operator decisions on suggestions, kept on the client (localStorage per job). */
+function useDecisions(jobId: string): [Decisions, (f: (d: Decisions) => Decisions) => void] {
+  const key = `zed.decisions.${jobId}`;
+  const [d, setD] = useState<Decisions>(() => {
+    try { return JSON.parse(window.localStorage.getItem(key) ?? "{}") as Decisions; } catch { return {}; }
+  });
+  const update = (f: (d: Decisions) => Decisions) => setD((x) => {
+    const n = f(x);
+    try { window.localStorage.setItem(key, JSON.stringify(n)); } catch { /* storage off: state stays in memory */ }
+    return n;
+  });
+  return [d, update];
 }

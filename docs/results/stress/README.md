@@ -332,4 +332,4 @@ Seeds where the two trackers' ID histories diverge: 951 of 960. Reasons in the t
 - the counting step that pairs an ID ending at the gate with a new ID starting across it;
 - its limits (gap 4.0 s, distance 2.0 box heights, near 3.0 box heights), tuned on simulator seeds 0–9 only;
 - the held-out checks: simulator seeds 1000–1019, MOT17-04, MOT17-09 and the MOT17-09 upload;
-- why recovered crossings are listed but not counted by default.
+- why recovered crossings are only suggestions for an operator to confirm, never an automatic count.
