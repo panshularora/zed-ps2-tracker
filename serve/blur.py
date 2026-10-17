@@ -145,8 +145,15 @@ def frame_boxes(
     return face_boxes(fd, img), head_boxes(tl, sc)
 
 
+def _no_blur(img: np.ndarray, boxes: np.ndarray) -> np.ndarray:
+    return img
+
+
 def blur_with(mode: str) -> Callable[[np.ndarray, np.ndarray], np.ndarray]:
-    return blur_faces_soft if mode == "face" else blur_regions
+    """``face``: soft ovals; ``head``: pixelated squares; ``none``: unchanged (tests only)."""
+    if mode not in ("face", "head", "none"):
+        raise ValueError(f"unknown blur mode {mode!r}")
+    return blur_faces_soft if mode == "face" else blur_regions if mode == "head" else _no_blur
 
 
 def blur_frame(img: np.ndarray, model_dir: Path, *, detector: str = "yolox_tiny",

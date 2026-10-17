@@ -1,118 +1,147 @@
 {
  "what": "Operator demo on the MOT17-09 upload: confirm only the possible missed crossings that ground truth (checked offline, never shown in the UI) says are real, and record the operator-adjusted count the UI shows.",
- "job": "d90a457d1cab",
- "blur": "face-only soft oval (serve.blur mode='face'); the tracker runs on this blurred copy, so the blur changes the tracking result",
- "upload": "MOT17-09 (960x540, 525 frames, 30 fps) via Studio step 4 /dashboard/studio/your-video; gate clicked at (0.02, 0.65) -> (0.98, 0.65) of the first frame; ours/visibility_botsort on CPU, YOLOX-S",
+ "canonical": true,
+ "job": "03bcd2ab3ace",
+ "tracked_on": "raw",
+ "pipeline": "detection + tracking on the raw upload frames (in memory); the face-only oval blur is applied only to the served copy, stills and annotated render; the raw upload was deleted when the job ended (files left: blurred.mp4, first_frame.jpg, meta.json)",
+ "upload": "MOT17-09 (960x540, 525 frames, 30 fps) via Studio step 4 /dashboard/studio/your-video; gate clicked at (0.02, 0.65) -> (0.98, 0.65) of the first frame (stored as y=0.6481); ours/visibility_botsort on CPU, YOLOX-S",
  "truth_method": "MOT17-09 gt.txt (pedestrians, visible) on the job's gate scaled to 1920x1080, hysteresis scaled the same way; plain crossings matched one-to-one to true ones (same direction, within 15 frames); a suggestion is real if it matches one-to-one a true crossing the plain count missed (same direction, within 15 frames). Script: python -m eval.operator_demo",
  "truth": {
   "in": 3,
   "out": 10
  },
  "tracker_count_ui": {
-  "in": 3,
-  "out": 9
+  "in": 4,
+  "out": 11
  },
- "plain_matched_to_truth": "8 of 12",
- "true_crossings_missed_by_plain": 5,
- "suggestions": 6,
- "unsure_crossings": 8,
+ "tracker_crossings_real": "9 of 15",
+ "tracker_precision": 0.6,
+ "true_crossings_missed_by_plain": 4,
+ "suggestions": 8,
+ "unsure_crossings": 10,
  "real_suggestions": [
-  "365:13:26"
+  "319:26:27"
  ],
  "confirmed_in_ui": [
-  "365:13:26"
+  "319:26:27"
  ],
  "operator_adjusted_ui": {
-  "in": 4,
-  "out": 9
+  "in": 5,
+  "out": 11
  },
  "tracker_count_ui_after_confirming": {
-  "in": 3,
-  "out": 9
+  "in": 4,
+  "out": 11
  },
  "real_ranks_under_pair_score": [
-  1
+  2
  ],
  "list_order_in_ui": "crossing time (all rows, no cap); pairing score shown as grey text",
  "order_shown_in_ui": [
-  "131:5:12",
-  "188:4:17",
-  "365:13:26",
-  "400:11:27",
-  "440:12:29",
-  "475:31:32"
+  "131:5:11",
+  "181:3:15",
+  "192:12:19",
+  "319:26:27",
+  "363:21:28",
+  "367:2:29",
+  "420:29:32",
+  "473:39:40"
  ],
  "pair_score": "1 - 0.5*min(1, gap_s/max_gap_s) - 0.5*min(1, distance_rel/max_dist_rel), max_gap_s 4.0, max_dist_rel 2.0 (limits tuned on simulator seeds 0-9)",
  "suggestion_detail": [
   {
-   "key": "131:5:12",
+   "key": "131:5:11",
    "frame": 131,
    "from": 5,
-   "to": 12,
+   "to": 11,
    "direction": "out",
-   "pair_score": 0.282,
-   "gap_s": 3.8,
-   "distance_rel": 0.972,
+   "pair_score": 0.846,
+   "gap_s": 0.47,
+   "distance_rel": 0.383,
+   "score_rank": 1,
+   "real": false
+  },
+  {
+   "key": "181:3:15",
+   "frame": 181,
+   "from": 3,
+   "to": 15,
+   "direction": "in",
+   "pair_score": 0.269,
+   "gap_s": 2.6,
+   "distance_rel": 1.626,
+   "score_rank": 8,
+   "real": false
+  },
+  {
+   "key": "192:12:19",
+   "frame": 192,
+   "from": 12,
+   "to": 19,
+   "direction": "out",
+   "pair_score": 0.457,
+   "gap_s": 0.6,
+   "distance_rel": 1.871,
    "score_rank": 5,
    "real": false
   },
   {
-   "key": "188:4:17",
-   "frame": 188,
-   "from": 4,
-   "to": 17,
+   "key": "319:26:27",
+   "frame": 319,
+   "from": 26,
+   "to": 27,
    "direction": "in",
-   "pair_score": 0.154,
-   "gap_s": 2.8,
-   "distance_rel": 1.983,
+   "pair_score": 0.716,
+   "gap_s": 1.77,
+   "distance_rel": 0.252,
+   "score_rank": 2,
+   "real": true
+  },
+  {
+   "key": "363:21:28",
+   "frame": 363,
+   "from": 21,
+   "to": 28,
+   "direction": "in",
+   "pair_score": 0.445,
+   "gap_s": 0.67,
+   "distance_rel": 1.887,
    "score_rank": 6,
    "real": false
   },
   {
-   "key": "365:13:26",
-   "frame": 365,
-   "from": 13,
-   "to": 26,
-   "direction": "in",
-   "pair_score": 0.909,
-   "gap_s": 0.2,
-   "distance_rel": 0.263,
-   "score_rank": 1,
-   "real": true
-  },
-  {
-   "key": "400:11:27",
-   "frame": 400,
-   "from": 11,
-   "to": 27,
+   "key": "367:2:29",
+   "frame": 367,
+   "from": 2,
+   "to": 29,
    "direction": "out",
-   "pair_score": 0.389,
-   "gap_s": 3.5,
-   "distance_rel": 0.696,
+   "pair_score": 0.534,
+   "gap_s": 2.3,
+   "distance_rel": 0.716,
    "score_rank": 4,
    "real": false
   },
   {
-   "key": "440:12:29",
-   "frame": 440,
-   "from": 12,
-   "to": 29,
-   "direction": "out",
-   "pair_score": 0.583,
-   "gap_s": 2.67,
-   "distance_rel": 0.336,
-   "score_rank": 2,
+   "key": "420:29:32",
+   "frame": 420,
+   "from": 29,
+   "to": 32,
+   "direction": "in",
+   "pair_score": 0.427,
+   "gap_s": 0.7,
+   "distance_rel": 1.94,
+   "score_rank": 7,
    "real": false
   },
   {
-   "key": "475:31:32",
-   "frame": 475,
-   "from": 31,
-   "to": 32,
+   "key": "473:39:40",
+   "frame": 473,
+   "from": 39,
+   "to": 40,
    "direction": "out",
-   "pair_score": 0.568,
-   "gap_s": 0.43,
-   "distance_rel": 1.511,
+   "pair_score": 0.595,
+   "gap_s": 0.37,
+   "distance_rel": 1.438,
    "score_rank": 3,
    "real": false
   }
@@ -120,7 +149,7 @@
  "player_checks": {
   "row_click": {
    "crossingT": 4.33,
-   "tAfter600ms": 3.85,
+   "tAfter600ms": 3.92,
    "playing": "1",
    "tAfter3200ms": 5.35,
    "playingAfter3200ms": "0"
@@ -130,27 +159,51 @@
    "playing": "0"
   }
  },
- "previous_run_head_blur": {
-  "job": "367de74b7ea3",
-  "tracker_count_ui": {
-   "in": 0,
-   "out": 7
+ "note": "A first attempt of this run (job 3e04c61b343c) succeeded on the server but the browser script timed out waiting for the result under CPU load (demo-clip re-blur running); its tracks are identical to this job's.",
+ "superseded": [
+  {
+   "why": "tracked on the head-square blurred copy (detection read blurred frames)",
+   "job": "367de74b7ea3",
+   "tracker_count_ui": {
+    "in": 0,
+    "out": 7
+   },
+   "plain_matched_to_truth": "6 of 7",
+   "suggestions": 9,
+   "real_suggestions": [
+    "283:3:29",
+    "357:30:32",
+    "403:21:34"
+   ],
+   "operator_adjusted_ui": {
+    "in": 1,
+    "out": 9
+   },
+   "real_ranks_under_pair_score_sort": [
+    2,
+    4,
+    9
+   ]
   },
-  "plain_matched_to_truth": "6 of 7",
-  "suggestions": 9,
-  "real_suggestions": [
-   "283:3:29",
-   "357:30:32",
-   "403:21:34"
-  ],
-  "operator_adjusted_ui": {
-   "in": 1,
-   "out": 9
-  },
-  "real_ranks_under_pair_score_sort": [
-   2,
-   4,
-   9
-  ]
- }
+  {
+   "why": "tracked on the face-oval blurred copy (detection read blurred frames)",
+   "job": "d90a457d1cab",
+   "tracker_count_ui": {
+    "in": 3,
+    "out": 9
+   },
+   "plain_matched_to_truth": "8 of 12",
+   "suggestions": 6,
+   "real_suggestions": [
+    "365:13:26"
+   ],
+   "operator_adjusted_ui": {
+    "in": 4,
+    "out": 9
+   },
+   "real_ranks_under_pair_score": [
+    1
+   ]
+  }
+ ]
 }

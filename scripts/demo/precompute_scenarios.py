@@ -1,6 +1,9 @@
 """Precompute the Scenarios tab overlays: one detection pass per clip (CPU YOLOX), then the
 ByteTrack baseline and ours (BoT-SORT + visibility) on the *identical* detections.
 
+Detection reads the **unblurred** clips (``data/demo/raw``, never committed or served), so the
+face blur of the shown cuts cannot change a box or a tally; only boxes and numbers are written.
+
 Writes web/public/scenarios/<clip>.json (small: rounded boxes per tracked frame) and
 web/public/scenarios/index.json. These clips have NO ground truth: the ID-switch numbers are
 the heuristic ``serve.analysis.suspected_switches`` count, illustrative only, never results.
@@ -146,7 +149,7 @@ def compact(rows: np.ndarray) -> dict[str, list[list[float]]]:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--clips", type=Path, default=ROOT / "data/demo/blurred")
+    ap.add_argument("--clips", type=Path, default=ROOT / "data/demo/raw")
     ap.add_argument("--out", type=Path, default=ROOT / "web/public/scenarios")
     ap.add_argument("--only", nargs="*")
     ap.add_argument("--threads", type=int, default=8)

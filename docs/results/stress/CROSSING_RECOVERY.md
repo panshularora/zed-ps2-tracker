@@ -65,7 +65,8 @@ the hide plus the ramp is longer than `max_gap_s`.
 | MOT17-09 · h60 | 0/4 | 3/2 → **5/4** (4 recovered; \|error\| 1 → 5) | 2/2 → **5/4** (5; \|error\| 0 → 5) |
 | MOT17-09 · v50 | 1/2 | 1/2 → 2/2 (1; \|error\| 0 → 1) | 1/2 → 3/2 (2; 0 → 2) |
 
-**Upload of MOT17-09** (job `7e62233a122c`):
+**Upload of MOT17-09** (job `7e62233a122c`; **superseded**: this job tracked the head-blurred
+copy, see the operator demo below for the canonical raw-tracked run):
 - Setup: the user-drawn gate at y = 0.649, CPU, YOLOX-S, our tracker. The true count is
   3 IN / 10 OUT, from gt.txt on the same line.
 - Before: **0/7**. After: **4/12**, with 9 recovered, so the total |error| goes from 6 to 3.
@@ -77,7 +78,8 @@ the hide plus the ramp is longer than `max_gap_s`.
 
 The method holds up on the simulator, where it was tuned, and on held-out seeds. It does **not**
 hold up on real footage: on the frozen MOT17-09 gates it makes the count worse for both trackers,
-and on the MOT17-09 upload (head-blur run) only 3 of 9 recoveries match a true crossing. The limits are relative to
+and on the MOT17-09 upload only 1 of 8 suggestions matches a true crossing the tracker missed
+(canonical raw-tracked run; 3 of 9 in the superseded head-blur run). The limits are relative to
 box height, so the large boxes in MOT17-09 widen "near the line" to most of the frame. Box heights
 in the simulator are 46–130 px; in MOT17-09 they are up to about 400 px.
 
@@ -109,25 +111,37 @@ Each suggestion carries `gap_s`, `distance_rel` and
 1 means the new number started at once, on the spot; 0 means it sits at both limits. The score
 is a hint shown as small grey text on each row. It never counts anything and never hides or
 orders a row: Studio step 4 shows every suggestion, in crossing-time order, with no top-N cap.
-On the head-blur MOT17-09 upload run the real crossings ranked 2, 4 and 9 of 9 by score (below), so a top-3 cap
+On the superseded head-blur MOT17-09 upload run the real crossings ranked 2, 4 and 9 of 9 by score (below), so a top-3 cap
 would have hidden two of the three real ones, and a score order would have put a false one
 first.
 
 ## Operator demo on the MOT17-09 upload
 
 `operator_demo_mot17_09.json` (`python -m eval.operator_demo`, ground truth offline only; truth
-3 IN / 10 OUT). The tracker runs on the blurred copy of an upload, so the blur changes the
-result:
+3 IN / 10 OUT). **Canonical run: job 03bcd2ab3ace**, detection and tracking on the raw upload
+frames, face-only oval blur applied only to what is shown (the raw file was deleted when the job
+ended):
 
-| Upload blur | Tracker count | Plain matched to truth | Suggestions | Real | Real ranks by score | Operator-adjusted (real ones confirmed) |
-|---|---|---|---|---|---|---|
-| Head squares (earlier run, job 367de74b7ea3) | 0 IN / 7 OUT | 6 of 7 | 9 | 3 | 2, 4, 9 | 1 IN / 9 OUT |
-| Face-only oval (current, job d90a457d1cab) | 3 IN / 9 OUT | 8 of 12 | 6 | 1 | 1 | 4 IN / 9 OUT |
+| | Value |
+|---|---|
+| Tracker count | 4 IN / 11 OUT (truth 3 / 10) |
+| Tracker crossings that are real | 9 of 15 (precision 0.60) |
+| True crossings the tracker missed | 4 |
+| Possible missed crossings (suggestions) | 8 |
+| Real suggestions | 1 (pairing-score rank 2 of 8) |
+| Operator-adjusted, only the real one confirmed | 5 IN / 11 OUT |
 
-With the face-only blur the tracker counts more crossings, but 4 of its 12 do not match a true
-crossing (8 of 12 do). So its IN of 3 is not three real INs, and confirming the one real
-suggestion (an IN) takes the operator-adjusted IN to 4, one above the true 3. On the head-blur run the real ones ranked 2, 4 and 9 of 9 by score: a top-3 cap would
-have hidden two of three, and a score order would have put a false one first. That is why the
-list shows all suggestions in clip order instead of the top 3 by score with a "Show N more"
-toggle (an earlier version of this branch had that cap and order). The score does not reliably
-surface the real ones, and an operator still has to look at every row.
+Confirming the one real suggestion (an IN) moves IN further from the truth, because the tracker
+already over-counts (6 of its 15 crossings are not real). Suggestions can only add; they cannot
+remove a false count.
+
+**Superseded** (both tracked on the *blurred* copy, so the blur changed the counts; kept in the
+JSON under `superseded`, not to be quoted): head-square blur, job 367de74b7ea3: tracker 0 / 7,
+9 suggestions, 3 real (score ranks 2, 4, 9), adjusted 1 / 9. Face-oval blur, job
+d90a457d1cab: tracker 3 / 9, 6 suggestions, 1 real (rank 1), adjusted 4 / 9.
+
+Why the list shows every suggestion in clip order, with no top-3 cap and no score sort: in the
+superseded head-blur run the real ones ranked 2, 4 and 9 of 9 by score, so a top-3 cap would
+have hidden two of three, and in the canonical run the top-scored suggestion is not real. The
+score is a hint, not a filter; an operator still has to look at every row. (An earlier version
+of this branch had the cap and the score order.)

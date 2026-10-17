@@ -1325,6 +1325,7 @@
   "recovered": 9,
   "matched_true_events_before": "6 of 7",
   "matched_true_events_after": "9 of 16 (3 of the 9 recovered match a true crossing within 15 frames)",
-  "truth_method": "MOT17-09 gt.txt (pedestrians, visible) on the same gate scaled x2 to 1920x1080, hysteresis 20 px"
+  "truth_method": "MOT17-09 gt.txt (pedestrians, visible) on the same gate scaled x2 to 1920x1080, hysteresis 20 px",
+  "superseded": "tracked on the head-blurred copy; canonical raw-tracked run: docs/results/stress/operator_demo_mot17_09.json (job 03bcd2ab3ace)"
  }
 }

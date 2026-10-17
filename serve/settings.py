@@ -4,6 +4,9 @@
 |---|---|---|
 | ``ZED_DATA_DIR`` | ``data/serve`` | job store and uploads (filesystem) |
 | ``ZED_CLIP_DIR`` | ``data/demo/blurred`` | face-blurred demo clips (the only clips served) |
+| ``ZED_RAW_CLIP_DIR`` | ``data/demo/raw`` | unblurred demo clips (tracker input, not served) |
+| ``ZED_UPLOAD_BLUR`` | ``face`` | blur of an upload's served copy (``face``/``head``/``none``) |
+| ``ZED_UPLOAD_RAW_TTL_S`` | ``3600`` | raw upload deleted after its first job, or after this |
 | ``ZED_CLIP_MANIFEST`` | ``configs/demo/clips.yaml`` | clip metadata (consent, styling, gate) |
 | ``ZED_MODEL_DIR`` | ``data/models`` | ONNX models (``python -m serve.detector fetch``) |
 | ``ZED_RESULTS_DIR`` | ``docs/results`` | benchmark results served by ``/api/benchmarks`` |
@@ -48,6 +51,8 @@ class Settings:
     clip_dir: Path = ROOT / "data" / "demo" / "blurred"
     # committed 720p face-blurred cuts (make_demo_pack.sh) for clips missing from clip_dir
     demo_cut_dir: Path = ROOT / "web" / "public" / "demo"
+    # unblurred demo clips (gitignored): the tracker reads these; nothing from here is served
+    raw_clip_dir: Path = ROOT / "data" / "demo" / "raw"
     clip_manifest: Path = ROOT / "configs" / "demo" / "clips.yaml"
     model_dir: Path = ROOT / "data" / "models"
     results_dir: Path = ROOT / "docs" / "results"
@@ -60,6 +65,8 @@ class Settings:
     max_video_seconds: float = 120.0
     max_job_frames: int = 1800
     cors_origins: tuple[str, ...] = field(default_factory=tuple)
+    upload_blur: str = "face"
+    upload_raw_ttl_s: float = 3600.0
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -68,6 +75,7 @@ class Settings:
             data_dir=_path("ZED_DATA_DIR", d.data_dir),
             clip_dir=_path("ZED_CLIP_DIR", d.clip_dir),
             demo_cut_dir=_path("ZED_DEMO_CUT_DIR", d.demo_cut_dir),
+            raw_clip_dir=_path("ZED_RAW_CLIP_DIR", d.raw_clip_dir),
             clip_manifest=_path("ZED_CLIP_MANIFEST", d.clip_manifest),
             model_dir=_path("ZED_MODEL_DIR", d.model_dir),
             results_dir=_path("ZED_RESULTS_DIR", d.results_dir),
@@ -79,6 +87,8 @@ class Settings:
             max_video_mb=_float("ZED_MAX_VIDEO_MB", d.max_video_mb),
             max_video_seconds=_float("ZED_MAX_VIDEO_SECONDS", d.max_video_seconds),
             max_job_frames=_int("ZED_MAX_JOB_FRAMES", d.max_job_frames),
+            upload_blur=os.environ.get("ZED_UPLOAD_BLUR", d.upload_blur),
+            upload_raw_ttl_s=_float("ZED_UPLOAD_RAW_TTL_S", d.upload_raw_ttl_s),
             cors_origins=tuple(
                 o.strip() for o in os.environ.get("ZED_CORS_ORIGINS", "").split(",") if o.strip()
             ),

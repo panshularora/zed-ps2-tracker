@@ -11,8 +11,14 @@
 * ``GET /api/benchmarks``, ``/api/benchmarks/plots/{name}.png``: the MOT17 results in
   ``docs/results``.
 
-Uploaded videos are face-blurred as the first stage of their first job, and only the blurred copy
-is ever served back. Uploads default to neutral event styling; ``consent=true`` (the uploader
+Detection and tracking always read the unblurred frames (in memory): the raw upload, or the raw
+demo clip in ``raw_clip_dir``. Blurring applies only to what is shown or saved: the served video,
+the first-frame still, the poster and the annotated render are made from the face-blurred copy,
+so the blur mode can never change a count. Uploaded videos are face-blurred as the first stage
+of their first job, and only the blurred copy is ever served back. The raw upload is deleted when
+that first job ends (succeeded, failed or cancelled), or after ``upload_raw_ttl_s`` if no job ever
+runs; later jobs on the same upload get 410 ``original_gone`` (upload it again).
+Uploads default to neutral event styling; ``consent=true`` (the uploader
 states that the people shown agreed) switches on the full alert contract.
 """
 
@@ -22,6 +28,7 @@ import json
 import math
 import re
 import threading
+import time
 import uuid
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -203,6 +210,41 @@ class Service:
             raise ApiError(404, "clip_missing", f"clip {clip_id} has no video on this server")
         return found[0]
 
+    def raw_path(self, clip_id: str) -> Path | None:
+        """The unblurred source the tracker reads (never served): the raw upload, or the raw demo
+        clip. None for a library clip whose raw file is not on this server."""
+        if clip_id.startswith("upload-"):
+            d = self.upload_dir(clip_id)
+            meta = json.loads((d / "meta.json").read_text())
+            p = d / str(meta["original"])
+            if not p.exists():
+                raise ApiError(
+                    410, "original_gone",
+                    "the original of this upload was deleted after its first job; upload it again",
+                )  # fmt: skip
+            return p
+        rec = self.clip(clip_id)
+        c = next(c for c in self.manifest() if c.id == rec["id"])
+        p = self.settings.raw_clip_dir / c.file
+        return p if p.exists() and not rec.get("demo_cut") else None
+
+    def drop_original(self, clip_id: str) -> None:
+        """Delete an upload's raw file (its blurred copy, stills and job outputs stay)."""
+        d = self.upload_dir(clip_id)
+        meta = json.loads((d / "meta.json").read_text())
+        (d / meta["original"]).unlink(missing_ok=True)
+
+    def sweep_originals(self) -> int:
+        """Delete raw uploads older than ``upload_raw_ttl_s`` (no job ran on them). Returns n."""
+        n, now_s = 0, time.time()
+        for meta in self.settings.uploads_dir.glob("*/meta.json"):
+            m = json.loads(meta.read_text())
+            p = meta.parent / m["original"]
+            if p.exists() and now_s - p.stat().st_mtime > self.settings.upload_raw_ttl_s:
+                p.unlink()
+                n += 1
+        return n
+
     def first_frame(self, clip_id: str) -> Path:
         """A face-blurred still of the first frame, for drawing the gate before the first job.
 
@@ -219,12 +261,13 @@ class Service:
             out = d / "first_frame.jpg"
             if out.exists():
                 return out
-            cap = cv2.VideoCapture(str(d / json.loads((d / "meta.json").read_text())["original"]))
+            cap = cv2.VideoCapture(str(self.raw_path(clip_id)))
             ok, img = cap.read()
             cap.release()
             if not ok:
                 raise ApiError(500, "frame_failed", f"could not decode a frame of {rec['id']}")
-            img = blur.blur_frame(img, self.settings.model_dir,
+            # blurred in memory before anything is written
+            img = blur.blur_frame(img, self.settings.model_dir, mode=self.settings.upload_blur,
                                   threads=self.settings.detector_threads)  # fmt: skip
         else:
             src = self.video_path(clip_id)
@@ -274,6 +317,7 @@ class Service:
             upload.content_type or ""
         ).startswith("video/"):
             raise ApiError(415, "unsupported_type", f"content type {upload.content_type!r}")
+        self.sweep_originals()
         uid = uuid.uuid4().hex[:12]
         d = s.uploads_dir / uid
         d.mkdir(parents=True)
@@ -339,6 +383,8 @@ class Service:
 
     def create_job(self, req: JobRequest) -> tuple[dict[str, Any], bool]:
         clip = self.clip(req.clip_id)
+        if clip["source"] == "upload":
+            self.raw_path(clip["id"])  # 410 once the original is gone
         cfgs = available_configs(self.settings.config_root)
         if req.config not in cfgs:
             raise ApiError(
@@ -395,25 +441,31 @@ class Service:
         o = rec["options"]
         opts = JobOptions(**{**o, "gate": tuple(o["gate"]) if o["gate"] else None})
         clip_id = rec["clip"]["id"]
-        if clip_id.startswith("upload-"):
-            d = self.upload_dir(clip_id)
-            blurred = d / "blurred.mp4"
-            if not blurred.exists():
-                from serve.blur import blur_video
+        upload = clip_id.startswith("upload-")
+        try:
+            raw = self.raw_path(clip_id)
+            if upload:
+                assert raw is not None
+                blurred = self.upload_dir(clip_id) / "blurred.mp4"
+                if not blurred.exists():  # the copy that is shown; the tracker never reads it
+                    from serve.blur import blur_video
 
-                meta = json.loads((d / "meta.json").read_text())
-                blur_video(
-                    d / meta["original"],
-                    blurred,
-                    self.settings.model_dir,
-                    threads=self.settings.detector_threads,
-                    progress=progress,
-                )
-            video = blurred
-        else:
-            video = self.video_path(clip_id)
-        cfg = load_config(available_configs(self.settings.config_root)[opts.config])
-        out = run_video(video, opts, cfg, self.detector(opts.detector), progress)
+                    blur_video(
+                        raw,
+                        blurred,
+                        self.settings.model_dir,
+                        threads=self.settings.detector_threads,
+                        progress=progress,
+                        mode=self.settings.upload_blur,
+                    )
+            cfg = load_config(available_configs(self.settings.config_root)[opts.config])
+            # detection + tracking on the unblurred frames (decoded in memory, never written)
+            video = raw if raw is not None else self.video_path(clip_id)
+            out = run_video(video, opts, cfg, self.detector(opts.detector), progress)
+        finally:
+            if upload:
+                self.drop_original(clip_id)
+        out["tracked_on"] = "raw" if raw is not None else "blurred (no raw copy on this server)"
         out["clip"] = {**rec["clip"], "video_url": f"/api/clips/{clip_id}/video"}
         out["config"] = opts.config
         out["detector"] = {

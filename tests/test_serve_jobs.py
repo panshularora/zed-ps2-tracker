@@ -110,6 +110,7 @@ def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     s = Settings(
         data_dir=tmp_path / "serve",
         clip_dir=blurred,
+        raw_clip_dir=raw,
         demo_cut_dir=tmp_path / "cuts",
         clip_manifest=manifest,
         model_dir=tmp_path / "models",
@@ -556,3 +557,135 @@ def test_reappearances_are_events_not_people() -> None:
     assert m["id_preserving_recoveries"] == 4
     assert m["reappeared_ids"] == 2
     assert m["reappeared_ids"] <= m["tracks"]
+
+
+# ---------------------------------------------------------------- raw in, blurred out
+def _blur_file(mode: str) -> Any:
+    """A stand-in for serve.blur.blur_video that really blurs (with the real oval / square
+    functions) the top third of every 'person', so blurred frames detect differently."""
+    from serve.blur import blur_with
+
+    def run(src: Path, dst: Path, model_dir: Path, **kw: Any) -> dict[str, Any]:
+        cap = cv2.VideoCapture(str(src))
+        vw = cv2.VideoWriter(str(dst), cv2.VideoWriter_fourcc(*"mp4v"), FPS, (W, H))
+        det = FakeDetector()
+        while True:
+            ok, img = cap.read()
+            if not ok:
+                break
+            tl, _ = det.detect(img)
+            heads = np.array(
+                [[x - 4, y - 4, x + w + 4, y + h / 3] for x, y, w, h in tl], np.float32
+            )
+            if len(heads):
+                blur_with(mode)(img, heads.reshape(-1, 4))
+            vw.write(img)
+        cap.release()
+        vw.release()
+        return {"mode": mode}
+
+    return run
+
+
+def _upload_and_track(c: TestClient, vid: bytes) -> tuple[str, dict[str, Any]]:
+    up = c.post("/api/uploads", files={"file": ("gate.mp4", vid, "video/mp4")}).json()
+    job = wait(
+        c, c.post("/api/jobs", json={"clip_id": up["id"], "gate": [0, 0.6, 1, 0.6]}).json()["id"]
+    )
+    assert job["status"] == "succeeded", job
+    return up["id"], c.get(f"/api/jobs/{job['id']}/result").json()
+
+
+def test_tracker_output_is_identical_whatever_the_blur_mode(
+    env: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    c, s = env["client"], env["settings"]
+    vid = (s.clip_dir / "walk.mp4").read_bytes()
+    outs: dict[str, Any] = {}
+    served: dict[str, bytes] = {}
+    for mode in ("face", "head", "none"):
+        monkeypatch.setattr("serve.blur.blur_video", _blur_file(mode))
+        cid, res = _upload_and_track(c, vid)
+        assert res["tracked_on"] == "raw"
+        outs[mode] = (res["tracks"], [e for e in res["events"] if e["kind"] == "gate"])
+        served[mode] = c.get(f"/api/clips/{cid}/video").content
+    assert outs["face"] == outs["head"] == outs["none"]
+    assert len(outs["none"][0]) == 2  # both people tracked
+    # the blurred copies really differ, and detecting on them would not give the same boxes
+    assert served["face"] != served["none"]
+    assert served["head"] != served["none"]
+    tmp = env["tmp"] / "served_head.mp4"
+    tmp.write_bytes(served["head"])
+    raw_cap, blur_cap = cv2.VideoCapture(str(s.clip_dir / "walk.mp4")), cv2.VideoCapture(str(tmp))
+    differ = 0
+    for _ in range(N):
+        ok1, a = raw_cap.read()
+        ok2, b = blur_cap.read()
+        if not (ok1 and ok2):
+            break
+        da, db = FakeDetector().detect(a)[0], FakeDetector().detect(b)[0]
+        differ += int(da.shape != db.shape or not np.allclose(da, db, atol=1))
+    assert differ > 0
+
+
+def test_raw_upload_is_deleted_when_its_first_job_ends(env: dict[str, Any]) -> None:
+    c, s = env["client"], env["settings"]
+    vid = (s.clip_dir / "walk.mp4").read_bytes()
+    up = c.post("/api/uploads", files={"file": ("gate.mp4", vid, "video/mp4")}).json()
+    d = s.uploads_dir / up["id"].removeprefix("upload-")
+    assert (d / "original.mp4").exists()  # on disk only until the first job ends
+    job = wait(c, c.post("/api/jobs", json={"clip_id": up["id"]}).json()["id"])
+    assert job["status"] == "succeeded"
+    assert not (d / "original.mp4").exists()
+    assert (d / "blurred.mp4").exists()
+    assert c.get(f"/api/clips/{up['id']}/video").status_code == 200
+    assert c.get(f"/api/jobs/{job['id']}/result").status_code == 200
+    r = c.post("/api/jobs", json={"clip_id": up["id"], "gate": [0, 0.5, 1, 0.5]})
+    assert r.status_code == 410
+    assert r.json()["error"]["code"] == "original_gone"
+
+
+def test_raw_upload_is_deleted_when_its_job_fails(
+    env: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    c, s = env["client"], env["settings"]
+
+    def boom(*a: Any, **k: Any) -> Any:
+        raise RuntimeError("tracker exploded")
+
+    monkeypatch.setattr("serve.api.run_video", boom)
+    up = c.post(
+        "/api/uploads",
+        files={"file": ("gate.mp4", (s.clip_dir / "walk.mp4").read_bytes(), "video/mp4")},
+    ).json()
+    job = wait(c, c.post("/api/jobs", json={"clip_id": up["id"]}).json()["id"])
+    assert job["status"] == "failed"
+    assert not (s.uploads_dir / up["id"].removeprefix("upload-") / "original.mp4").exists()
+
+
+def test_stale_raw_uploads_without_a_job_are_swept(env: dict[str, Any]) -> None:
+    import os
+
+    c, s = env["client"], env["settings"]
+    vid = (s.clip_dir / "walk.mp4").read_bytes()
+    up = c.post("/api/uploads", files={"file": ("gate.mp4", vid, "video/mp4")}).json()
+    raw = s.uploads_dir / up["id"].removeprefix("upload-") / "original.mp4"
+    old = time.time() - s.upload_raw_ttl_s - 5
+    os.utime(raw, (old, old))
+    fresh = c.post("/api/uploads", files={"file": ("b.mp4", vid, "video/mp4")}).json()  # sweeps
+    assert not raw.exists()
+    assert (s.uploads_dir / fresh["id"].removeprefix("upload-") / "original.mp4").exists()
+
+
+def test_library_clips_are_tracked_on_the_raw_copy(env: dict[str, Any]) -> None:
+    c, s = env["client"], env["settings"]
+    # the served (blurred) copy shows nobody; the raw copy has the two walkers
+    vw = cv2.VideoWriter(str(s.clip_dir / "walk.mp4"), cv2.VideoWriter_fourcc(*"mp4v"), FPS, (W, H))
+    for _ in range(N):
+        vw.write(np.zeros((H, W, 3), np.uint8))
+    vw.release()
+    job = wait(c, c.post("/api/jobs", json={"clip_id": "walk"}).json()["id"])
+    res = c.get(f"/api/jobs/{job['id']}/result").json()
+    assert res["tracked_on"] == "raw"
+    assert len(res["tracks"]) == 2
+    assert (s.raw_clip_dir / "walk.mp4").exists()  # library raw clips are not deleted

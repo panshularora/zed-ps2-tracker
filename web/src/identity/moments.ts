@@ -6,11 +6,13 @@
 import type { Reappearance, VerifyDoc } from "./verify";
 
 export interface StoryRef { clip: string; id: number; back: number }
+// Re-picked after the Pexels overlays were recomputed on the raw clips (old IDs no longer exist).
+// Two other "kept" candidates (subway #25 92->123, #5 87->119) were dropped: the crops show a
+// different person, so the heuristic was wrong there. Rabat has no confirmed kept event now.
 export const STORY_MOMENTS: StoryRef[] = [
-  { clip: "subway_turnstile", id: 10, back: 86 },
-  { clip: "subway_turnstile", id: 13, back: 118 },
-  { clip: "mexico_city_entrance", id: 1, back: 424 },
-  { clip: "rabat_stadium", id: 9, back: 100 },
+  { clip: "subway_turnstile", id: 14, back: 149 },
+  { clip: "mexico_city_entrance", id: 5, back: 292 },
+  { clip: "shibuya_crossing", id: 6, back: 132 },
   { clip: "MOT17-09", id: 14, back: 235 },
 ];
 

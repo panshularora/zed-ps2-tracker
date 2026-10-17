@@ -69,13 +69,34 @@ Accuracy is the benchmark (`/api/benchmarks`).
   tailgate / hold alerts (`docs/licenses.md`, "Demo clips").
 * `POST /api/uploads` (multipart `file`, `consent`): mp4 / mov / m4v / webm / mkv / avi, at most
   `ZED_MAX_VIDEO_MB` (200) and `ZED_MAX_VIDEO_SECONDS` (120), must decode. The first job on an
-  upload blurs it (`serve/blur.py`) before detection; only the blurred copy is served.
+  upload writes its face-blurred copy (`serve/blur.py`, `ZED_UPLOAD_BLUR`, default `face`: soft
+  ovals over faces, bodies sharp); only the blurred copy is served.
   `consent=true` (the uploader states that the people shown agreed) enables the alert contract.
+
+### Raw in, blurred out
+
+* **Detection and tracking read the unblurred frames**, decoded in memory: the raw upload, or the
+  raw demo clip in `ZED_RAW_CLIP_DIR` (`data/demo/raw`, gitignored, from `make clips`). The blur
+  mode therefore never changes a box, an ID or a count (`tests/test_serve_jobs.py::
+  test_tracker_output_is_identical_whatever_the_blur_mode`, face / head / none). A result says
+  `"tracked_on": "raw"`; if a library clip has no raw copy on the server it is tracked on the
+  blurred copy and the result says so.
+* **Everything shown or saved is blurred first**: the served video, the first-frame still for
+  drawing the gate (blurred in memory before it is written), the poster, the annotated render and
+  the browser-side row stills (grabbed from the served blurred video). No raw pixels are written
+  by the service apart from the uploaded file itself.
+* **Lifetime of a raw upload**: written to `ZED_DATA_DIR/uploads/<id>/original.<ext>` on upload;
+  read for the first-frame still and by the first job; **deleted when that first job ends**
+  (succeeded, failed or cancelled while running). An upload that never gets a job is deleted
+  after `ZED_UPLOAD_RAW_TTL_S` (3600 s), checked on every new upload. Later jobs on the same
+  upload get 410 `original_gone`: upload the clip again. The blurred copy, the stills and the job
+  outputs (boxes, events) stay until the upload / job is deleted.
 
 ## Errors
 
 Every error is `{"error": {"code", "message", ...}, "detail": message}` with the HTTP status:
-404 `clip_not_found` / `job_not_found`, 409 `job_not_done` / `not_blurred`, 413 `too_large`,
+404 `clip_not_found` / `job_not_found`, 409 `job_not_done` / `not_blurred`, 410 `original_gone`,
+413 `too_large`,
 415 `unsupported_type`, 422 `invalid_input` / `unknown_config` / `needs_gpu` / `not_a_video` /
 `too_long`. A failed job keeps `error: {code, message}` in its record.
 

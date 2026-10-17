@@ -102,29 +102,31 @@ def test_occluder_is_the_box_in_front() -> None:
     assert occluder_of(tracks, 1, 10, 21) == 2
 
 
-# ---- regression: the subway turnstile "kept #4" that was really another person --------------
-def test_committed_verdicts_flag_turnstile_4() -> None:
+# ---- regression: a subway turnstile "kept #14" that was really another person ---------------
+# (re-pinned after the overlays were recomputed on the raw clips; #14's 230 -> 318 gap hands the
+# number from a woman in a black top to a man in a white shirt, checked on the crops)
+def test_committed_verdicts_flag_turnstile_14() -> None:
     doc = json.loads((PUB / "verify" / "subway_turnstile.json").read_text())
     ev = {(e["run"], e["id"], e["back"]): e for e in doc["events"]}
-    four = ev[("ours", 4, 128)]
-    assert four["last"] == 95
+    four = ev[("ours", 14, 318)]
+    assert four["last"] == 230
     assert four["verdict"] == "swap"
     assert any("appearance" in r for r in four["reasons"])
     assert any("size" in r for r in four["reasons"])
-    assert ev[("ours", 10, 86)]["verdict"] == "kept"  # a story moment stays confirmed
+    assert ev[("ours", 14, 149)]["verdict"] == "kept"  # a story moment stays confirmed
 
 
 @pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg not installed")
-def test_turnstile_4_recomputed_from_video() -> None:
+def test_turnstile_14_recomputed_from_video() -> None:
     scn = json.loads((PUB / "scenarios" / "subway_turnstile.json").read_text())
-    tr = tracks_of(scn["runs"]["ours"]["frames"])[4]
+    tr = tracks_of(scn["runs"]["ours"]["frames"])[14]
     video = Video(PUB / "demo" / "subway_turnstile.mp4")
     scale = video.W / scn["meta"]["width"]
-    app = appearance(video, tr, 95, 128, 1, scale)
-    err, tol, ratio = motion_check(tr, 95, 128, 30.0)
+    app = appearance(video, tr, 230, 318, 1, scale)
+    err, tol, ratio = motion_check(tr, 230, 318, 30.0)
     assert app is not None
-    assert app < APP_MIN  # white top before, orange top after
+    assert app < APP_MIN  # black top before, white shirt after
     assert decide(app, err, tol, ratio)[0] == "swap"
-    app_ok = appearance(video, tracks_of(scn["runs"]["ours"]["frames"])[10], 62, 86, 1, scale)
+    app_ok = appearance(video, tr, 110, 149, 1, scale)
     assert app_ok is not None
     assert app_ok >= APP_MIN

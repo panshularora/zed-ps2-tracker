@@ -15,26 +15,27 @@ const json = (p: string) => JSON.parse(readFileSync(p, "utf8"));
 const turnDoc = json("public/verify/subway_turnstile.json") as VerifyDoc;
 const turn = fromScenario(json("public/scenarios/subway_turnstile.json"), null, null);
 
-describe("kept-vs-swap verdicts (regression: subway turnstile #4)", () => {
-  it("#4 reappearing at frame 128 (last seen 95) on a different person is a possible swap, never 'kept'", () => {
+// re-pinned after the overlays were recomputed on the raw clips (see tests/test_verify_keeps.py)
+describe("kept-vs-swap verdicts (regression: subway turnstile #14)", () => {
+  it("#14 reappearing at frame 318 (last seen 230) on a different person is a possible swap, never 'kept'", () => {
     const v = verdictOf(turnDoc, "ours");
-    expect(v(4, 128)?.verdict).toBe("swap");
+    expect(v(14, 318)?.verdict).toBe("swap");
     const tr = tracksOf(turn.runs.ours.frames);
-    const b = boxesAt(tr, 129, turn.fps, v).find((x) => x.id === 4)!;
+    const b = boxesAt(tr, 318, turn.fps, v).find((x) => x.id === 14)!; // #14 is drawn for one frame only
     expect(b.state).toBe("swap");
-    expect(chipText(b, true)).toBe(swapLabel(4));
-    expect(chipText(b, true)).toBe("possible swap: #4 given to someone else");
-    // the earlier gap (33 -> 75) passed the check
-    expect(boxesAt(tr, 76, turn.fps, v).find((x) => x.id === 4)?.state).toBe("kept");
+    expect(chipText(b, true)).toBe(swapLabel(14));
+    expect(chipText(b, true)).toBe("possible swap: #14 given to someone else");
+    // the earlier gap (110 -> 149) passed the check
+    expect(boxesAt(tr, 150, turn.fps, v).find((x) => x.id === 14)?.state).toBe("kept");
   });
   it("flagged swaps break the timeline and are counted as uncertain in the summary", () => {
     const { people: ps } = people(turn, "ours", verdictOf(turnDoc, "ours"));
-    const four = ps.find((p) => p.ids.includes(4))!;
-    expect(four.swaps.map((s) => [s.last, s.f])).toEqual([[95, 128]]);
-    expect(four.hidden.some((h) => h.f1 + 1 === 128)).toBe(false);
+    const four = ps.find((p) => p.ids.includes(14))!;
+    expect(four.swaps.map((s) => [s.last, s.f])).toEqual([[230, 318]]);
+    expect(four.hidden.some((h) => h.f1 + 1 === 318)).toBe(false);
     expect(summaryText(ps)).toMatch(/uncertain \(possible swap\)/);
-    render(<PersonTimeline people={[four]} frames={turn.frames} f={1} focus={4} onSeek={() => undefined} />);
-    expect(screen.getByTestId("ptl-swap").textContent).toContain("swap? #4");
+    render(<PersonTimeline people={[four]} frames={turn.frames} f={1} focus={14} onSeek={() => undefined} />);
+    expect(screen.getByTestId("ptl-swap").textContent).toContain("swap? #14");
   });
   it("counts per run match the file; tooltip says heuristic, not ground truth", () => {
     expect(counts(turnDoc, "ours")).toEqual({ kept: turnDoc.summary.ours!.kept, swap: turnDoc.summary.ours!.swap, unknown: 0 });
@@ -53,13 +54,14 @@ describe("story moments", () => {
       expect(m, `${r.clip} #${r.id}`).toBeTruthy();
       expect(m.caption).toContain(`comes back still #${r.id}`);
     }
-    const t10 = storyMoments("subway_turnstile", turnDoc)[0];
-    expect(t10.caption).toBe(storyCaption(t10.ev));
-    expect(t10.caption).toMatch(/^Person #10 walks behind #20 for 0\.8 s \(23 frames\)/);
+    const t14 = storyMoments("subway_turnstile", turnDoc)[0];
+    expect(t14.caption).toBe(storyCaption(t14.ev));
+    expect(t14.caption).toMatch(/^Person #14 walks behind #10 for 1\.3 s \(38 frames\)/);
   });
   it("a moment whose check is not 'kept' is dropped, not relabelled", () => {
-    const bad: VerifyDoc = { ...turnDoc, events: turnDoc.events.map((e) => (e.id === 10 ? { ...e, verdict: "swap" as const } : e)) };
-    expect(storyMoments("subway_turnstile", bad).map((m) => m.ev.id)).toEqual([13]);
+    expect(storyMoments("subway_turnstile", turnDoc).map((m) => m.ev.id)).toEqual([14]);
+    const bad: VerifyDoc = { ...turnDoc, events: turnDoc.events.map((e) => (e.id === 14 ? { ...e, verdict: "swap" as const } : e)) };
+    expect(storyMoments("subway_turnstile", bad).map((m) => m.ev.id)).toEqual([]);
   });
 });
 

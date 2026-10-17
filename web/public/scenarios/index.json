@@ -20,7 +20,7 @@
   },
   "tracks": {
    "baseline": 1,
-   "ours": 3
+   "ours": 1
   },
   "disagreements": 0
  },
@@ -40,14 +40,14 @@
   "frames_tracked": 351,
   "covered_s": 11.7,
   "id_switches": {
-   "baseline": 8,
-   "ours": 13
+   "baseline": 15,
+   "ours": 16
   },
   "tracks": {
-   "baseline": 45,
-   "ours": 56
+   "baseline": 58,
+   "ours": 74
   },
-  "disagreements": 25
+  "disagreements": 35
  },
  {
   "id": "milan_turnstiles",
@@ -60,17 +60,17 @@
   "kind": "illustrative",
   "width": 1920,
   "height": 1080,
-  "src_fps": 59.940060001224516,
+  "src_fps": 59.94005994005994,
   "stride": 2,
   "frames_tracked": 236,
   "covered_s": 7.87,
   "id_switches": {
-   "baseline": 0,
+   "baseline": 1,
    "ours": 0
   },
   "tracks": {
-   "baseline": 3,
-   "ours": 4
+   "baseline": 10,
+   "ours": 11
   },
   "disagreements": 0
  },
@@ -85,7 +85,7 @@
   "kind": "illustrative",
   "width": 1920,
   "height": 1080,
-  "src_fps": 29.970030000612258,
+  "src_fps": 29.97002997002997,
   "stride": 1,
   "frames_tracked": 600,
   "covered_s": 20.02,
@@ -94,8 +94,8 @@
    "ours": 0
   },
   "tracks": {
-   "baseline": 7,
-   "ours": 8
+   "baseline": 10,
+   "ours": 11
   },
   "disagreements": 0
  },
@@ -110,19 +110,19 @@
   "kind": "illustrative",
   "width": 1920,
   "height": 1080,
-  "src_fps": 59.940060001224516,
+  "src_fps": 59.94005994005994,
   "stride": 2,
   "frames_tracked": 600,
   "covered_s": 20.02,
   "id_switches": {
-   "baseline": 20,
-   "ours": 28
+   "baseline": 30,
+   "ours": 35
   },
   "tracks": {
-   "baseline": 104,
-   "ours": 130
+   "baseline": 125,
+   "ours": 155
   },
-  "disagreements": 81
+  "disagreements": 72
  },
  {
   "id": "rabat_stadium",
@@ -140,13 +140,13 @@
   "frames_tracked": 208,
   "covered_s": 6.93,
   "id_switches": {
-   "baseline": 2,
-   "ours": 4
+   "baseline": 5,
+   "ours": 5
   },
   "tracks": {
-   "baseline": 22,
-   "ours": 30
+   "baseline": 21,
+   "ours": 24
   },
-  "disagreements": 5
+  "disagreements": 1
  }
 ]
