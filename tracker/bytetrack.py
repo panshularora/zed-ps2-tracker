@@ -28,6 +28,7 @@ import copy
 import dataclasses
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -136,6 +137,10 @@ class ByteTrackLike:
         self.last_stage1: Stage1Record | None = None
         self.match_costs: dict[int, float] = {}
         """track_id → association cost of its match this frame (any stage)."""
+        self.trace_enabled = False
+        """When True, fill :attr:`last_trace` with this frame's association decisions (read-only
+        explainability: candidates, IoU / fused costs, thresholds, expiries and the buffer used)."""
+        self.last_trace: dict[str, Any] | None = None
 
     def clone(self) -> ByteTrackLike:
         """Independent copy of the tracking state; stateless helpers (KF, CMC, estimator,
@@ -254,6 +259,26 @@ class ByteTrackLike:
 
         tentative = [t for t in live if t.state is TrackState.TENTATIVE]
         pool = [t for t in live if t.state in (TrackState.CONFIRMED, TrackState.LOST)]
+        tr: dict[str, Any] | None = None
+        if self.trace_enabled:
+            tr = {
+                "frame": self.frame_id,
+                "high_idx": np.nonzero(hi_mask)[0].tolist(),
+                "low_idx": np.nonzero(lo_mask)[0].tolist(),
+                "det_vis": vis_all.tolist(),
+                "tracks": {
+                    t.track_id: {
+                        "state": t.state.value,
+                        "pred_tlwh": [float(v) for v in t.tlwh],
+                        "frames_lost": self.frame_id - 1 - t.last_frame,
+                        "visibility": float(t.visibility),
+                    }
+                    for t in live
+                },
+                "stages": [],
+                "births": [],
+                "expired": [],
+            }
 
         # 3. first association: confirmed + lost ↔ high
         self.match_costs = {}
@@ -268,6 +293,12 @@ class ByteTrackLike:
                 tuple(t.state is TrackState.LOST for t in pool), c1, d_high.tlwh, m1.matches,
                 cfg.association.match_thresh, v_high,
             )  # fmt: skip
+        if tr is not None:
+            tr["stages"].append(
+                self._trace_stage(
+                    "high", pool, d_high, c1_used, m1, cfg.association.match_thresh, tr["high_idx"]
+                )
+            )
         self._apply_matches(pool, d_high, v_high, m1, c1)
 
         # 4. second association: unmatched *confirmed* ↔ low, IoU only
@@ -276,6 +307,18 @@ class ByteTrackLike:
             r_tracked, d_low, use_score=False, use_appearance=False, vis=v_low, soften=True
         )
         m2 = self.assign(c2, cfg.association.second_match_thresh)
+        if tr is not None:
+            tr["stages"].append(
+                self._trace_stage(
+                    "low",
+                    r_tracked,
+                    d_low,
+                    c2,
+                    m2,
+                    cfg.association.second_match_thresh,
+                    tr["low_idx"],
+                )
+            )
         self._apply_matches(r_tracked, d_low, v_low, m2, c2)
 
         # 5. unmatched confirmed → lost
@@ -291,6 +334,19 @@ class ByteTrackLike:
         d_left, v_left = d_high.subset(left), v_high[left]
         c3 = self._cost(tentative, d_left, use_score=True, use_appearance=use_app, vis=v_left)
         m3 = self.assign(c3, cfg.association.unconfirmed_match_thresh)
+        if tr is not None:
+            left_idx = [tr["high_idx"][int(j)] for j in left]
+            tr["stages"].append(
+                self._trace_stage(
+                    "tentative",
+                    tentative,
+                    d_left,
+                    c3,
+                    m3,
+                    cfg.association.unconfirmed_match_thresh,
+                    left_idx,
+                )
+            )
         self._apply_matches(tentative, d_left, v_left, m3, c3)
         for i in m3.unmatched_rows:
             tentative[int(i)].mark_missed(self.lifecycle)
@@ -300,11 +356,22 @@ class ByteTrackLike:
             if d_left.scores[j] < cfg.detection.new_track_thresh:
                 continue
             self._birth(d_left, int(j), float(v_left[j]))
+            if tr is not None:
+                tr["births"].append(
+                    {"track_id": self.tracks[-1].track_id, "det": tr["high_idx"][int(left[int(j)])]}
+                )
 
         # 8. expiry + duplicate pruning
         for t in self.tracks:
             occluded = t.visibility < self.cfg.visibility.occluded_thresh
             lc_t = self._lc_occluded if occluded else self.lifecycle
+            if tr is not None and t.state is TrackState.LOST:
+                tr["tracks"].setdefault(t.track_id, {}).update(
+                    buffer=lc_t.max_time_lost,
+                    buffer_extended=occluded
+                    and lc_t is not self.lifecycle
+                    and lc_t.max_time_lost != self.lifecycle.max_time_lost,
+                )
             if self.cfg.lifecycle.removal_lag and t.state is TrackState.LOST:
                 if t.removal_flagged:
                     t.remove()  # upstream: its id is in removed_stracks -> dropped from lost
@@ -314,9 +381,47 @@ class ByteTrackLike:
                     continue
             t.expire_if_stale(self.frame_id, lc_t)
         self._remove_duplicates()
+        if tr is not None:
+            for t in self.tracks:
+                if t.state is TrackState.REMOVED:
+                    lost_for = self.frame_id - t.last_frame
+                    occl = t.visibility < self.cfg.visibility.occluded_thresh
+                    buf = (self._lc_occluded if occl else self.lifecycle).max_time_lost
+                    tr["expired"].append(
+                        {
+                            "track_id": t.track_id,
+                            "frames_lost": lost_for,
+                            "buffer": buf,
+                            "last_visibility": float(t.visibility),
+                            "reason": "buffer" if lost_for > buf else "duplicate_or_tentative",
+                        }
+                    )
+            self.last_trace = tr
         self.tracks = [t for t in self.tracks if t.state is not TrackState.REMOVED]
 
         return FrameResult(self.frame_id, self._report())
+
+    def _trace_stage(
+        self,
+        name: str,
+        tracks: list[Track],
+        dets: Detections,
+        cost: FloatArray,
+        m: Matching,
+        thresh: float,
+        det_idx: list[int],
+    ) -> dict[str, Any]:
+        """One association stage as data: rows = track ids, cols = original detection indices."""
+        iou = 1.0 - iou_cost(self._boxes(tracks), dets.xyxy, self.cfg.association.iou_plus_one)
+        return {
+            "stage": name,
+            "thresh": thresh,
+            "track_ids": [t.track_id for t in tracks],
+            "det_idx": list(det_idx),
+            "iou": np.round(iou, 4).tolist(),
+            "cost": np.round(cost, 4).tolist(),
+            "matches": [[tracks[int(r)].track_id, det_idx[int(c)]] for r, c in m.matches],
+        }
 
     def _birth(self, dets: Detections, j: int, vis: float) -> None:
         mean, cov = self.kf.initiate(tlwh_to_xywh(dets.tlwh[j])[0])
