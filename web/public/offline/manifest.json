@@ -19,6 +19,7 @@
  "/api/config/ours/delayed_v3_strict": "config__ours__delayed_v3_strict.json",
  "/api/config/ours/visibility": "config__ours__visibility.json",
  "/api/config/ours/visibility_botsort": "config__ours__visibility_botsort.json",
+ "/api/config/ours/visibility_botsort_mem6": "config__ours__visibility_botsort_mem6.json",
  "/api/configs": "configs.json",
  "/api/health": "health.json",
  "/api/jobs": "jobs.json",

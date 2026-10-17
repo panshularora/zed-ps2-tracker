@@ -1,0 +1,9 @@
+# Ours + longer memory for hidden people (stress-suite candidate, 2026-10-17).
+# Same as visibility_botsort.yaml except occluded_buffer_scale 3 -> 6: a person whose last box was
+# mostly hidden (estimated visibility < 0.7) is remembered 180 frames (6 s at 30 fps) instead of 90.
+# Chosen on stress seeds 0-9 (tuning) and checked on MOT17 val-half public FRCNN on CPU:
+# HOTA 52.5 / IDF1 59.7 / IDSW 181 vs 52.5 / 59.8 / 180 for visibility_botsort.yaml.
+# Reported stress numbers use seeds 1000-1019 (docs/results/stress/*_mem6.json).
+inherit: visibility_botsort.yaml
+visibility:
+  occluded_buffer_scale: 6.0
