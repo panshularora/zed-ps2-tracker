@@ -126,8 +126,21 @@ def build_walkers(sc: Scenario, rng: np.random.Generator) -> list[Walker]:
     n = max(1, sc.people)
     kind = sc.kind
 
-    def hide_band() -> float:
-        return GATE_Y + (rng.random() - 0.5) * 120
+    def hide_band(w: Walker | None = None) -> float:
+        """Foot row where the hide starts: the hide is centred on the gate (±40 px), so the
+        person is hidden while crossing and re-emerges on screen even for a 5 s hide."""
+        centre = GATE_Y + (rng.random() - 0.5) * 80
+        if w is None:
+            return centre
+        span = abs(w.gvy) * (sc.hide_s + 2 * RAMP_F / FPS)
+        sgn = 1.0 if w.gvy > 0 else -1.0
+        start = centre - sgn * span / 2
+        # keep the start on screen (the person must be seen before the hide)
+        return (
+            float(min(max(start, 40.0), H - 40.0))
+            if sgn > 0
+            else float(max(min(start, H - 40.0), 40.0))
+        )
 
     if kind in ("grid", "fast_walker", "camera_shake", "density"):
         for i in range(n):
@@ -136,7 +149,7 @@ def build_walkers(sc: Scenario, rng: np.random.Generator) -> list[Walker]:
                 w.gvy *= 2.6
                 w.vy = w.gvy
             if sc.hide_s > 0:
-                w.hide_at = hide_band()
+                w.hide_at = hide_band(w)
             ws.append(w)
     elif kind == "lookalike_cross":
         # pairs of same-sized people on crossing diagonals, meeting at the gate; the one behind is
@@ -178,7 +191,7 @@ def build_walkers(sc: Scenario, rng: np.random.Generator) -> list[Walker]:
             t_gate = abs((GATE_Y - w.y) / w.gvy)
             w.stops = [(w.t0 + t_gate - 0.4 + 0.3 * rng.random(), 1.5 + 1.5 * rng.random())]
             if sc.hide_s > 0:
-                w.hide_at = hide_band()
+                w.hide_at = hide_band(w)
             ws.append(w)
     elif kind == "step_back":
         for i in range(n):
@@ -186,7 +199,7 @@ def build_walkers(sc: Scenario, rng: np.random.Generator) -> list[Walker]:
             if i % 2 == 0:  # half of them cross the line, then step back over it
                 w.turn_at = GATE_Y + (35 if w.gvy > 0 else -35)
             if sc.hide_s > 0:
-                w.hide_at = hide_band()
+                w.hide_at = hide_band(w)
             ws.append(w)
     elif kind == "linger":
         for i in range(n):
@@ -195,13 +208,13 @@ def build_walkers(sc: Scenario, rng: np.random.Generator) -> list[Walker]:
                 t_gate = abs((GATE_Y - 30 - w.y) / w.gvy)
                 w.stops = [(w.t0 + t_gate, 4.0 + 3.0 * rng.random())]
             if sc.hide_s > 0:
-                w.hide_at = hide_band()
+                w.hide_at = hide_band(w)
             ws.append(w)
     elif kind == "dropout":
         # no occluder at all: the detector simply misses one person for dropout_f frames
         for i in range(n):
             w = _walker(rng, i + 1, sc.arrive_s * rng.random(), sc)
-            w.hide_at = hide_band()
+            w.hide_at = hide_band(w)
             ws.append(w)
     else:
         raise ValueError(f"unknown scenario kind {kind!r}")
