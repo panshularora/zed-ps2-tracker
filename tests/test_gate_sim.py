@@ -19,8 +19,9 @@ def test_same_seed_replays_identically():
 
 
 def test_different_seed_differs():
-    a, b = frames(SimParams(seed=1, seconds=4, play="crowd")), frames(
-        SimParams(seed=2, seconds=4, play="crowd")
+    a, b = (
+        frames(SimParams(seed=1, seconds=4, play="crowd")),
+        frames(SimParams(seed=2, seconds=4, play="crowd")),
     )
     assert a[1:] != b[1:]
 

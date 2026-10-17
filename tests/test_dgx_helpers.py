@@ -93,7 +93,9 @@ def test_prepare_follows_train_test_symlinks(
 ) -> None:
     import models.prepare as prep
 
-    monkeypatch.setattr(prep, "_image_info", lambda img_dir: (len(list(img_dir.iterdir())), ".jpg", 64, 48))
+    monkeypatch.setattr(
+        prep, "_image_info", lambda img_dir: (len(list(img_dir.iterdir())), ".jpg", 64, 48)
+    )
     real = tmp_path / "real"
     _seq(real / "train", "SOMPT22-02", 2, np.array([[1, 1, 0, 0, 5, 5, 1, 1, 1.0]]))
     _seq(real / "test", "SOMPT22-01", 2, None)
