@@ -58,12 +58,15 @@ export function withOfflineFallback(base: typeof fetch): typeof fetch {
     if (!alt) return base(input, init);
     try {
       const res = await base(input, init);
-      if (res.status < 500) {
+      const html = (res.headers.get("content-type") ?? "").toLowerCase().includes("text/html");
+      // Static hosts (Vercel SPA rewrite) answer /api/* with 200 index.html. That is not the API.
+      if (html) {
+        /* fall through to snapshot */
+      } else if (res.status < 500) {
         if (res.ok) setOffline(false);
         return res;
-      }
-      // a running service answering with its own error (e.g. 503 model_missing) is not "offline"
-      if (await isServiceError(res)) {
+      } else if (await isServiceError(res)) {
+        // a running service answering with its own error (e.g. 503 model_missing) is not "offline"
         setOffline(false);
         return res;
       }

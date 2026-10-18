@@ -38,6 +38,19 @@ describe("offline fallback", () => {
     expect(base).toHaveBeenCalledTimes(1);
     expect(isOffline()).toBe(false);
   });
+  it("falls back when a static host returns the SPA html for /api (200)", async () => {
+    const base = vi.fn(async (u: RequestInfo | URL) =>
+      String(u).startsWith("/offline/")
+        ? new Response('{"status":"ok","clips":6}', { headers: { "content-type": "application/json" } })
+        : new Response("<!doctype html><title>Gate tracker</title>", {
+            status: 200,
+            headers: { "content-type": "text/html; charset=utf-8" },
+          })) as unknown as typeof fetch;
+    const r = await withOfflineFallback(base)("/api/health");
+    expect(await r.json()).toEqual({ status: "ok", clips: 6 });
+    expect(isOffline()).toBe(true);
+    expect(base).toHaveBeenCalledWith("/offline/health.json");
+  });
   it("reports a clear 503 when there is no snapshot (SPA html)", async () => {
     const base = (async (u: RequestInfo | URL) =>
       String(u).startsWith("/offline/") ? new Response("<html>", { headers: { "content-type": "text/html" } }) : new Response("", { status: 500 })) as typeof fetch;
