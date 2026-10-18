@@ -16,8 +16,8 @@ const GATE = "#F5A524";
 const ease = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 
 /** Counters live in a bar outside the frame: a single row "IN n · OUT n". */
-/** The focus person gets a solid chip in its ID colour and a 2 px box; everyone else is a thin grey
- *  outline at 40 % with no chip; their events go to the caption bar. */
+/** Story/Scenarios: the focus person gets a solid chip; everyone else is a thin grey outline.
+ *  Your Video (`unchecked`): empty focus so every box keeps its #id chip. */
 /** Solid chips; the chip of a hidden person is dimmed (their box is dashed at the last-seen spot). */
 export const chipAlpha = (state: Drawn["state"]) => (state === "hidden" ? 0.5 : 1);
 
@@ -74,6 +74,13 @@ export function useVerify(clip: string, given?: VerifyDoc | null): VerifyDoc | n
     return () => { live = false; };
   }, [clip, given]);
   return doc;
+}
+
+/** Who gets a coloured box and `#id` chip. Empty set = everyone (Your Video). */
+export function overlayFocus(unchecked: boolean | undefined, follow: number | null, storyFocus: Set<number>): Set<number> {
+  if (unchecked) return new Set();
+  if (follow != null) return new Set([follow]);
+  return storyFocus;
 }
 
 export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data: ReplayData; watch?: string; verify?: VerifyDoc | null; seek?: { f: number; n: number; leadS?: number; playS?: number } | null; unchecked?: boolean }) {
@@ -168,12 +175,12 @@ export function IdentityPlayer({ data, watch, verify, seek, unchecked }: { data:
         const z = 1 + (ZOOM - 1) * zk, w = W / z, h = H / z;
         view = [Math.min(Math.max(0, fb[0] + fb[2] / 2 - w / 2), W - w), Math.min(Math.max(0, fb[1] + fb[3] / 2 - h / 2), H - h), w, h];
       }
-      paintFrame(ctx, cw, ch, data, v(), view, all, fid, fid == null ? focusIds : new Set([fid]), ff, tracks);
+      paintFrame(ctx, cw, ch, data, v(), view, all, fid, overlayFocus(unchecked, fid, focusIds), ff, tracks);
     };
     const v = () => (src && video.current && video.current.readyState >= 2 ? video.current : null);
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [data, src, off, playing, story, steps, tracks, focusIds, verdict]);
+  }, [data, src, off, playing, story, steps, tracks, focusIds, verdict, unchecked]);
 
   function seekFrame(f: number, lead = 0.3) {
     const s = Math.max(0, (f - 1) / data.fps - lead);

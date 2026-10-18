@@ -5,7 +5,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { boxesAt, eventLines, frameTag, people, tracksOf, type Drawn } from "../src/identity/story";
 import { verdictOf, type VerifyDoc } from "../src/identity/verify";
-import { chipAlpha, paintFrame } from "../src/identity/IdentityPlayer";
+import { chipAlpha, overlayFocus, paintFrame } from "../src/identity/IdentityPlayer";
 import { PersonTimeline } from "../src/identity/PersonTimeline";
 import { ScenarioRail, THUMB_CROP } from "../src/pages/Scenarios";
 import { fromScenario, type ReplayData } from "../src/guided/model";
@@ -40,6 +40,21 @@ const all: Drawn[] = [
   { id: 3, box: [700, 100, 50, 120], state: "hidden" },
   { id: 5, box: [850, 100, 50, 120], state: "seen" },
 ];
+
+describe("Your Video: every person keeps their ID chip", () => {
+  it("overlayFocus is empty in unchecked mode so paintFrame labels everyone", () => {
+    expect([...overlayFocus(true, null, new Set([14]))]).toEqual([]);
+    expect([...overlayFocus(true, 7, new Set([14]))]).toEqual([]);
+    expect([...overlayFocus(false, null, new Set([14]))]).toEqual([14]);
+    expect([...overlayFocus(false, 7, new Set([14]))]).toEqual([7]);
+  });
+
+  it("empty focus paints #id on every box, not only the story person", () => {
+    const { ctx, texts } = recorder();
+    paintFrame(ctx, 1000, 600, d, null, [0, 0, 1000, 600], all, null, overlayFocus(true, null, new Set([14])), 1, new Map());
+    expect(texts.filter((t) => /^#\d+$/.test(t)).sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)))).toEqual(["#3", "#5", "#7", "#14", "#20"]);
+  });
+});
 
 describe("only the focus person's event is text on the frame", () => {
   it("frameTag: a short tag for the focus person, nothing for anyone else", () => {
