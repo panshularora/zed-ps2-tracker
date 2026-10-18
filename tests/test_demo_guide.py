@@ -9,7 +9,7 @@ from scripts.demo.guide import RULE, annotate, renumbers, rows_of
 
 
 def _walk(f: int) -> list[float]:
-    return [900, 200 + 30 * f, 100, 200]  # bottom crosses y=540 (h50) near f=5
+    return [900, 200 + 30 * f, 100, 200]  # walks straight down the frame
 
 
 def _data(base_changes: dict[int, int], ours_changes: dict[int, int]) -> dict[str, Any]:
@@ -51,7 +51,8 @@ def test_no_change_no_moment() -> None:
     g = annotate(_data({}, {}))
     assert g["moments"] == []
     assert sum(e["t"] == "cross" for e in g["events"]["ours"]) == 1
-    assert g["gate"]["name"] == "h50"
+    assert g["gate"]["name"] == "walk"  # from motion: the walker goes straight down
+    assert g["gate"]["a"][1] == g["gate"]["b"][1]  # so the line is horizontal
 
 
 def test_renumber_needs_same_place() -> None:

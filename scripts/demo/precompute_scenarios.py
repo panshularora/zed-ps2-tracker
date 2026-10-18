@@ -24,6 +24,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
+from scripts.demo.camera_motion import camera_shift  # noqa: E402
 from scripts.demo.guide import annotate  # noqa: E402
 from serve.analysis import suspected_switches  # noqa: E402
 from serve.clips import load_manifest  # noqa: E402
@@ -200,6 +201,7 @@ def main(argv: list[str] | None = None) -> int:
                 "frames": compact(r),
             }
         dis = disagreements(rows["baseline"], rows["ours"])
+        camera = camera_shift(path, stride, m.seq_length)
         meta = {
             "id": cid,
             "title": clip.title,
@@ -225,7 +227,10 @@ def main(argv: list[str] | None = None) -> int:
                     "meta": meta,
                     "runs": runs,
                     "disagreements": dis,
-                    "guide": annotate({"meta": meta, "runs": runs, "disagreements": dis}),
+                    "camera": camera,
+                    "guide": annotate(
+                        {"meta": meta, "runs": runs, "disagreements": dis, "camera": camera}
+                    ),
                 },
                 separators=(",", ":"),
             )

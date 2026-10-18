@@ -2,8 +2,8 @@
 
 Adds a ``guide`` block to ``web/public/scenarios/<clip>.json``:
 
-* ``gate``: the counting line. Candidates are fixed fractions of the frame (image geometry only);
-  the one people walk across most often (summed over BOTH trackers, so neither is favoured) wins.
+* ``gate``: the counting line, from where people walk (``motion_gate``: perpendicular to the
+  dominant walking direction of the tracks, both trackers pooled); no tracker's count is used.
 * ``events[run]``: gate crossings (``eval.gate_events.crossings``, 10 px hysteresis; none in the
   first ``SETTLE_S`` of the clip, see below), ``lost`` /
   ``back`` (same ID returns after a gap) and ``renumber`` (one tracker changed the number while the
@@ -31,15 +31,17 @@ HYST_PX = 10.0
 SETTLE_S = 1.0
 GAP_S = 0.5  # same-ID gap that counts as "lost then back"
 
-# (name, a, b) as fractions of width / height
-CANDIDATES: list[tuple[str, tuple[float, float], tuple[float, float]]] = [
-    ("h50", (0.0, 0.5), (1.0, 0.5)),
-    ("h65", (0.0, 0.65), (1.0, 0.65)),
-    ("h80", (0.0, 0.8), (1.0, 0.8)),
-    ("v35", (0.35, 0.0), (0.35, 1.0)),
-    ("v50", (0.5, 0.0), (0.5, 1.0)),
-    ("v65", (0.65, 0.0), (0.65, 1.0)),
-]
+# Gate rule (same for every clip, documented in docs/demo_gates.md): the line is placed from
+# where people walk, never from any tracker's count. Per track (both trackers' tracks pooled with
+# equal weight, so neither is favoured), take the bottom-centre (foot point) displacement from its
+# first to its last frame; tracks shorter than MIN_TRACK_S or moving less than MIN_MOVE_FRAC of the
+# frame diagonal are ignored (people standing still). The dominant walking axis is the principal
+# axis of those displacements (sum of d d^T, so opposite flows on one axis add up). The gate is the
+# line perpendicular to that axis, through the median of the tracks' mid-points along the axis,
+# spanning the whole frame. "in" = the direction most of those tracks walk along the axis. A
+# panning camera is removed first (background shift per frame, scripts/demo/camera_motion.py).
+MIN_TRACK_S = 1.0
+MIN_MOVE_FRAC = 0.05
 
 
 def rows_of(frames: dict[str, list[list[float]]]) -> np.ndarray:
@@ -47,19 +49,111 @@ def rows_of(frames: dict[str, list[list[float]]]) -> np.ndarray:
     return np.asarray(sorted(out), float).reshape(-1, 6)
 
 
-def _gate(name: str, a: tuple[float, float], b: tuple[float, float], w: int, h: int) -> Gate:
-    return Gate(name, (round(a[0] * w), round(a[1] * h)), (round(b[0] * w), round(b[1] * h)))
+def _foot(box: np.ndarray) -> np.ndarray:
+    return np.array([box[0] + box[2] / 2.0, box[1] + box[3]])
 
 
-def pick_gate(rows: dict[str, np.ndarray], w: int, h: int) -> Gate:
-    best, best_n = None, -1
-    for name, a, b in CANDIDATES:
-        g = _gate(name, a, b, w, h)
-        n = sum(len(crossings(r, g, HYST_PX)) for r in rows.values() if len(r))
-        if n > best_n:
-            best, best_n = g, n
-    assert best is not None
+def walking_motion(
+    rows: dict[str, np.ndarray],
+    fps_t: float,
+    w: int,
+    h: int,
+    camera: list[list[float]] | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """(displacements, mid-points) of the foot point of every moving track of every run.
+
+    ``camera[f - 1]`` is the cumulative image shift of the background at tracked frame ``f``
+    (``scripts/demo/camera_motion.py``); it is subtracted so a panning phone camera does not look
+    like people walking sideways. Mid-points stay in image coordinates (where the line is drawn)."""
+    cam = np.asarray(camera, float).reshape(-1, 2) if camera else None
+
+    def shift(f: float) -> np.ndarray:
+        if cam is None or not len(cam):
+            return np.zeros(2)
+        return cam[min(max(int(f) - 1, 0), len(cam) - 1)]
+
+    disp, mid = [], []
+    min_f = max(2, round(MIN_TRACK_S * fps_t))
+    min_d = MIN_MOVE_FRAC * float(np.hypot(w, h))
+    for r in rows.values():
+        if not len(r):
+            continue
+        for tid in np.unique(r[:, 1]):
+            t = r[r[:, 1] == tid]
+            t = t[np.argsort(t[:, 0], kind="stable")]
+            if len(t) < min_f:
+                continue
+            p0, p1 = _foot(t[0, 2:6]), _foot(t[-1, 2:6])
+            d = (p1 - shift(t[-1, 0])) - (p0 - shift(t[0, 0]))
+            if float(np.hypot(*d)) < min_d:
+                continue
+            disp.append(d)
+            mid.append((p0 + p1) / 2.0)
+    return np.asarray(disp, float).reshape(-1, 2), np.asarray(mid, float).reshape(-1, 2)
+
+
+def _clip_line(c: float, n: np.ndarray, w: int, h: int) -> tuple[np.ndarray, np.ndarray]:
+    """End points on the frame border of the line {p : n . p = c}."""
+    pts: list[np.ndarray] = []
+    if abs(n[1]) > 1e-9:
+        for x in (0.0, float(w)):
+            y = (c - n[0] * x) / n[1]
+            if -1e-6 <= y <= h + 1e-6:
+                pts.append(np.array([x, min(max(y, 0.0), h)]))
+    if abs(n[0]) > 1e-9:
+        for y in (0.0, float(h)):
+            x = (c - n[1] * y) / n[0]
+            if -1e-6 <= x <= w + 1e-6:
+                pts.append(np.array([min(max(x, 0.0), w), y]))
+    uniq: list[np.ndarray] = []
+    for q in pts:
+        if all(np.hypot(*(q - u)) > 1e-3 for u in uniq):
+            uniq.append(q)
+    if len(uniq) < 2:
+        raise ValueError("gate line does not cross the frame")
+    best = max(((p, q) for i, p in enumerate(uniq) for q in uniq[i + 1 :]),
+               key=lambda pq: float(np.hypot(*(pq[0] - pq[1]))))  # fmt: skip
     return best
+
+
+def motion_gate(
+    rows: dict[str, np.ndarray],
+    fps_t: float,
+    w: int,
+    h: int,
+    camera: list[list[float]] | None = None,
+) -> dict[str, Any]:
+    """The documented gate rule (see the comment above ``MIN_TRACK_S``). Uses track motion only
+    (camera pan removed): no crossing count of any tracker is looked at."""
+    disp, mid = walking_motion(rows, fps_t, w, h, camera)
+    if len(disp) == 0:
+        axis = np.array([0.0, 1.0])  # nobody moves: fall back to a horizontal line at mid-height
+        c_pt = np.array([w / 2.0, h / 2.0])
+    else:
+        vals, vecs = np.linalg.eigh(disp.T @ disp)
+        axis = vecs[:, int(np.argmax(vals))]
+        proj = disp @ axis
+        if int(np.sum(proj > 0)) < int(np.sum(proj < 0)):
+            axis = -axis
+        c_pt = mid[int(np.argsort(mid @ axis)[len(mid) // 2])]
+    c = float(axis @ c_pt)
+    p, q = _clip_line(c, axis, w, h)
+    u_want = np.array([axis[1], -axis[0]])  # left-hand normal of a->b == axis  ("in")
+    if float((q - p) @ u_want) < 0:
+        p, q = q, p
+    ang = float(np.degrees(np.arctan2(axis[1], axis[0])))
+    return {
+        "a": [round(float(p[0])), round(float(p[1]))],
+        "b": [round(float(q[0])), round(float(q[1]))],
+        "norm": [
+            round(float(p[0]) / w, 3),
+            round(float(p[1]) / h, 3),
+            round(float(q[0]) / w, 3),
+            round(float(q[1]) / h, 3),
+        ],
+        "walk_deg": round(ang, 1),
+        "tracks_used": len(disp),
+    }
 
 
 def gaps(r: np.ndarray, fps_tracked: float) -> list[dict[str, Any]]:
@@ -101,7 +195,8 @@ def annotate(data: dict[str, Any]) -> dict[str, Any]:
     w, h = meta["width"], meta["height"]
     fps_t = meta["src_fps"] / meta["stride"]
     rows = {k: rows_of(v["frames"]) for k, v in data["runs"].items()}
-    gate = pick_gate(rows, w, h)
+    mg = motion_gate(rows, fps_t, w, h, data.get("camera"))
+    gate = Gate("walk", (mg["a"][0], mg["a"][1]), (mg["b"][0], mg["b"][1]))
     settle = 1 + SETTLE_S * fps_t
     cross = {
         k: [e for e in crossings(r, gate, HYST_PX) if e.frame >= settle] if len(r) else []
@@ -136,7 +231,11 @@ def annotate(data: dict[str, Any]) -> dict[str, Any]:
             "name": gate.name,
             "a": list(gate.a),
             "b": list(gate.b),
-            "how": "fixed-fraction candidate line most often crossed (both trackers summed)",
+            "how": "perpendicular to the dominant walking direction of the tracks (both trackers"
+            " pooled), through the median track mid-point; no tracker count is used",
+            "norm": mg["norm"],
+            "walk_deg": mg["walk_deg"],
+            "tracks_used": mg["tracks_used"],
         },
         "rule": RULE,
         "events": events,
