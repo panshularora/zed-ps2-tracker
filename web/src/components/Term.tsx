@@ -8,6 +8,8 @@ export const TERMS: Record<string, string> = {
   MOTA: "Classic accuracy: penalises misses, false boxes and ID switches (higher is better).",
   AssA: "Association accuracy: how well IDs stay with the same person (higher is better).",
   DetA: "Detection accuracy: how well people are found in each frame (higher is better).",
+  FP: "False positives: boxes the tracker reported where nobody was (lower is better).",
+  FN: "False negatives: people the tracker missed (lower is better).",
   "p95 ms": "Per-frame time that 95 % of frames finish within.",
   MAE: "Mean absolute error of the estimate.",
   "Spearman ρ": "Rank correlation between estimate and truth (1 = same order).",

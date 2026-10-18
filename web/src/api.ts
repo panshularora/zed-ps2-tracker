@@ -149,14 +149,24 @@ export interface Benchmarks {
   gpu?: GpuRun | null;
 }
 
-export interface GpuRow { name: string; label: string; group: string; HOTA: number | null; IDF1: number | null; MOTA: number | null; AssA: number | null; DetA: number | null; IDSW: number | null; p95_ms: number | null }
+export interface GpuRow { name: string; label: string; group: string; HOTA: number | null; IDF1: number | null; MOTA: number | null; AssA: number | null; DetA: number | null; IDSW: number | null; FP?: number | null; FN?: number | null; p95_ms: number | null }
+export interface GpuScale {
+  evaluations: number; tracker_runs: number; tracker_configs: number; sequences: number; frames: number; tracked_frames: number; excluded: number;
+  go_no_go: { verdict: string | null; failed: number; total: number } | null;
+  stress: { source: string; cells: number; seeds_per_cell: number | null; seeds: [number, number]; trackers: number; runs: number } | null;
+  detectors: string[]; reid: string[]; precision: string[];
+}
+export interface ReidSide { label: string; HOTA: number; IDSW: number; IDF1: number }
+export interface ReidPair { family: string; base: string; ours: string; fewer_idsw_everywhere: boolean; hota_never_lower: boolean; rows: { dataset: string; base: ReidSide; ours: ReidSide; d_HOTA: number; d_IDF1: number; d_IDSW: number }[] }
 export interface GpuRun {
   source: string;
   analysis: string;
   gpu: string | null;
   profile: string | null;
   tuned: Record<string, number> | null;
-  datasets: { id: string; cache: string; dataset: string; clean: boolean; detector: string | null; trained_on: string | null; input_size: string | null; source: string; rows: GpuRow[]; plots: Record<string, string> }[];
+  scale?: GpuScale;
+  reid_rule?: { source: string; pairs: ReidPair[] };
+  datasets: { id: string; cache: string; dataset: string; clean: boolean; sequences?: number; frames?: number; detector: string | null; trained_on: string | null; input_size: string | null; source: string; rows: GpuRow[]; plots: Record<string, string> }[];
   excluded: string[];
   reproduction: { verdict: string; source: string; reference: string; rows: { metric: string; paper: number | null; ours: number | null; delta: number | null; tolerance: number | null; within: boolean | null }[] } | null;
   go_no_go_v2: { verdict: string; source: string; rule: string; what: string; criteria: { id: string; what: string; rule: string; got: string | null; passed: boolean }[]; rows: { arm: string; HOTA: number; IDF1: number; MOTA: number; AssA: number; IDSW: number; p95_ms: number; flag_pct: number }[] } | null;

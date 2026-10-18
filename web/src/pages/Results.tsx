@@ -4,6 +4,7 @@ import { Term } from "../components/Term";
 import { loadSummary } from "../lib/summary";
 import { DatasetTable } from "../components/DatasetTable";
 import { GpuRunSection } from "../components/GpuRun";
+import { GpuShowcase } from "../components/GpuShowcase";
 import { Mot20Status } from "../components/Mot20Status";
 import { api, type AblationRow, type Benchmarks } from "../api";
 import StressChart from "../components/StressChart";
@@ -30,6 +31,7 @@ export function ResultsView({ b }: { b: Benchmarks }) {
   return (
     <div>
       <h1>Results</h1>
+      {b.gpu && <GpuShowcase g={b.gpu} />}
       <StressMap />
       <details className="stress-how" style={{ marginTop: 16, maxWidth: 820 }} data-testid="results-what">
         <summary>What am I looking at?</summary>
