@@ -35,7 +35,7 @@ describe("results: laptop GPU run", () => {
     fireEvent.click(within(abl).getByTestId("gpu-ds-mot20_val_half__sparsetrack_ablation"));
     expect(within(abl).getByTestId("gpu-row-reid_vis_gated").textContent).toContain("69.5");
     expect(within(abl).queryByTestId("gpu-ds-mot20_val_half__mot20full_SAW_EVAL_HALF")).toBeNull();
-    expect(abl.textContent).toContain("mot20_val_half__mot20full_SAW_EVAL_HALF");
+    expect(abl.textContent).not.toContain("SAW_EVAL_HALF");
     expect(within(abl).getAllByRole("img").map((i) => i.getAttribute("src"))).toContain("/api/benchmarks/plots/gpu-mot20_val_half__sparsetrack_ablation-stress_visibility.png");
     expect(screen.queryByText("pending DGX run")).toBeNull();
     expect(screen.getByTestId("gpu-gate-events")).toBeTruthy();

@@ -80,7 +80,7 @@ export default function App() {
         </Routes>
       </main>
       <footer className="footer">
-        <span>Benchmark numbers are provisional: MOT17 val-half, public detections, read from docs/results/summary.json (laptop GPU run).</span>
+        <span>Benchmark numbers are provisional (ByteTrack baseline not reproduced): laptop GPU run, YOLOX-X detectors (ByteTrack / SparseTrack weights, fp16) + OSNet-AIN re-ID, read from docs/results/phase3.</span>
         <span>
           Code: Apache-2.0. Demo clips: <a href="https://www.pexels.com/license/" target="_blank" rel="noreferrer">Pexels License</a> (not Apache-2.0), faces blurred; see web/public/demo/LICENSE_CLIPS.md.
         </span>

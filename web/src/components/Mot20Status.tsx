@@ -33,7 +33,7 @@ export function Mot20Status({ s = mot20Status() }: { s?: S }) {
         </tbody>
       </table>
       <p className="credit" style={{ marginTop: 8 }}>
-        Sources: docs/results/go_no_go.md (MOT20 CPU corrupted-gt row), docs/evaluation.md (oracle), docs/results/summary.json (laptop GPU ablation). MOT20 numbers in the table above this panel are from the leak-free SparseTrack ablation cache; the MOT17→MOT20 transfer cache is a second clean run. The leftover SAW_EVAL_HALF folder on disk is excluded.
+        Sources: docs/results/go_no_go.md (MOT20 CPU corrupted-gt row), docs/evaluation.md (oracle), docs/results/summary.json (laptop GPU ablation). MOT20 numbers in the table above this panel are from the leak-free SparseTrack ablation cache; the MOT17→MOT20 transfer cache is a second clean run.
       </p>
     </div>
   );

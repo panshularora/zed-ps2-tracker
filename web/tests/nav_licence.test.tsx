@@ -45,7 +45,8 @@ describe("navigation", () => {
     render(<MemoryRouter future={R} initialEntries={["/dashboard"]}><App /></MemoryRouter>);
     const f = document.querySelector("footer")!.textContent!;
     expect(f).toContain("provisional");
-    expect(f).toContain("summary.json (laptop GPU run)");
+    expect(f).toContain("YOLOX-X detectors");
+    expect(f).not.toContain("public detections");
     expect(f).toContain("Pexels License (not Apache-2.0)");
     expect(f).not.toMatch(/DGX/);
   });

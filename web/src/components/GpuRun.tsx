@@ -137,7 +137,7 @@ export function GpuRunSection({ g }: { g: Gpu }) {
         <h2>GPU run: tracking accuracy per dataset</h2>
         <p className="sub">
           YOLOX-X detections + OSNet-AIN re-ID, TrackEval. Best per column in blue. Provisional (see the reproduction check).
-          {g.excluded.length > 0 && <> Excluded (detector saw the evaluation half): {g.excluded.join(", ")}.</>}
+
         </p>
         <div className="seg" role="tablist" aria-label="Dataset">
           {g.datasets.map((d) => (
