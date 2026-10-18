@@ -6,7 +6,7 @@ Zed Digital problem statement 2 (PS-2): identity-preserving, strictly online mul
 
 **Live demo:** https://zed-ps2-tracker.vercel.app
 
-**Demo video (Google Drive):** https://drive.google.com/drive/folders/1hPGca_j9OgOLtWjlsOP-xGHwSv46dQv_
+**Demo video (Google Drive):** https://drive.google.com/drive/folders/1hPGca_j9OgOLtWjlsOP-xGHwSv46dQv_?usp=sharing
 
 **GitHub:** https://github.com/panshularora/zed-ps2-tracker
 
@@ -27,7 +27,7 @@ Author: **Panshul Arora**, SRM IST.
 
 - **Live app:** https://zed-ps2-tracker.vercel.app
 - **Health (when the API is running):** `/api/health`
-- **Demo video:** https://drive.google.com/drive/folders/1hPGca_j9OgOLtWjlsOP-xGHwSv46dQv_
+- **Demo video:** https://drive.google.com/drive/folders/1hPGca_j9OgOLtWjlsOP-xGHwSv46dQv_?usp=sharing
 - **Report:** [Word](docs/report/Zed_PS2_Project_Report.docx) · [PDF](docs/report/Zed_PS2_Project_Report.pdf)
 - **Slides:** [PowerPoint](docs/presentation/Zed_PS2_Deck.pptx)
 
