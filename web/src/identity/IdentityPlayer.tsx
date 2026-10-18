@@ -17,7 +17,7 @@ const ease = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 
 /** Counters live in a bar outside the frame: a single row "IN n · OUT n". */
 /** The focus person gets a solid chip in its ID colour and a 2 px box; everyone else is a thin grey
- *  outline at 40 % with no chip (a possible swap is never dimmed). */
+ *  outline at 40 % with no chip; their events go to the caption bar. */
 /** Solid chips; the chip of a hidden person is dimmed (their box is dashed at the last-seen spot). */
 export const chipAlpha = (state: Drawn["state"]) => (state === "hidden" ? 0.5 : 1);
 
@@ -278,9 +278,9 @@ export function paintFrame(ctx: CanvasRenderingContext2D, cw: number, ch: number
     gateLabels(ctx, d.gate, px);
   }
   const hasFocus = focus.size > 0;
-  const swapIds = new Set(all.filter((b) => b.state === "swap").map((b) => b.id));
-  // failures are never dimmed: a possible swap is drawn at full strength even outside the focus
-  const isF = (id: number) => !hasFocus || focus.has(id) || swapIds.has(id);
+  // outside the focus everyone (a possible swap too) is a thin grey outline; their events are listed
+  // in the caption bar under the frame ("Also now: …"), so nothing is hidden
+  const isF = (id: number) => !hasFocus || focus.has(id) || id === follow;
   // follow: 1.5 s fading trail in ID colour
   if (follow != null) {
     const m = tracks.get(follow);
@@ -302,7 +302,7 @@ export function paintFrame(ctx: CanvasRenderingContext2D, cw: number, ch: number
       // not the focus person: thin grey outline at 40 %, no chip
       ctx.globalAlpha = OTHER_ALPHA;
       ctx.strokeStyle = OTHER_GREY; ctx.lineWidth = 1 * px;
-      if (b.state === "hidden") ctx.setLineDash([8 * px, 6 * px]);
+      if (b.state === "hidden" || b.state === "swap") ctx.setLineDash([8 * px, 6 * px]);
       ctx.strokeRect(...b.box);
       ctx.setLineDash([]);
       ctx.globalAlpha = 1;

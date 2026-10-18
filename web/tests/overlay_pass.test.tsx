@@ -51,10 +51,10 @@ describe("only the focus person's event is text on the frame", () => {
     for (const b of all) expect(frameTag(b, false)).toBeNull();
   });
 
-  it("painted text = a chip only for the focus person (#14) and a possible swap (#7) + exactly one tag; no 'still … hidden', no swap sentence", () => {
+  it("painted text = a chip only for the focus person (#14) + exactly one tag; no 'still … hidden', no swap sentence", () => {
     const { ctx, texts } = recorder();
     paintFrame(ctx, 1000, 600, d, null, [0, 0, 1000, 600], all, null, new Set([14]), 1, new Map());
-    expect(texts.filter((t) => /^#\d+$/.test(t)).sort()).toEqual(["#14", "#7"]);
+    expect(texts.filter((t) => /^#\d+$/.test(t)).sort()).toEqual(["#14"]);
     expect(texts.filter((t) => !/^#\d+$/.test(t) && t !== "IN" && t !== "OUT")).toEqual(["kept #14"]);
     expect(texts.join(" ")).not.toMatch(/still|hidden|possible swap|given to|not checked/);
   });
