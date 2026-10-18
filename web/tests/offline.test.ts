@@ -26,6 +26,18 @@ describe("offline fallback", () => {
     expect((await f("/api/c")).status).toBe(404);
     await expect(f("/api/a", { method: "POST" })).rejects.toThrow();
   });
+  it("passes a live service's own 5xx error through (model_missing), no snapshot", async () => {
+    const body = { error: { code: "model_missing", message: "file is missing", fix: "python -m serve.detector fetch --out data/models" } };
+    const base = vi.fn(async (u: RequestInfo | URL) =>
+      String(u).startsWith("/offline/")
+        ? new Response("<html>", { headers: { "content-type": "text/html" } })
+        : new Response(JSON.stringify(body), { status: 503, headers: { "content-type": "application/json" } })) as unknown as typeof fetch;
+    const r = await withOfflineFallback(base)("/api/clips/upload-1/first-frame.jpg");
+    expect(r.status).toBe(503);
+    expect((await r.json()).error.code).toBe("model_missing");
+    expect(base).toHaveBeenCalledTimes(1);
+    expect(isOffline()).toBe(false);
+  });
   it("reports a clear 503 when there is no snapshot (SPA html)", async () => {
     const base = (async (u: RequestInfo | URL) =>
       String(u).startsWith("/offline/") ? new Response("<html>", { headers: { "content-type": "text/html" } }) : new Response("", { status: 500 })) as typeof fetch;

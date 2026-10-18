@@ -37,6 +37,17 @@ function setOffline(v: boolean) {
 
 const urlOf = (input: RequestInfo | URL) => (typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
 
+/** True when a 5xx carries the service's own JSON error envelope ({error: {code}}). */
+async function isServiceError(res: Response): Promise<boolean> {
+  if (!(res.headers.get("content-type") ?? "").includes("application/json")) return false;
+  try {
+    const b = (await res.clone().json()) as { error?: { code?: unknown } };
+    return typeof b?.error?.code === "string";
+  } catch {
+    return false;
+  }
+}
+
 /** Wrap fetch so failed (network error, 5xx, 502 proxy) GET /api calls fall back to snapshots. */
 export function withOfflineFallback(base: typeof fetch): typeof fetch {
   return async (input, init) => {
@@ -49,6 +60,11 @@ export function withOfflineFallback(base: typeof fetch): typeof fetch {
       const res = await base(input, init);
       if (res.status < 500) {
         if (res.ok) setOffline(false);
+        return res;
+      }
+      // a running service answering with its own error (e.g. 503 model_missing) is not "offline"
+      if (await isServiceError(res)) {
+        setOffline(false);
         return res;
       }
     } catch {
