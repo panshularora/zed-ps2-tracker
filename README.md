@@ -1,189 +1,235 @@
 # zed-ps2-tracker
 
-**Identity-preserving, strictly online multi-person tracking through dense occlusion.**
-This is Zed Digital problem statement 2 (PS-2): every person crossing a crowded gate should keep
-**one ID from approach to exit**, even when they are hidden behind someone else for a while.
+**Gate counter that keeps one ID per person.**
 
-> **Status: phase 2 done on CPU with public detections** (PRs #6–#13). Built so far:
-> * five baselines ported to **exact upstream parity** (ByteTrack-like, OC-SORT, Deep OC-SORT,
->   Hybrid-SORT, BoT-SORT);
-> * our two components, a depth-order **visibility estimate** and an ambiguity-aware **delayed
->   assignment**, both evaluated honestly;
-> * `make ablate`, the gate-event metrics (`make gates`) and a static **viewer** (`make viewer`).
->
-> **Headline:** on public detections without re-ID, visibility helps exactly as much as a longer
-> buffer, and the delayed assignment is a **no-go**. Both are reported, not hidden.
->
-> **GPU run (laptop RTX 3050, 16–18 Oct 2026), provisional:** YOLOX-X + OSNet re-ID on MOT17,
-> MOT20 and DanceTrack are in [Results (GPU)](#results-gpu-laptop-yolox-x--re-id-provisional).
-> Main finding: the visibility rule stops re-ID from hurting (MOT20: 69.4 → 67.5 with re-ID → 69.5
-> ours); not the best tracker overall (BoT-SORT wins MOT17, Hybrid-SORT DanceTrack). ByteTrack reproduction: **NOT REPRODUCED** (MOTA 66.4 vs 76.6 in the paper); go/no-go v2 for the
-> delayed decision: **NO-GO** (all five pre-registered criteria failed). Write-up:
-> [docs/results/gpu/ANALYSIS.md](docs/results/gpu/ANALYSIS.md).
+Zed Digital problem statement 2 (PS-2): identity-preserving, strictly online multi-person tracking through a crowded gate. Every person should keep **one ID from approach to exit**, even when they are hidden behind someone else.
 
-## Product demo (CPU): web app + job API
+**Live demo:** https://zed-ps2-tracker.vercel.app
 
-A React frontend over the `serve/` job API. Pick a face-blurred clip (or upload one), run the
-tracker on CPU with a small YOLOX detector, and play it back with persistent IDs, trails, the
-gate line and live in/out counters. Results and architecture pages read the same repo outputs as
-this README. The **demo clips are not benchmarks**: no number from them appears in any results
-table.
+**Demo video (Google Drive):** _paste Google Drive link here_
 
-```bash
-make setup                 # .venv (Python 3.11) with the package + dev tools
-make models clips blur     # ONNX models (sha256-checked), 5 Pexels clips, face-blurred copies under data/demo/
-make demo                  # API on :8000 + web app on http://localhost:5173 (Ctrl-C stops both)
-# or, with Docker:
-docker compose up --build  # web app on http://localhost:8080, API on :8000 (mounts data/models + data/demo/blurred)
+**GitHub:** https://github.com/panshularora/zed-ps2-tracker
+
+| Deliverable | File |
+|---|---|
+| Project report (Word) | [docs/report/Zed_PS2_Project_Report.docx](docs/report/Zed_PS2_Project_Report.docx) |
+| Project report (PDF) | [docs/report/Zed_PS2_Project_Report.pdf](docs/report/Zed_PS2_Project_Report.pdf) |
+| Slide deck (PPT) | [docs/presentation/Zed_PS2_Deck.pptx](docs/presentation/Zed_PS2_Deck.pptx) |
+| Deck outline | [docs/deck_outline.md](docs/deck_outline.md) |
+
+Author: **Panshul Arora**, SRM IST.
+
+> **Headline.** The visibility rule **stops re-ID from hurting**. On MOT20 (SparseTrack detector) HOTA is ByteTrack 69.4 → ByteTrack + re-ID 67.5 → ours 69.5. It is **not** the best tracker overall: BoT-SORT (CMC, IoU) wins MOT17; Hybrid-SORT wins DanceTrack. ByteTrack paper MOTA is **not reproduced** (66.4 vs 76.6). Delayed assignment is a **NO-GO**. Both negatives are reported, not hidden.
+
+---
+
+## Links
+
+- **Live app:** https://zed-ps2-tracker.vercel.app
+- **Health (when the API is running):** `/api/health`
+- **Demo video:** _paste Google Drive link here_
+- **Report:** [Word](docs/report/Zed_PS2_Project_Report.docx) · [PDF](docs/report/Zed_PS2_Project_Report.pdf)
+- **Slides:** [PowerPoint](docs/presentation/Zed_PS2_Deck.pptx)
+
+The public URL serves the React workstation (Dashboard, Gate scene, Scenarios, Studio, Results, Experiments, Analytics, Architecture). Scenarios, the gate scene, and Results use committed offline snapshots, so they work without a GPU. **Your video** (upload → draw a gate → CPU tracker) needs the FastAPI job service in `serve/` (local `uvicorn` or the Docker image).
+
+---
+
+## 1. Summary
+
+At a ticket gate, a people counter is only as good as its IDs. If a person is hidden behind someone for a second and comes back with a new number, the gate can miss their crossing, count them twice, or hand their ticket to someone else.
+
+This project builds:
+
+1. a strictly **online** tracker that tries to keep one ID per person from approach to exit
+2. a **gate-counting** layer on top of it
+3. a **web app** that shows, honestly, where it works and where it fails
+
+**Ours** is BoT-SORT plus a visibility rule: when a person's last box looked mostly hidden (estimated visibility below 0.7), the tracker remembers them three times longer (90 frames, 3 s at 30 fps, instead of 30). **Baseline** is ByteTrack with its code defaults. Both run from the same from-scratch `tracker/` code. Display code never relabels IDs.
+
+### Key results (from the report)
+
+- **Stress Map** (synthetic gate, 48 cells × 20 seeds): ours has fewer ID changes than ByteTrack in **24 of 48** cells and more in **14 of 48** (tie 4, unclear 6). Ours wins at every crowd size for hides of **1–2.5 s**; past **3 s** its memory runs out.
+- **Longer memory** (opt-in `visibility_botsort_mem6.yaml`): better 36, worse 1, tie 1, unclear 10. Tuned on separate seeds; on real data it was checked on MOT17 only (HOTA 52.5 either way). **Not the default.**
+- **MOT17-09 upload** (the only real clip with ground truth, CPU, YOLOX-S): truth **3 IN / 10 OUT**, tracker counted **4 IN / 11 OUT**. **9 of 15** counted crossings are real; **4** true crossings were missed.
+- **Official benchmarks** (GPU detectors, provisional): visibility stops re-ID from hurting (MOT20 HOTA 69.4 → 67.5 → **69.5** ours; MOT17 62.5 → 63.2). BoT-SORT wins MOT17. Hybrid-SORT wins DanceTrack. ByteTrack MOTA 66.4 vs 76.6 published.
+- **Delayed assignment:** pre-registered go/no-go **NO-GO** (all five checks failed). Dropped.
+
+---
+
+## 2. The problem
+
+Zed's **ZIG** platform uses crowded gates for hands-free validation, Fast Lane entry, tailgating control and passenger counting. Each of these needs one body attached to one number:
+
+| Gate use | What it needs from the tracker | What breaks it |
+|---|---|---|
+| Hands-free validation, Fast Lane entry | A validated ticket stays on the right body through the gate | An ID switch hands one person's validation to someone else |
+| Tailgating / fare-evasion control | Two bodies on one validation are two distinct IDs | An ID merge hides a tailgater; a split invents a phantom |
+| Passenger counting | One crossing per person per direction | Fragmented tracks double-count; merged tracks under-count |
+| Privacy | Identity without identification | Stored faces or long-lived identities |
+
+Three failure modes we measure:
+
+1. **ID switch after a hide.** The detector loses the box, memory expires, the person comes back with a new number.
+2. **Swap.** The same number comes back on a different person (example: subway-turnstile `#14`).
+3. **Missed crossing.** The ID changes while the person is hidden on the line, so neither the old nor the new number crosses.
+
+---
+
+## 3. Our solution vs baseline
+
+Same detector, smarter memory: we keep the person, not just the box.
+
+| | ByteTrack (baseline) | Ours |
+|---|---|---|
+| Core tracker | ByteTrack | BoT-SORT + visibility rules |
+| When someone is hidden | Drops them quickly (30-frame buffer) | Keeps their ID while they are likely just hidden (×3 buffer if last box vis &lt; 0.7 → 90 frames) |
+| Matching on return | Position only | Position + camera-motion correction when a CMC file exists; appearance re-ID on GPU only |
+| Proof | MOT tables below | 48 crowd/hiding cells, 20 seeds each, plus MOT17/MOT20/DanceTrack |
+| Privacy | n/a | Tracking reads original frames in memory only; output blurs faces with an oval; the uploaded original is deleted after a successful job |
+
+| Config | Builds on | Key settings | Status |
+|---|---|---|---|
+| `configs/baselines/bytetrack.yaml` | — | high 0.6 / low 0.1 / new 0.7; match 0.9; buffer 30; no appearance | Baseline everywhere |
+| `configs/ours/visibility_botsort.yaml` | `botsort.yaml` | depth-order visibility × score; occluded_thresh 0.7; occluded_buffer_scale 3.0 | Default “ours” in app, API and stress suite |
+| `configs/ours/visibility_botsort_mem6.yaml` | visibility_botsort | buffer scale 6.0 (180 frames) | Opt-in only |
+| `configs/ours/delayed*.yaml` | ByteTrack (+ re-ID) | K-frame look-ahead | **NO-GO**; off by default |
+
+MOT17 val-half, public FRCNN, CPU, no re-ID (pipeline check, not comparable to published YOLOX numbers):
+
+| Tracker | HOTA | IDF1 | IDSW |
+|---|---|---|---|
+| ByteTrackLike (baseline) | 50.1 | 56.3 | 191 |
+| BoT-SORT (CMC) | 51.6 | 58.8 | 197 |
+| BoT-SORT, buffer 90 for every track (control) | 52.4 | 59.5 | 180 |
+| **BoT-SORT + visibility (ours, default)** | **52.5** | **59.8** | **180** |
+| BoT-SORT + visibility, longer memory (mem6) | 52.5 | 59.7 | 181 |
+
+On public detections the visibility rule is about as good as a longer buffer for every track. Its intended use is gating appearance, which needs embeddings.
+
+---
+
+## 4. Architecture
+
+```
+Video (upload or demo clip)
+  → YOLOX-S / YOLOX-tiny (CPU, onnxruntime, 640 input)
+  → Tracker (BoT-SORT + visibility)
+  → Gate logic (foot point, hysteresis, unsure flags)
+  → FastAPI jobs API (serve/)
+  → React app (web/) — 10 tabs
 ```
 
-### Run on Windows (PowerShell, no WSL)
+| Stage | What happens | Where |
+|---|---|---|
+| Video in | `POST /api/uploads` (mp4/mov/m4v/webm/mkv/avi, consent flag). Limits: 200 MB, 120 s, 1,800 tracked frames, 1 job worker | `serve/api.py` |
+| Gate | User clicks two points on a face-blurred first frame | Studio step 4 |
+| Detection | YOLOX (default `ZED_DETECTOR`; live image falls back to tiny if s is missing) | `serve/detector.py` |
+| Tracking | `ours/visibility_botsort` on raw frames in memory. Re-ID off on CPU | `tracker/` |
+| Gate logic | Crossing = box bottom-centre crosses the line with hysteresis. Low vis/score near the line is flagged unsure. Possible missed crossings are listed, never added to the count | `eval/gate_events.py`, `serve/analysis.py` |
+| Outputs | Job status, tracks.csv, annotated.mp4, events.json | `serve/api.py` |
+| Web app | Dashboard, Overview, What we use, Gate scene, Scenarios, Studio, Results, Experiments, Analytics, Architecture. Offline snapshot when the backend is down | `web/src/App.tsx` |
 
-```powershell
-cd $HOME\Desktop\zed-ps2-tracker-main
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -U pip
-python -m pip install -e ".[serve]" imageio-ffmpeg     # imageio-ffmpeg = a bundled ffmpeg for uploads
-python -m serve.detector fetch --out data\models       # = make models (YOLOX nano/tiny/s + YuNet, sha256-checked)
-python -m uvicorn serve.app:app --host 127.0.0.1 --port 8000   # backend; keep this window open
+**Privacy.** Detection and tracking read unblurred frames in memory and never write them. Oval face blur is on output only (YuNet + a face-sized box at the top of every person box). The original upload is dropped after a **successful** job.
+
+**Stage A / Stage B (research).** GPU detector + re-ID caches once (YOLOX-X, OSNet); CPU tracker ablations many times from those caches. Details: [docs/architecture.md](docs/architecture.md).
+
+```mermaid
+flowchart LR
+    subgraph A["Stage A · GPU, once"]
+        F[frames] --> D["YOLOX-X"] --> R["OSNet-AIN"] --> C[(cache .npz)]
+    end
+    subgraph B["Stage B · CPU, many times"]
+        C --> T["online tracker"]
+        T --> E["TrackEval HOTA · IDF1 · MOTA"]
+        T --> X["stress bins"]
+        T --> G[gate events]
+    end
 ```
 
-In a second PowerShell window: `cd web; npm ci; npm run dev`, then open http://localhost:5173
-(or `npm run build` once and use http://127.0.0.1:8000, which serves `web/dist`).
-If you skip the `fetch` step the backend downloads each model on first use into `data\models`
-(60 s timeout, sha256-checked; `ZED_AUTO_DOWNLOAD=0` turns that off). If the face model still
-cannot be loaded (offline, an OpenCV build that cannot read it), uploads are blurred over the head
-region of every person box instead, the result says `fallback_blur: true`, and the tracker still
-runs. The library clips play from the committed 720p cuts in `web/public/demo`, so
-`make clips blur` is optional.
+---
 
-| Overview | Demo (subway turnstile, after a CPU run) |
+## 5. The app
+
+Ten tabs. Numbers on Results/Overview come from this repo's own output files.
+
+| Tab | What a judge sees |
+|---|---|
+| Dashboard / Overview | One-line goal, CPU MOT17 cards (ours IDF1 59.8, 180 ID switches, tracker p95 2.27 ms) |
+| What we use | Detector, tracker configs, licenses |
+| Gate scene | Synthetic two-person script with exact ground truth: ByteTrack vs ours |
+| Scenarios | Face-blurred Pexels clips, labelled “Illustrative · no ground truth”. Watch IDs, including failures |
+| Studio | Four steps: Watch the failure, Compare, Evidence, **Your video** (upload, consent, click two gate points, run) |
+| Results | Stress Map (8×6 grid), GPU checks, ablation tables. Delayed assignment tagged sanity-check **NO-GO** |
+| Experiments / Analytics | Ablations and gate-event notes |
+| Architecture | Pipeline diagram |
+
+**Break it yourself.** Click a Stress Map cell to replay that seed. Drag pillars or groups on the Gate scene; copy a shareable URL that rebuilds the same scene.
+
+Your Video overlays a `#id` chip on **every** person in the upload playback.
+
+| Overview | Demo (subway turnstile) |
 |---|---|
 | ![](docs/media/web_overview.jpg) | ![](docs/media/web_demo.jpg) |
 | **Results** | **Architecture** |
 | ![](docs/media/web_results.jpg) | ![](docs/media/web_architecture.jpg) |
 
-Measured on this repo's CPU box (x86_64 VM, 4 onnxruntime threads): the full 11.7 s turnstile
-clip (351 frames at 1080p) with YOLOX-S took **24.2 s** end to end (detector p50 62.8 ms/frame,
-tracker p95 2.0 ms/frame), started from the web UI. The Pexels clips have no consent from the people in them, so they are shown with
-neutral styling only: IDs, crossings, counts and kept-ID recoveries, with no tailgating or
-fare-evasion alerts ([docs/licenses.md](docs/licenses.md#demo-clips-pexels)). Details:
-[web/README.md](web/README.md), [serve/README.md](serve/README.md).
+---
 
-## Why this matters for Zed's gate products
+## 6. Stress Map (synthetic gate)
 
-The crowded gate is the scene of Zed's **ZIG** hands-free ticketing and validation platform:
+Scene: 960×540 at 30 fps, counting line at y = 300. 8 hidden times (0.5–5 s) × 6 crowd sizes (5–40) = **48 cells**, 20 seeds (1000–1019), 960 runs per tracker. Verdict is better only when the bootstrap 95% CI excludes 0 and the sign test gives p &lt; 0.05.
 
-| ZIG use | What it needs from the tracker | What breaks it |
-|---|---|---|
-| **Hands-free validation** (bus, rail, BRT) and **Fast Lane** venue entry | a validated ticket stays attached to the right body all the way through the gate | an ID switch hands one person's validation to someone else |
-| **Tailgating / fare-evasion control** | two bodies on one validation are seen as two distinct IDs crossing close together | an ID *merge* hides a tailgater; an ID *split* invents a phantom one |
-| **Passenger counting** | one crossing per person per direction | fragmented tracks double-count; merged tracks under-count |
-| **Privacy** | identity without identification | the design keeps short-lived, in-memory body embeddings only: no faces, no stored identities |
+Numbers are mean ID changes per clip, **ours / ByteTrack**. B = ours better, W = worse, T = tie, U = unclear.
 
-So the metrics we care about are **identity metrics** (IDF1, HOTA, ID switches) under occlusion
-and crowding, plus **gate events** (counting, attribution and tailgating errors, phase 2b). Raw
-detection accuracy matters less.
+| | 0.5 s | 1 s | 1.5 s | 2 s | 2.5 s | 3 s | 4 s | 5 s |
+|---|---|---|---|---|---|---|---|---|
+| 5 people | 1.0/1.1 T | 1.4/5.0 B | 1.7/5.0 B | 2.8/5.0 B | 3.0/5.0 B | 5.1/5.0 T | 5.2/5.0 T | 5.1/4.9 T |
+| 10 people | 2.8/2.5 U | 3.5/10.5 B | 4.2/10.6 B | 5.3/10.3 B | 7.6/10.3 B | 10.9/10.2 W | 10.7/10.1 W | 10.4/10.0 U |
+| 15 people | 4.5/3.9 U | 5.0/16.4 B | 7.1/16.1 B | 9.8/15.8 B | 10.0/15.8 B | 16.2/15.8 U | 16.1/15.2 W | 15.3/14.7 W |
+| 20 people | 8.4/7.3 W | 9.1/22.5 B | 12.4/22.4 B | 12.6/21.4 B | 16.6/21.9 B | 22.7/21.6 W | 21.9/20.5 W | 20.7/19.4 W |
+| 30 people | 15.9/15.0 U | 16.6/35.0 B | 20.2/35.1 B | 24.0/34.5 B | 26.8/33.5 B | 35.3/33.6 W | 33.9/31.8 W | 31.6/29.6 W |
+| 40 people | 23.8/24.0 U | 27.4/51.1 B | 31.6/50.6 B | 33.6/48.9 B | 37.5/48.1 B | 49.3/46.9 W | 46.8/44.1 W | 43.4/40.5 W |
 
-## Architecture
+- All **24 “better”** cells are hides of 1–2.5 s at every crowd size. Example: 10 people hidden 1 s → 3.5 vs 10.5 ID changes, strict kept 6.6 vs 0.0 of 10.
+- **14 worse** cells: 20 people at 0.5 s, and 13 of 18 cells at 3 s or more (memory expired).
+- First divergence reason in 558 of 960 seeds: ByteTrack's 30-frame memory expired.
+- Reproduce: `python -m eval.stress_run grid --seeds 20 --seed0 1000 --workers 6`
 
-```mermaid
-flowchart LR
-    subgraph A["Stage A · GPU, once (scripts/dgx)"]
-        F[frames] --> D["YOLOX-X<br/>score ≥ 0.05"] --> R["OSNet-AIN<br/>512-d embedding"] --> C[(cache .npz<br/>per sequence)]
-    end
-    subgraph B["Stage B · CPU, many times"]
-        C --> S[val-half split] --> T["online tracker<br/>tracker.update(dets_t)"]
-        T --> M[MOT txt + per-frame JSON<br/>tracks + pending]
-        M --> E["TrackEval<br/>HOTA · IDF1 · MOTA"]
-        M --> X["stress bins<br/>visibility · density"]
-        M -.phase 2b.-> G[gate events]
-        T --> L["latency<br/>p50 · p95 · max"]
-    end
-```
+| Setting | Better | Worse | Tie | Unclear | Sum of mean ID changes |
+|---|---|---|---|---|---|
+| Ours default (`visibility_botsort`) | 24 | 14 | 4 | 6 | 786.7 |
+| Ours longer memory (mem6, opt-in) | 36 | 1 | 1 | 10 | 726.1 |
 
-* **Stage A** runs the detector and re-ID model once over every frame on the DGX and stores a
-  compact cache. It keeps every detection down to confidence 0.05, each with its embedding.
-* **Stage B** runs the tracker, evaluation and ablations on CPU from that cache. Every config
-  therefore sees identical detections, and a change in score is a change in *tracking*.
+---
 
-Details: [docs/architecture.md](docs/architecture.md) and [docs/algorithm.md](docs/algorithm.md).
+## 7. MOT17-09 upload (real video, labels checked offline)
 
-Modules (file-by-file map in [docs/modules.md](docs/modules.md)):
+MOT17-09 (960×540, 525 frames, 30 fps) through Studio step 4. Gate clicked at (0.02, 0.65) → (0.98, 0.65). CPU, YOLOX-S. Ground truth is **never shown in the UI**.
 
-* `tracker/`: the online tracker. Kalman, costs, assignment, lifecycle, gallery, `visibility.py`,
-  `delayed.py`, `cmc.py`, `baselines/` (OC-SORT family, Hybrid-SORT), and `bytetrack.py`
-  (ByteTrack-like, plus BoT-SORT via parity switches). NumPy + SciPy only, `mypy --strict`.
-* `eval/`: splits, TrackEval, stress, latency, oracle, `ablate.py`, `go_no_go.py`, `corrupt.py`,
-  `visibility_eval.py`, `gate_events.py`, `export_viewer.py`.
-* `models/`, `scripts/dgx/`: Stage A on GPU. `viewer/`: static Vite/React viewer.
-* `serve/`: FastAPI job service (clips, uploads, CPU detector, tracking jobs, benchmarks API,
-  face blurring). `web/`: the React product frontend.
+| Measure | Value |
+|---|---|
+| True count (gt.txt, offline) | 3 IN / 10 OUT |
+| Tracker count shown in the app | 4 IN / 11 OUT |
+| Counted crossings that match a true one | 9 of 15 (precision 0.60) |
+| True crossings the tracker missed | 4 |
+| Possible missed crossings listed | 8, of which 1 is real |
+| Unsure crossings listed | 10 |
 
-## Quickstart
+The net count is close (off by +1 / +1) and hides errors on both sides: 6 false crossings and 4 missed ones. That is why the app shows only the tracker count, and lists suggestions as **moments worth checking**, never as an adjusted count.
 
-```bash
-git clone https://github.com/panshularora/zed-ps2-tracker && cd zed-ps2-tracker
-make setup        # .venv with Python 3.11 (uv) + package + dev tools
-make check        # ruff + mypy (strict on tracker/) + pytest (207 tests)
-make test         # pytest + the web app's vitest
-make data         # MOT17 + MOT20 labels and public detections only (no images, ~30 MB)
-make smoke        # MOT17 train (full) + val-half with public dets: TrackEval + stress + latency
-```
+---
 
-### Getting the demo videos
+## 8. Results (GPU, laptop): YOLOX-X + re-ID, provisional
 
-A fresh clone already plays the Scenarios tab: short 720p face-blurred cuts of each clip's tracked
-range are committed in `web/public/demo/` (about 11 MB, made by `scripts/demo/make_demo_pack.sh`).
-For the full-length clips, which are optional:
+One `run.sh all --profile laptop` on an RTX 3050 6 GB (16–18 Oct 2026), TrackEval on the val halves. Installed with `make ingest` into [docs/results/phase3/](docs/results/phase3/).
 
-```bash
-make models clips blur   # ONNX models, Pexels clips (data/demo/raw), face-blurred copies (data/demo/blurred)
-make serve               # API on :8000 (serves only the blurred clips)
-make web                 # build web/dist (or `make demo` for API + Vite dev server)
-```
-
-If a clip is missing, the player draws the boxes on a plain clip-shaped panel and shows
-"Clip not downloaded on this machine. In ~/zed-ps2-tracker run: make clips blur  then reload."
-
-Run any config on any split (outputs go to `outputs/<DATASET>_<SPLIT>/`):
-
-```bash
-make eval    DATASET=MOT17 SPLIT=val_half CONFIG=configs/baselines/bytetrack.yaml NAME=bt
-make eval    DATASET=MOT20 CONFIG=configs/baselines/bytetrack_mot20.yaml DETS=<cache dir>
-make latency DATASET=MOT17 SPLIT=full
-make oracle  DATASET=MOT17          # visibility-0 ceiling
-make ablate                         # ablation table + stress plots -> docs/results/ablation/
-make gates                          # after make ablate: gate events on the frozen MOT17 lines
-make viewer                         # export clips + build viewer/dist/index.html (needs Node 20)
-make serve                          # CPU job API + built web app / viewer (FastAPI, `pip install -e .[serve]`)
-make web                            # build the web app (web/dist); make demo runs API + dev server
-make dashboard                      # same as make web; workstation at /dashboard/studio, /experiments, /evidence
-make ingest BRING_BACK=<tar> DELETE=1   # DGX bundle -> data/stagea (sha256-checked), one tar at a time
-make phase3                         # frozen phase-3 plan on the ingested caches -> docs/results/phase3/
-make phase3-selftest                # the same chain on a synthetic bundle (~25 s)
-python -m tracker.cli --caches <cache dir> --config configs/baselines/bytetrack.yaml \
-    --out results/x --jsonl          # MOT txt + per-frame JSON (tracks + pending)
-```
-
-The GPU side is in [docs/dgx_runbook.md](docs/dgx_runbook.md) (checked, step by step) and
-[docs/dgx_guide.md](docs/dgx_guide.md): `bash scripts/dgx/setup.sh`, one `run.sh` per dataset,
-`finalize.sh`, then `pack.sh` → `scp` → `make ingest` → `make phase3`.
-
-## Results (GPU, laptop): YOLOX-X + re-ID, provisional
-
-> One `run.sh all --profile laptop` on an RTX 3050 6 GB (16–18 Oct 2026), TrackEval on the
-> val halves; installed with `make ingest` into [docs/results/phase3/](docs/results/phase3/).
-> **Provisional:** our ByteTrack is 10.2 MOTA / 5.5 IDF1 below the ByteTrack paper on MOT17
-> (FP +2021, FN +3471, IDSW 165 vs 159), so the gap is on the detection side; comparisons between
-> trackers on the same detections stay fair. Full tables and reasons:
-> [docs/results/gpu/ANALYSIS.md](docs/results/gpu/ANALYSIS.md).
+**Provisional:** our ByteTrack is 10.2 MOTA / 5.5 IDF1 below the ByteTrack paper on MOT17 (FP +2021, FN +3471, IDSW 165 vs 159). Comparisons between trackers on the **same** detections stay fair. Write-up: [docs/results/gpu/ANALYSIS.md](docs/results/gpu/ANALYSIS.md).
 
 | Dataset (detector) | Tracker | HOTA | IDF1 | MOTA | IDSW | AssA |
 |---|---|---|---|---|---|---|
 | MOT17 val-half (`bytetrack_ablation`) | ByteTrackLike | 63.4 | 73.8 | 66.4 | 165 | 66.5 |
-| | BoT-SORT (CMC, IoU) | **64.6** | **76.3** | **67.1** | 135 | **68.6** |
+| | **BoT-SORT (CMC, IoU)** | **64.6** | **76.3** | **67.1** | 135 | **68.6** |
 | | Deep OC-SORT | 63.3 | 74.6 | 64.6 | **125** | 68.2 |
 | | ByteTrackLike + re-ID | 62.5 | 73.0 | 66.5 | 183 | 64.9 |
 | | ours: ByteTrack + re-ID + visibility gate | 63.2 | 73.9 | 66.2 | 167 | 66.2 |
@@ -191,36 +237,25 @@ The GPU side is in [docs/dgx_runbook.md](docs/dgx_runbook.md) (checked, step by 
 | MOT20 val-half (`sparsetrack_ablation`) | ByteTrackLike | 69.4 | 84.1 | 87.9 | **1011** | 66.8 |
 | | BoT-SORT (CMC, IoU) | 69.3 | 83.9 | 87.9 | 1162 | 66.5 |
 | | ByteTrackLike + re-ID | 67.5 | 81.1 | 87.7 | 1278 | 63.5 |
-| | ours: ByteTrack + re-ID + visibility gate | **69.5** | **84.5** | 87.9 | 1019 | **66.9** |
+| | **ours: ByteTrack + re-ID + visibility gate** | **69.5** | **84.5** | 87.9 | 1019 | **66.9** |
 | | ours: BoT-SORT + re-ID + visibility gate | 69.2 | 84.0 | 87.9 | 1162 | 66.3 |
-| MOT20 val-half (`bytetrack_x_mot17`, MOT17-trained) | ByteTrackLike | 60.8 | 76.8 | 79.6 | 1070 | 58.6 |
-| | Hybrid-SORT | **62.9** | **79.9** | **82.6** | 1471 | **60.6** |
+| MOT20 val-half (`bytetrack_x_mot17`) | ByteTrackLike | 60.8 | 76.8 | 79.6 | 1070 | 58.6 |
+| | **Hybrid-SORT** | **62.9** | **79.9** | **82.6** | 1471 | **60.6** |
 | | ours: ByteTrack + re-ID + visibility gate | 60.9 | 77.5 | 79.8 | **1039** | 58.8 |
 | DanceTrack val (`dancetrack_bytetrack_x`) | ByteTrackLike | 52.5 | 54.9 | 88.1 | 1775 | 36.3 |
 | | BoT-SORT (IoU) | 52.3 | 53.2 | 88.1 | 1934 | 35.9 |
-| | Hybrid-SORT | **57.4** | **58.5** | 87.3 | **1667** | **42.9** |
+| | **Hybrid-SORT** | **57.4** | **58.5** | 87.3 | **1667** | **42.9** |
 | | ours: BoT-SORT + re-ID + visibility gate | 54.3 | 55.8 | 88.1 | 1897 | 38.8 |
 
-**What we found: the visibility rule stops re-ID from hurting.** On MOT20 with the SparseTrack
-detector, ByteTrack 69.4 HOTA → ByteTrack + re-ID 67.5 → ours 69.5 (the best HOTA in that setting;
-IDSW 1011 → 1278 → 1019). On MOT17: ByteTrack + re-ID 62.5 → ours 63.2. It is **not** the best
-tracker overall: BoT-SORT without re-ID beats ours on MOT17 (HOTA 64.6 vs 63.9), and Hybrid-SORT
-wins DanceTrack val (57.4 vs 54.3) and MOT20 with the MOT17-trained detector (62.9). The second
-beat is the Stress Map (synthetic gate: ours keeps the ID for hides of about 1–2.5 s; the Gate scene world fix does not touch its generator, see [docs/gate_scene_vs_stress_map.md](docs/gate_scene_vs_stress_map.md)).
+**What we found: the visibility rule stops re-ID from hurting.** MOT20 SparseTrack: ByteTrack 69.4 HOTA → + re-ID 67.5 → ours **69.5**. MOT17: + re-ID 62.5 → ours 63.2. BoT-SORT without re-ID still beats ours on MOT17 (64.6 vs 63.9). Hybrid-SORT wins DanceTrack val (57.4 vs 54.3).
 
-**Where we lose:** DanceTrack (Hybrid-SORT); frame latency on MOT20 (ours p95 87–95 ms vs 13.7 ms
-for ByteTrack); and the ByteTrack baseline is not reproduced (MOTA 66.4 vs 76.6, IDF1 73.8 vs 79.3),
-so all GPU scores are provisional.
+**A pre-registered idea we dropped (NO-GO).** Delayed decisions (K = 5 vs K = 0) failed all five pre-registered checks: IDSW 183 → 198 instead of −10 %, IDF1 73.0 → 71.9, fired on 51 % of frames (limit 10 %), p95 170 ms (limit 20 ms), MOT20 IDSW 1462 → 1575.
 
-**A pre-registered idea we dropped (NO-GO).** Delayed decisions (K = 5 vs K = 0) failed all five
-pre-registered checks: IDSW 183 → 198 instead of −10 %, IDF1 73.0 → 71.9, fired on 51 % of frames
-(limit 10 %), p95 170 ms (limit 20 ms), MOT20 IDSW 1462 → 1575.
+---
 
-## Results (phase 2): MOT17 val-half, public FRCNN detections, no re-ID
+## 9. Results (phase 2): MOT17 val-half, public FRCNN, no re-ID
 
-> Same caveat as phase 1: these are public detections with IoU-only association, so they are
-> **not** comparable to published YOLOX numbers. Latency is single-threaded `update()` time on
-> the CPU box. Reproduce with `make ablate`. Details: [docs/results/ablation/](docs/results/ablation/).
+> Public detections with IoU-only association. **Not** comparable to published YOLOX numbers. Reproduce with `make ablate`. Details: [docs/results/ablation/](docs/results/ablation/).
 
 | Tracker | HOTA | IDF1 | MOTA | IDSW | AssA | DetA | p50 / p95 / max ms |
 |---|---|---|---|---|---|---|---|
@@ -233,194 +268,115 @@ pre-registered checks: IDSW 183 → 198 instead of −10 %, IDF1 73.0 → 71.9, 
 | ByteTrackLike + visibility | 51.0 | 57.3 | 47.6 | 183 | 60.4 | 43.3 | 1.07 / 2.19 / 3.6 |
 | ByteTrackLike + delayed K=5 (near-online) | 48.8 | 54.3 | 47.4 | 215 | 55.6 | 43.0 | 1.26 / 18.00 / 69.5 |
 | ByteTrackLike + visibility + delayed K=5 | 49.6 | 55.1 | 47.5 | 203 | 57.5 | 43.0 | 1.52 / 20.33 / 63.2 |
-| BoT-SORT + visibility | **52.5** | **59.8** | 48.0 | 180 | **63.3** | 43.8 | 1.09 / 2.27 / 3.0 |
+| **BoT-SORT + visibility** | **52.5** | **59.8** | 48.0 | 180 | **63.3** | 43.8 | 1.09 / 2.27 / 3.0 |
 | BoT-SORT, buffer 90 (control) | 52.4 | 59.5 | 48.0 | 180 | 63.0 | 43.8 | 1.07 / 2.19 / 7.2 |
 
-Stress plots by gt visibility and by density:
-[stress_visibility.png](docs/results/ablation/stress_visibility.png),
-[stress_density.png](docs/results/ablation/stress_density.png).
+**Delayed assignment: NO-GO** ([docs/results/go_no_go.md](docs/results/go_no_go.md)). With K = 3/5/8, ID switches rise on every condition.
 
-**Visibility estimate** (`tracker/visibility.py`, scored against gt column 9 by
-[docs/results/visibility/](docs/results/visibility/)): MAE 0.074, Spearman 0.613, AUROC
-(v < 0.5) 0.938, AP 0.460. The detector score alone gives MAE 0.107 / Spearman 0.429 / AUROC
-0.947 / AP 0.293. As a tracking signal it is **indistinguishable from a 90-frame buffer** (rows
-above). Its intended use, gating appearance updates, needs embeddings and is not yet tested.
+**Gate events** (`make gates`, 25 crossings / 9 tailgates on MOT17-02/04/09): crossing recall 56–60 %, attribution error 14–33 %, count error 28–40 %, tailgate P/R 80 / 44 %. Too few events to rank trackers.
 
-**Delayed assignment: NO-GO** ([docs/results/go_no_go.md](docs/results/go_no_go.md), criteria
-fixed in advance). With K = 3/5/8, ID switches rise on every condition. Corrupted gt (seed 0):
-273 → 375/395/389. FRCNN: 191 → 212/215/217. SDP: 291 → 335/311/339. DPM: 89 → 90/94/97. HOTA is
-lower or within ±0.2. p95 compute rises from 2–4 ms to 13–157 ms, plus the K/fps output delay.
-It stays out of any headline configuration.
+**Visibility estimate** vs gt: MAE 0.074, Spearman 0.613, AUROC (v &lt; 0.5) 0.938. As a tracking signal on public dets it is indistinguishable from a 90-frame buffer.
 
-**Gate events** (`make gates`, lines frozen in `configs/gates/mot17_val_half.yaml`, details in
-[docs/results/gate_events/](docs/results/gate_events/)). The check run, gt as tracker, scores 0
-error. Baselines reach crossing recall 56–60 %, attribution error 14–33 %, count error 28–40 %
-and tailgate P/R 80 / 44 %. MOT17-02/04/09 contain only **25 crossings and 9 tailgates**, too few
-to rank trackers, so the gate clip from the GPU session is needed.
+---
 
-**Viewer** (`make viewer` → single-file `viewer/dist/index.html`, opens offline). It draws real
-frames under the boxes when given an MP4 or JPEGs, synced with `requestVideoFrameCallback`
-(tested in headless Chrome, `npm run e2e:media`); the screenshots below are still on a blank
-canvas until the DGX clips come back:
+## 10. Where we lose
 
-| ByteTrack vs BoT-SORT, MOT17-04 | held decisions (delayed K=5) | gt vs ByteTrack, MOT17-09 |
-|---|---|---|
-| ![](docs/media/viewer_mot17-04_bytetrack_vs_botsort.png) | ![](docs/media/viewer_mot17-04_held_decisions.png) | ![](docs/media/viewer_mot17-09_gt_vs_bytetrack.png) |
+- **Hidden longer than 3 s.** Memory runs out; worse than ByteTrack in 14 of 48 cells (1 of 48 with opt-in longer memory, checked on MOT17 only).
+- **Short hides in big crowds.** 20 people at 0.5 s: 8.4 vs 7.3 ID changes.
+- **DanceTrack.** Hybrid-SORT 57.4 HOTA vs ours 54.3.
+- **Speed.** MOT20 ours p95 87–95 ms/frame vs 13.7 ms for ByteTrack (IoU).
+- **Baseline not reproduced.** MOTA 66.4 vs 76.6, IDF1 73.8 vs 79.3 in the paper, so every GPU score is provisional.
+- **CPU uploads.** Appearance re-ID is off, which causes false and missed crossings.
+- **Keep-ID relabeller.** Deleted. It rewrote ours' new numbers back to old ones, so the “Ours” pane was not our tracker.
 
-Implementation deviations, pitfalls and negative results:
-[docs/implementation_notes.md](docs/implementation_notes.md).
+**Dropped on purpose.** Pre-registered delay-K failed all five checks (see §8).
 
-## Results (phase 1)
+---
 
-### Pipeline check: public FRCNN detections, IoU-only, MOT17 train
+## 11. How to run
 
-> **Read this first.** These numbers use MOTChallenge's **public FRCNN detections** and the
-> **IoU-only ByteTrack-like baseline** (`configs/baselines/bytetrack.yaml`, ByteTrack code
-> defaults, no re-ID, no per-sequence tuning, no interpolation). They show that the pipeline
-> (split, tracker, TrackEval, stress, latency) works end to end on real data. They are **not**
-> comparable to published ByteTrack numbers, which use YOLOX detections, and they are not our
-> method. Scored with TrackEval (`BENCHMARK=MOT17`). Reproduce with `make smoke`.
+### Live
 
-**MOT17 train, all frames (7 FRCNN sequences, 5,316 frames)**
+Open **https://zed-ps2-tracker.vercel.app**. Gate scene, Scenarios and Results work there. For **Your video** (CPU detect + track):
 
-| Sequence | HOTA | IDF1 | MOTA | IDs | FP | FN | GT |
-|---|---|---|---|---|---|---|---|
-| MOT17-02 | 34.8 | 39.7 | 32.4 | 49 | 149 | 12,356 | 18,581 |
-| MOT17-04 | 53.0 | 61.1 | 54.0 | 41 | 18 | 21,795 | 47,557 |
-| MOT17-05 | 42.9 | 52.7 | 48.2 | 29 | 72 | 3,481 | 6,917 |
-| MOT17-09 | 49.0 | 56.6 | 54.8 | 17 | 11 | 2,381 | 5,325 |
-| MOT17-10 | 41.3 | 46.0 | 51.4 | 204 | 592 | 5,448 | 12,839 |
-| MOT17-11 | 51.9 | 57.5 | 56.6 | 39 | 137 | 3,921 | 9,436 |
-| MOT17-13 | 47.0 | 55.6 | 48.9 | 143 | 587 | 5,215 | 11,642 |
-| **Combined** | **47.7** | **54.5** | **49.5** | **522** | 1,566 | 54,597 | 112,297 |
+```bash
+python -m uvicorn serve.app:app --host 127.0.0.1 --port 8000
+```
 
-**MOT17 val-half** (the split all later results use; frames N//2+2..N): HOTA **50.1**, IDF1
-**56.3**, MOTA **47.5**, IDs **191** (GT 53,890). Per-sequence numbers are in
-`outputs/MOT17_val_half/metrics/`.
+or `docker compose up --build` (see [deploy/README.md](deploy/README.md)). Render Blueprint: `render.yaml` (Docker, `$PORT`, YOLOX-tiny auto-download).
 
-**Stress bins** (same run, MOT17 train). Bin totals are verified equal to TrackEval's.
+### Quickstart
 
-| gt visibility | GT boxes | Recall | ID recall | IDs | IDs / 1k GT |
-|---|---|---|---|---|---|
-| 0.00–0.25 | 26,469 (23.6%) | 1.0% | 1.1% | 15 | 0.57 |
-| 0.25–0.50 | 19,435 (17.3%) | 3.0% | 1.9% | 37 | 1.90 |
-| 0.50–0.75 | 18,098 (16.1%) | 60.6% | 41.2% | 231 | 12.76 |
-| 0.75–1.00 | 48,295 (43.0%) | 95.0% | 80.0% | 239 | 4.95 |
+```bash
+git clone https://github.com/panshularora/zed-ps2-tracker && cd zed-ps2-tracker
+make setup                 # .venv (Python 3.11) with the package + dev tools
+make models clips blur     # ONNX models (sha256-checked), Pexels clips, face-blurred copies
+make demo                  # API on :8000 + web app on http://localhost:5173
+# or:
+docker compose up --build  # web on :8080, API on :8000
+make check && make test    # ruff + mypy + pytest, then vitest
+```
 
-| People per frame | Frames | MOTA | IDF1 | IDs | IDs / 1k GT |
-|---|---|---|---|---|---|
-| 0–8 | 970 | 61.0 | 61.2 | 22 | 3.45 |
-| 9–15 | 1,663 | 53.0 | 54.8 | 90 | 4.99 |
-| 16–32 | 1,315 | 45.2 | 48.7 | 336 | 11.37 |
-| 33+ | 1,368 | 49.4 | 56.7 | 74 | 1.27 |
+### Windows (PowerShell)
 
-What these numbers say:
+```powershell
+cd $HOME\Desktop\zed-ps2-tracker-main
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -U pip
+python -m pip install -e ".[serve]" imageio-ffmpeg
+python -m serve.detector fetch --out data\models
+python -m uvicorn serve.app:app --host 127.0.0.1 --port 8000
+```
 
-* Below 50% visibility, the public detector barely fires (recall ≤ 3%).
-* ID switches concentrate in the half-visible band (0.5–0.75), where boxes flicker in and out,
-  and in moderately crowded frames.
-* This is the failure regime that the phase-2 visibility estimate and delayed assignment target.
+Second window: `cd web; npm ci; npm run dev` → http://localhost:5173  
+Or `npm run build` and use http://127.0.0.1:8000 (serves `web/dist`).
 
-**Latency** (tracker `update()` only, single thread `OMP_NUM_THREADS=1`, Intel Xeon (VM, model
-string "Intel(R) Xeon(R) Processor"), Python 3.11, NumPy 2.4, 3 timed passes over MOT17 train =
-15,948 frames):
+A fresh clone already plays Scenarios from committed 720p cuts in `web/public/demo/` (~11 MB). `make clips blur` is optional.
 
-| p50 | p95 | p99 | max | frames > 10 ms |
-|---|---|---|---|---|
-| 0.92 ms | **1.90 ms** | 2.12 ms | **40.7 ms** | 4 of 15,948 |
+### Research commands
 
-The max comes from isolated spikes on a shared VM. Four of the seven sequences have maxima of
-1.6–2.9 ms; each of the other three has single-frame spikes of 19.5–40.7 ms. The densest sequence (MOT17-04, 27 dets/frame) has p95 2.1 ms.
+```bash
+make data         # MOT17 + MOT20 labels and public detections (~30 MB, no images)
+make smoke        # MOT17 train + val-half with public dets
+make ablate       # ablation table + stress plots
+make gates        # gate events on frozen MOT17 lines
+make eval DATASET=MOT17 SPLIT=val_half CONFIG=configs/baselines/bytetrack.yaml NAME=bt
+python -m eval.stress_run grid --seeds 20 --seed0 1000 --workers 6
+```
 
-### Ceiling: the visibility-0 cap
+GPU Stage A: [docs/dgx_runbook.md](docs/dgx_runbook.md), [docs/laptop_runbook.md](docs/laptop_runbook.md).
 
-MOT17/MOT20 gt includes people who are **fully hidden** (visibility 0; 11% of MOT17 val-half),
-and TrackEval scores them. Submitting the gt itself with only the visible boxes (a perfect
-detector and perfect identities that never coast) gives:
+---
 
-| Oracle | HOTA | IDF1 | MOTA |
-|---|---|---|---|
-| MOT17 val-half, gt boxes with vis > 0 | 91.1 | 94.2 | 89.1 |
-| MOT20 val-half, gt boxes with vis > 0 | 97.3 | 98.4 | 96.9 |
-
-### Not yet available
-
-* **A reproduced ByteTrack baseline** on YOLOX-X: the laptop GPU run is 10.2 MOTA below the paper
-  (see [Results (GPU)](#results-gpu-laptop-yolox-x--re-id-provisional)), so its numbers stay provisional.
-* **SOMPT22 scores:** Stage A ran, but its test split has no public ground truth.
-* **MOT20 public-detection numbers:** MOT20's public detections carry confidences that are
-  almost all 0/1, so a score-thresholded tracker discards nearly all of them.
-* **MOTChallenge test numbers:** the server is offline (archive notice of 16 Apr 2026). Published
-  test-leaderboard numbers will only ever appear in a separate table. See
-  [docs/evaluation.md](docs/evaluation.md).
-
-## How to reproduce
-
-1. `make setup && make data && make smoke` reproduces every number above (≈ 1 min on 8 CPUs).
-   CI pins MOT17-09 val-half (HOTA 52.7 / IDF1 59.5 / MOTA 51.6 / 5 IDs) as a regression test.
-2. Stage A on a GPU: see [docs/dgx_runbook.md](docs/dgx_runbook.md). Pack with
-   `scripts/dgx/pack.sh`, copy the tars back, and `make ingest BRING_BACK=<tar>` each one
-   (sha256-checked against SHA256SUMS); then `make phase3`.
-3. Stage B from caches: `make eval DETS=<bring_back>/cache/MOT17/ablation/train NAME=...`.
-   `run.json` next to each result records the config, git commit, inputs and whether the
-   detector saw the eval half.
-
-## Roadmap
-
-1. **GPU session** ([docs/next_gpu_session.md](docs/next_gpu_session.md)): YOLOX detections and
-   re-ID caches; re-run `make ablate` and the go/no-go on them; visibility-gated appearance;
-   delayed look-ahead with re-ID; MOT20 / DanceTrack; the gate clip.
-2. **Integration:** proposal [docs/integration.md](docs/integration.md) (edge box, gate-event
-   contract, pilot), CPU job service `serve/` + web app `web/` (docker-compose), video script
-   [docs/demo_video_script.md](docs/demo_video_script.md) and deck outline
-   [docs/deck_outline.md](docs/deck_outline.md); GPU numbers are placeholders until phase 3. Full table in [docs/roadmap.md](docs/roadmap.md).
-
-## Documentation
+## 12. Documentation
 
 | Doc | Contents |
 |---|---|
-| [docs/architecture.md](docs/architecture.md) | Stage A/B diagrams, one-frame data flow, interfaces, plug-in points |
-| [docs/algorithm.md](docs/algorithm.md) | Kalman, costs, association, lifecycle FSM; planned visibility + delayed assignment (pseudocode) |
-| [docs/modules.md](docs/modules.md) | every file |
-| [docs/evaluation.md](docs/evaluation.md) | metrics, splits, no-test-server policy, stress and latency methods, online-only rule, leakage, vis-0 cap |
-| [docs/dgx_runbook.md](docs/dgx_runbook.md) | checked step-by-step DGX runbook (setup → pack → scp → ingest) |
-| [docs/dgx_guide.md](docs/dgx_guide.md) | GPU background and bring-back checklist |
-| [docs/preregistration/](docs/preregistration/) | go/no-go v2 rule, frozen before the GPU data |
-| [docs/integration.md](docs/integration.md) | product proposal for ZIG: placement, event contract, gains, limits, pilot |
-| [docs/demo_video_script.md](docs/demo_video_script.md), [docs/deck_outline.md](docs/deck_outline.md) | video shot list, deck outline |
-| [serve/README.md](serve/README.md) | CPU job service: clips, uploads, jobs, events, metrics, errors, env vars |
-| [web/README.md](web/README.md) | the product frontend (overview, demo, results, architecture) |
-| [docs/implementation_notes.md](docs/implementation_notes.md) | deviations from upstream, pitfalls, negative results |
-| [docs/next_gpu_session.md](docs/next_gpu_session.md) | what to run on the GPU next, and why |
-| [docs/results/](docs/results/) | parity, visibility, go/no-go, ablation, gate events |
-| [viewer/README.md](viewer/README.md) | the static viewer |
-| [docs/licenses.md](docs/licenses.md) | data / weights / code licences |
-| [docs/decisions.md](docs/decisions.md) | ADRs |
-| [docs/glossary.md](docs/glossary.md) | terms |
-| [docs/roadmap.md](docs/roadmap.md) | roadmap and status by phase |
-| [docs/research/](docs/research/) | Research Lab briefs |
-| [docs/integration/](docs/integration/) | remaining planned deliverables (walkthrough videos, deck) |
-| [docs/status.md](docs/status.md) | what is done, what waits for the GPU, what was cut |
+| [docs/report/Zed_PS2_Project_Report.docx](docs/report/Zed_PS2_Project_Report.docx) | Full project report |
+| [docs/presentation/Zed_PS2_Deck.pptx](docs/presentation/Zed_PS2_Deck.pptx) | 9-slide deck |
+| [docs/architecture.md](docs/architecture.md) | Stage A/B diagrams, interfaces |
+| [docs/algorithm.md](docs/algorithm.md) | Kalman, costs, association, visibility, delayed assignment |
+| [docs/evaluation.md](docs/evaluation.md) | Metrics, splits, online-only rule, vis-0 cap |
+| [docs/results/gpu/ANALYSIS.md](docs/results/gpu/ANALYSIS.md) | GPU run analysis |
+| [docs/results/go_no_go.md](docs/results/go_no_go.md) | Delayed-assignment NO-GO |
+| [docs/integration.md](docs/integration.md) | ZIG placement, event contract, pilot |
+| [docs/demo_video_script.md](docs/demo_video_script.md) | Video shot list |
+| [docs/licenses.md](docs/licenses.md) | Data / weights / code licences |
+| [serve/README.md](serve/README.md) | CPU job service |
+| [web/README.md](web/README.md) | Product frontend |
+| [docs/glossary.md](docs/glossary.md) | Terms |
 
-## Licensing
+---
 
-Every benchmark dataset (MOT17, MOT20, DanceTrack videos, SOMPT22) is **non-commercial**, and
-so are the public detector/re-ID weights trained on them. This repo is a research benchmark. The
-tracker code depends only on NumPy, SciPy and PyYAML. TrackEval (MIT) is vendored with its
-licence, and AGPL code (boxmot, Ultralytics) is deliberately avoided. Full details are in
-[docs/licenses.md](docs/licenses.md).
+## 13. Licensing
 
-The project's own code is licensed under the **Apache License 2.0**: see [LICENSE](LICENSE),
-Copyright 2026 Panshul Arora. Ported code from ByteTrack, OC-SORT, BoT-SORT, Deep OC-SORT and
-Hybrid-SORT, the vendored TrackEval, and the CMC files are all MIT. Their notices are kept in
-[NOTICE](NOTICE). The Apache-2.0 licence does not cover the datasets or the detector/re-ID
-weights, which remain **non-commercial research use only**. Nor does it cover the demo clips in
-`web/public/demo/` and stills in `web/public/thumbs/`: those are Pexels footage under the Pexels
-License, listed with their sources in [web/public/demo/LICENSE_CLIPS.md](web/public/demo/LICENSE_CLIPS.md);
-do not reuse them as stock.
+Benchmark datasets (MOT17, MOT20, DanceTrack, SOMPT22) and public detector/re-ID weights are **non-commercial research use only**. Tracker code depends on NumPy, SciPy and PyYAML. TrackEval (MIT) is vendored. AGPL code (boxmot, Ultralytics) is avoided.
 
-## CI
+Project code: **Apache License 2.0**, Copyright 2026 Panshul Arora — [LICENSE](LICENSE). Ported ByteTrack / OC-SORT / BoT-SORT / Deep OC-SORT / Hybrid-SORT and TrackEval are MIT ([NOTICE](NOTICE)). Demo clips in `web/public/demo/` are Pexels License ([web/public/demo/LICENSE_CLIPS.md](web/public/demo/LICENSE_CLIPS.md)).
 
-The workflow lives in `docs/ci/github-actions.yml` (jobs: Python checks, web lint/typecheck/tests/
-build, both Docker images, MOT17 regression), because the token that created the repo lacks the
-`workflow` scope. To enable it, add it through the GitHub UI as `.github/workflows/ci.yml`.
+---
+
+## 14. CI
+
+Workflow: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) (Python checks, web tests/build, Docker images, MOT17 regression). A copy also lives at [docs/ci/github-actions.yml](docs/ci/github-actions.yml).

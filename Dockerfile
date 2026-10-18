@@ -45,10 +45,13 @@ COPY docs/results/ docs/results/
 COPY viewer/data/ clips/
 COPY --from=viewer /src/viewer/dist/ viewer/
 COPY --from=web /src/web/dist/ web/
+COPY deploy/start.sh deploy/start.sh
 RUN useradd --create-home --uid 10001 app \
-    && mkdir -p /data/serve /data/demo/blurred /data/models && chown -R app /data
+    && mkdir -p /data/serve /data/demo/blurred /data/models && chown -R app /data \
+    && chmod +x /app/deploy/start.sh
 USER app
 VOLUME ["/data/serve"]
+ENV PORT=8000 ZED_AUTO_DOWNLOAD=1 ZED_DETECTOR=yolox_tiny
 EXPOSE 8000
-HEALTHCHECK --interval=30s --timeout=3s CMD python -c "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/api/health', timeout=2)"
-CMD ["uvicorn", "serve.app:app", "--host", "0.0.0.0", "--port", "8000"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD python -c "import os,urllib.request as u; p=os.environ.get('PORT','8000'); u.urlopen('http://127.0.0.1:%s/api/health'%p, timeout=2)"
+CMD ["/app/deploy/start.sh"]

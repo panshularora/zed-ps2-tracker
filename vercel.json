@@ -1,0 +1,9 @@
+{
+  "buildCommand": "cd web && npm ci --no-audit --no-fund && npm run build",
+  "outputDirectory": "web/dist",
+  "installCommand": "true",
+  "framework": null,
+  "rewrites": [
+    { "source": "/((?!assets/|demo/|offline/|scenarios/|thumbs/|verify/).*)", "destination": "/index.html" }
+  ]
+}

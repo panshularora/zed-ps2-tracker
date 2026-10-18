@@ -1,0 +1,17 @@
+.venv
+**/.venv
+**/node_modules
+data
+dashboard/node_modules
+web/node_modules
+viewer/node_modules
+frontend or the dashbaord content
+*.pyc
+**/__pycache__
+.git
+outputs
+clips
+*.tgz
+summary.json
+dashboard/sidebar_tools_verified.png
+dashboard_audit.png

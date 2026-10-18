@@ -5,6 +5,7 @@
 !eval/
 !models/
 !serve/
+!deploy/
 !configs/
 !docs/results/
 !viewer/

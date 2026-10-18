@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: zed-ps2-tracker
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: ZED_AUTO_DOWNLOAD
+        value: "1"
+      - key: ZED_DETECTOR
+        value: yolox_tiny
+      - key: ZED_DETECTOR_THREADS
+        value: "2"
+      - key: ZED_JOB_WORKERS
+        value: "1"
+      - key: PYTHONUNBUFFERED
+        value: "1"
