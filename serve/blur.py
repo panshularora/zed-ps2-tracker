@@ -248,109 +248,113 @@ def blur_video(
     ``mode="head"``: the older, heavier pixelated head rectangles."""
     import cv2
 
-    cap = cv2.VideoCapture(str(src))
-    if not cap.isOpened():
-        raise OSError(f"cannot open {src}")
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    total = max(1, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
-    w, h = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fd, why = face_detector(model_dir, (w, h))
-    det = person_detector(detector, model_dir, threads)
-    ffmpeg = ffmpeg_exe()
-    tmp = dst.with_suffix(".tmp.mp4")
-    enc = subprocess.Popen(
-        [
-            ffmpeg,
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-y",
-            "-f",
-            "rawvideo",
-            "-pix_fmt",
-            "bgr24",
-            "-s",
-            f"{w}x{h}",
-            "-r",
-            f"{fps:.6f}",
-            "-i",
-            "-",
-            "-c:v",
-            "libx264",
-            "-crf",
-            "20",
-            "-pix_fmt",
-            "yuv420p",
-            "-g",
-            str(gop),
-            "-keyint_min",
-            str(gop),
-            "-sc_threshold",
-            "0",
-            "-an",
-            "-movflags",
-            "+faststart",
-            str(tmp),
-        ],
-        stdin=subprocess.PIPE,
-    )
-    assert enc.stdin is not None
-    frames: deque[np.ndarray] = deque()
-    boxes: deque[np.ndarray] = deque()
-    n, n_faces, n_heads, t0 = 0, 0, 0, time.perf_counter()
+    from serve.pipeline import close_capture, open_capture
 
-    history: deque[np.ndarray] = deque(maxlen=hold)
-    blur = blur_with(mode)
-    while True:
-        ok, img = cap.read()
-        if not ok:
-            break
-        n += 1
-        if progress and n % 5 == 0:
-            try:
-                progress("blur", min(n, total), total)
-            except BaseException:
-                enc.kill()
-                cap.release()
-                raise
-        tl, sc = det.detect(img)
-        f, hb = frame_boxes(fd, tl, sc, img, mode)
-        n_faces += len(f)
-        n_heads += len(hb)
-        frames.append(img)
-        boxes.append(np.concatenate([f, hb]).astype(np.float32))
-        if len(frames) > hold:
-            # window = the hold previous frames' boxes + this frame + hold following frames
-            front = np.concatenate([*history, *list(boxes)[: hold + 1]]) if boxes else None
+    cap = open_capture(src)
+    try:
+        if cap is None or not cap.isOpened():
+            raise OSError(f"cannot open {src}")
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        total = max(1, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
+        w, h = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fd, why = face_detector(model_dir, (w, h))
+        det = person_detector(detector, model_dir, threads)
+        ffmpeg = ffmpeg_exe()
+        tmp = dst.with_suffix(".tmp.mp4")
+        enc = subprocess.Popen(
+            [
+                ffmpeg,
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-y",
+                "-f",
+                "rawvideo",
+                "-pix_fmt",
+                "bgr24",
+                "-s",
+                f"{w}x{h}",
+                "-r",
+                f"{fps:.6f}",
+                "-i",
+                "-",
+                "-c:v",
+                "libx264",
+                "-crf",
+                "20",
+                "-pix_fmt",
+                "yuv420p",
+                "-g",
+                str(gop),
+                "-keyint_min",
+                str(gop),
+                "-sc_threshold",
+                "0",
+                "-an",
+                "-movflags",
+                "+faststart",
+                str(tmp),
+            ],
+            stdin=subprocess.PIPE,
+        )
+        assert enc.stdin is not None
+        frames: deque[np.ndarray] = deque()
+        boxes: deque[np.ndarray] = deque()
+        n, n_faces, n_heads, t0 = 0, 0, 0, time.perf_counter()
+
+        history: deque[np.ndarray] = deque(maxlen=hold)
+        blur = blur_with(mode)
+        while True:
+            ok, img = cap.read()
+            if not ok:
+                break
+            n += 1
+            if progress and n % 5 == 0:
+                try:
+                    progress("blur", min(n, total), total)
+                except BaseException:
+                    enc.kill()
+                    raise
+            tl, sc = det.detect(img)
+            f, hb = frame_boxes(fd, tl, sc, img, mode)
+            n_faces += len(f)
+            n_heads += len(hb)
+            frames.append(img)
+            boxes.append(np.concatenate([f, hb]).astype(np.float32))
+            if len(frames) > hold:
+                # window = the hold previous frames' boxes + this frame + hold following frames
+                front = np.concatenate([*history, *list(boxes)[: hold + 1]]) if boxes else None
+                img0 = frames.popleft()
+                history.append(boxes.popleft())
+                if front is not None and len(front):
+                    blur(img0, front)
+                enc.stdin.write(img0.tobytes())
+        while frames:
+            front = np.concatenate([*history, *list(boxes)[: hold + 1]])
             img0 = frames.popleft()
             history.append(boxes.popleft())
-            if front is not None and len(front):
+            if len(front):
                 blur(img0, front)
             enc.stdin.write(img0.tobytes())
-    while frames:
-        front = np.concatenate([*history, *list(boxes)[: hold + 1]])
-        img0 = frames.popleft()
-        history.append(boxes.popleft())
-        if len(front):
-            blur(img0, front)
-        enc.stdin.write(img0.tobytes())
-    enc.stdin.close()
-    if enc.wait() != 0:
-        raise RuntimeError(f"ffmpeg failed on {src}")
-    tmp.replace(dst)
-    secs = time.perf_counter() - t0
-    return {
-        "frames": n,
-        "fps": fps,
-        "faces": n_faces,
-        "heads": n_heads,
-        "seconds": round(secs, 1),
-        "gop": gop,
-        "hold": hold,
-        "mode": mode,
-        "fallback_blur": fd is None,
-        "fallback_reason": why,
-    }
+        enc.stdin.close()
+        if enc.wait() != 0:
+            raise RuntimeError(f"ffmpeg failed on {src}")
+        tmp.replace(dst)
+        secs = time.perf_counter() - t0
+        return {
+            "frames": n,
+            "fps": fps,
+            "faces": n_faces,
+            "heads": n_heads,
+            "seconds": round(secs, 1),
+            "gop": gop,
+            "hold": hold,
+            "mode": mode,
+            "fallback_blur": fd is None,
+            "fallback_reason": why,
+        }
+    finally:
+        close_capture(cap)
 
 
 def main(argv: list[str] | None = None) -> int:

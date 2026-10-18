@@ -12,6 +12,10 @@ Frame numbering in the result: tracked frame ``k`` (1-based) is video frame ``(k
 
 from __future__ import annotations
 
+import contextlib
+import errno
+import gc
+import os
 import platform
 import time
 from collections.abc import Callable
@@ -50,14 +54,78 @@ class VideoInfo:
         return self.frames / self.fps if self.fps > 0 else 0.0
 
 
-def probe(path: Path) -> VideoInfo:
-    """Size, fps and frame count of a video, or ``ValueError`` if OpenCV cannot decode it."""
+# Windows Media Foundation (OpenCV's default capture backend on NT) often keeps a sharing lock
+# on the file after VideoCapture.release(). ffmpeg does not. ERROR_SHARING_VIOLATION is 32.
+_LOCK_WINERRORS = {5, 32, 33}
+_LOCK_ERRNOS = {errno.EACCES, errno.EPERM, errno.EBUSY, errno.EAGAIN}
+if hasattr(errno, "ETXTBSY"):
+    _LOCK_ERRNOS.add(errno.ETXTBSY)
+
+
+def _is_lock_error(err: OSError) -> bool:
+    win = getattr(err, "winerror", None)
+    if win in _LOCK_WINERRORS:
+        return True
+    return err.errno in _LOCK_ERRNOS
+
+
+def open_capture(path: Path | str) -> Any:
+    """Open a video. On Windows prefer ffmpeg so the file is not locked by MSMF."""
     import cv2
 
-    cap = cv2.VideoCapture(str(path))
+    src = str(path)
+    apis: tuple[int, ...] = (cv2.CAP_FFMPEG, cv2.CAP_ANY) if os.name == "nt" else (cv2.CAP_ANY,)
+    attempts = 8 if os.name == "nt" else 1
+    delay, last = 0.05, None
+    for i in range(attempts):
+        for api in apis:
+            cap = cv2.VideoCapture(src, api)
+            if cap.isOpened():
+                return cap
+            cap.release()
+            last = cap
+        if i + 1 < attempts:
+            time.sleep(delay)
+            delay = min(delay * 2, 0.4)
+    return last
+
+
+def close_capture(cap: Any) -> None:
+    """Release a capture. Callers should then drop their reference; we GC for MSMF on NT."""
+    if cap is None:
+        return
+    with contextlib.suppress(Exception):
+        cap.release()
+    gc.collect()
+
+
+def unlink_locked(
+    path: Path, *, missing_ok: bool = True, attempts: int = 8, delay_s: float = 0.05
+) -> None:
+    """Delete ``path``, retrying Windows sharing violations from OpenCV or a virus scan."""
+    last: OSError | None = None
+    for i in range(max(1, attempts)):
+        try:
+            path.unlink(missing_ok=missing_ok)
+            return
+        except OSError as err:
+            if not _is_lock_error(err):
+                raise
+            last = err
+            gc.collect()
+            time.sleep(delay_s * (i + 1))
+    if last is not None:
+        raise last
+
+
+def probe(path: Path) -> VideoInfo:
+    """Size, fps and frame count of a video, or ``ValueError`` if OpenCV cannot decode it."""
+    cap = open_capture(path)
     try:
-        if not cap.isOpened():
+        if cap is None or not cap.isOpened():
             raise ValueError("not a decodable video")
+        import cv2
+
         w, h = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = float(cap.get(cv2.CAP_PROP_FPS))
         n = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -68,7 +136,9 @@ def probe(path: Path) -> VideoInfo:
             raise ValueError(f"unsupported frame rate {fps}")
         return VideoInfo(w, h, fps, max(n, 1))
     finally:
-        cap.release()
+        close_capture(cap)
+        cap = None
+        gc.collect()
 
 
 @dataclass(frozen=True)
@@ -92,13 +162,11 @@ def detect_video(
     progress: Progress | None = None,
 ) -> tuple[SequenceCache, dict[str, Any]]:
     """Run the detector on every ``stride``-th frame; returns the cache and timing."""
-    import cv2
-
     info = probe(path)
     total_tracked = (info.frames + stride - 1) // stride
     if max_frames:
         total_tracked = min(total_tracked, max_frames)
-    cap = cv2.VideoCapture(str(path))
+    cap = open_capture(path)
     fr, tl, sc, det_ms = [], [], [], []
     k, idx, t_dec = 0, 0, 0.0
     try:
@@ -126,7 +194,9 @@ def detect_video(
             if progress and (k % 5 == 0 or k == total_tracked):
                 progress("detect", k, total_tracked)
     finally:
-        cap.release()
+        close_capture(cap)
+        cap = None
+        gc.collect()
     if k == 0:
         raise ValueError("no frames decoded")
     meta = CacheMeta(

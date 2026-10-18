@@ -337,6 +337,55 @@ def test_upload_validation(env: dict[str, Any]) -> None:
     assert c.get(f"/api/clips/{up['id']}/video").status_code == 409
 
 
+def test_probe_releases_file_so_it_can_be_deleted(tmp_path: Path) -> None:
+    from serve.pipeline import probe
+
+    p = write_video(tmp_path / "clip.mp4")
+    info = probe(p)
+    assert info.width == W
+    assert info.height == H
+    p.unlink()
+    assert not p.exists()
+
+
+def test_unlink_locked_retries_sharing_violation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from serve.pipeline import unlink_locked
+
+    p = tmp_path / "x.bin"
+    p.write_bytes(b"ok")
+    hits = {"n": 0}
+    real = Path.unlink
+
+    def flaky(self: Path, *a: Any, **k: Any) -> None:
+        if self == p and hits["n"] < 2:
+            hits["n"] += 1
+            err = OSError(13, "used by another process")
+            err.winerror = 32
+            raise err
+        return real(self, *a, **k)
+
+    monkeypatch.setattr(Path, "unlink", flaky)
+    unlink_locked(p, delay_s=0.0)
+    assert hits["n"] == 2
+    assert not p.exists()
+
+
+def test_rejected_upload_keeps_not_a_video_when_cleanup_locked(
+    env: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def boom(path: Path, **k: Any) -> None:
+        err = OSError(13, "used by another process")
+        err.winerror = 32
+        raise err
+
+    monkeypatch.setattr("serve.api.unlink_locked", boom)
+    r = env["client"].post("/api/uploads", files={"file": ("a.mp4", b"not a video", "video/mp4")})
+    assert r.status_code == 422, r.text
+    assert r.json()["error"]["code"] == "not_a_video"
+
+
 def test_upload_job_blurs_first_and_consent_enables_contract(env: dict[str, Any]) -> None:
     c = env["client"]
     vid = (env["settings"].clip_dir / "walk.mp4").read_bytes()

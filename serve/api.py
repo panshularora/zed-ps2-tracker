@@ -24,6 +24,7 @@ states that the people shown agreed) switches on the full alert contract.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import math
 import re
@@ -42,7 +43,15 @@ from serve.clips import DemoClip, load_manifest
 from serve.detector import MODELS, ModelUnavailable, YoloxDetector, ensure_yolox
 from serve.errors import ApiError
 from serve.jobs import TERMINAL, JobManager, JobStore, now
-from serve.pipeline import JobOptions, VideoInfo, probe, run_video
+from serve.pipeline import (
+    JobOptions,
+    VideoInfo,
+    close_capture,
+    open_capture,
+    probe,
+    run_video,
+    unlink_locked,
+)
 from serve.settings import Settings
 from tracker.config import load_config
 
@@ -232,7 +241,7 @@ class Service:
         """Delete an upload's raw file (its blurred copy, stills and job outputs stay)."""
         d = self.upload_dir(clip_id)
         meta = json.loads((d / "meta.json").read_text())
-        (d / meta["original"]).unlink(missing_ok=True)
+        unlink_locked(d / meta["original"], missing_ok=True)
 
     def sweep_originals(self) -> int:
         """Delete raw uploads older than ``upload_raw_ttl_s`` (no job ran on them). Returns n."""
@@ -241,7 +250,7 @@ class Service:
             m = json.loads(meta.read_text())
             p = meta.parent / m["original"]
             if p.exists() and now_s - p.stat().st_mtime > self.settings.upload_raw_ttl_s:
-                p.unlink()
+                unlink_locked(p)
                 n += 1
         return n
 
@@ -270,9 +279,12 @@ class Service:
             out = d / "first_frame.jpg"
             if out.exists():
                 return out
-            cap = cv2.VideoCapture(str(self.raw_path(clip_id)))
-            ok, img = cap.read()
-            cap.release()
+            cap = open_capture(self.raw_path(clip_id))
+            try:
+                ok, img = cap.read()
+            finally:
+                close_capture(cap)
+                cap = None
             if not ok:
                 raise ApiError(500, "frame_failed", f"could not decode a frame of {rec['id']}")
             # blurred in memory before anything is written
@@ -294,9 +306,12 @@ class Service:
             out = self.settings.cache_dir / f"first-{clip_id}-{src.stat().st_mtime_ns}.jpg"
             if out.exists():
                 return out
-            cap = cv2.VideoCapture(str(src))
-            ok, img = cap.read()
-            cap.release()
+            cap = open_capture(src)
+            try:
+                ok, img = cap.read()
+            finally:
+                close_capture(cap)
+                cap = None
             if not ok:
                 raise ApiError(500, "frame_failed", "could not decode a frame")
         cv2.imwrite(str(out), img, [cv2.IMWRITE_JPEG_QUALITY, 88])
@@ -308,11 +323,14 @@ class Service:
         src = self.video_path(clip_id)
         out = self.settings.cache_dir / f"poster-{clip_id}-{src.stat().st_mtime_ns}.jpg"
         if not out.exists():
-            cap = cv2.VideoCapture(str(src))
-            fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
-            cap.set(cv2.CAP_PROP_POS_FRAMES, int(fps))  # 1 s in
-            ok, img = cap.read()
-            cap.release()
+            cap = open_capture(src)
+            try:
+                fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
+                cap.set(cv2.CAP_PROP_POS_FRAMES, int(fps))  # 1 s in
+                ok, img = cap.read()
+            finally:
+                close_capture(cap)
+                cap = None
             if not ok:
                 raise ApiError(500, "poster_failed", "could not decode a frame")
             h, w = img.shape[:2]
@@ -361,9 +379,13 @@ class Service:
                     f"video is {i.duration_s:.1f} s; the limit is {s.max_video_seconds:g} s",
                 )
         except BaseException:
-            for p in d.iterdir():
-                p.unlink()
-            d.rmdir()
+            # OpenCV / Defender can still hold original.mp4; never replace the real API error
+            # (not_a_video, too_long, …) with WinError 32 from this cleanup.
+            for p in list(d.iterdir()):
+                with contextlib.suppress(OSError):
+                    unlink_locked(p)
+            with contextlib.suppress(OSError):
+                d.rmdir()
             raise
         title = re.sub(r"[^\w .-]", "", Path(name).stem)[:60] or "upload"
         meta = {
