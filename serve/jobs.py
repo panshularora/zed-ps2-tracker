@@ -30,6 +30,7 @@ from typing import Any
 
 import numpy as np
 
+from serve.detector import ModelUnavailable
 from serve.pipeline import JobOptions
 
 STATUSES = ("queued", "running", "succeeded", "failed", "cancelled")
@@ -226,6 +227,9 @@ class JobManager:
             self.store.update(job_id, status="cancelled", stage="cancelled", finished_at=now())
         except Exception as err:  # the job fails, the service keeps running
             code = "invalid_input" if isinstance(err, ValueError) else "job_failed"
+            extra: dict[str, Any] = {}
+            if isinstance(err, ModelUnavailable):  # missing model / ffmpeg: say what to run
+                code, extra = "model_missing", {"cause": err.cause, "fix": err.fix}
             self.store.update(
                 job_id,
                 status="failed",
@@ -234,6 +238,7 @@ class JobManager:
                 error={
                     "code": code,
                     "message": str(err) or type(err).__name__,
+                    **extra,
                     "trace": traceback.format_exc(limit=3),
                 },
             )

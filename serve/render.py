@@ -42,9 +42,11 @@ def render_annotated(video: Path, result: dict[str, Any], dst: Path) -> Path:
     fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
     w, h = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     tmp = dst.with_suffix(".tmp.mp4")
+    from serve.blur import ffmpeg_exe
+
     enc = subprocess.Popen(
         [
-            "ffmpeg",
+            ffmpeg_exe(),
             "-hide_banner",
             "-loglevel",
             "error",

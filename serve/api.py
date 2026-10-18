@@ -39,7 +39,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from serve.benchmarks import PLOTS, benchmarks, gpu_plot_path
 from serve.clips import DemoClip, load_manifest
-from serve.detector import MODELS, YoloxDetector, model_path
+from serve.detector import MODELS, ModelUnavailable, YoloxDetector, ensure_yolox
 from serve.errors import ApiError
 from serve.jobs import TERMINAL, JobManager, JobStore, now
 from serve.pipeline import JobOptions, VideoInfo, probe, run_video
@@ -245,6 +245,15 @@ class Service:
                 n += 1
         return n
 
+    def blur_status(self, clip_id: str) -> dict[str, Any]:
+        """How the shown copy was blurred: ``fallback_blur`` = person-box heads, no face model."""
+        if not clip_id.startswith("upload-"):
+            return {"mode": "prepared demo copy", "fallback_blur": False, "fallback_reason": None}
+        f = self.upload_dir(clip_id) / "blur.json"
+        if f.is_file():
+            return {"mode": self.settings.upload_blur, **json.loads(f.read_text())}
+        return {"mode": self.settings.upload_blur, "fallback_blur": False, "fallback_reason": None}
+
     def first_frame(self, clip_id: str) -> Path:
         """A face-blurred still of the first frame, for drawing the gate before the first job.
 
@@ -267,8 +276,19 @@ class Service:
             if not ok:
                 raise ApiError(500, "frame_failed", f"could not decode a frame of {rec['id']}")
             # blurred in memory before anything is written
-            img = blur.blur_frame(img, self.settings.model_dir, mode=self.settings.upload_blur,
-                                  threads=self.settings.detector_threads)  # fmt: skip
+            status: dict[str, Any] = {}
+            try:
+                img = blur.blur_frame(
+                    img,
+                    self.settings.model_dir,
+                    mode=self.settings.upload_blur,
+                    threads=self.settings.detector_threads,
+                    status=status,
+                )
+            except ModelUnavailable as err:
+                fix, name = err.fix, err.name
+                raise ApiError(503, "model_missing", err.cause, fix=fix, model=name) from err
+            (d / "blur.json").write_text(json.dumps(status))
         else:
             src = self.video_path(clip_id)
             out = self.settings.cache_dir / f"first-{clip_id}-{src.stat().st_mtime_ns}.jpg"
@@ -373,9 +393,7 @@ class Service:
     def detector(self, name: str) -> YoloxDetector:
         with self._det_lock:
             if name not in self._detectors:
-                p = model_path(name, self.settings.model_dir)
-                if not p.exists():
-                    raise RuntimeError(f"model {p} missing (run `python -m serve.detector fetch`)")
+                p = ensure_yolox(name, self.settings.model_dir)  # fetched on first use
                 det = YoloxDetector(p, MODELS[name][0], 0.1, threads=self.settings.detector_threads)
                 det.name = name  # type: ignore[attr-defined]
                 self._detectors[name] = det
@@ -450,7 +468,7 @@ class Service:
                 if not blurred.exists():  # the copy that is shown; the tracker never reads it
                     from serve.blur import blur_video
 
-                    blur_video(
+                    info = blur_video(
                         raw,
                         blurred,
                         self.settings.model_dir,
@@ -458,6 +476,9 @@ class Service:
                         progress=progress,
                         mode=self.settings.upload_blur,
                     )
+                    (self.upload_dir(clip_id) / "blur.json").write_text(json.dumps(
+                        {k: info.get(k) for k in ("mode", "fallback_blur", "fallback_reason")}
+                    ))  # fmt: skip
             cfg = load_config(available_configs(self.settings.config_root)[opts.config])
             # detection + tracking on the unblurred frames (decoded in memory, never written)
             video = raw if raw is not None else self.video_path(clip_id)
@@ -466,6 +487,7 @@ class Service:
             if upload:
                 self.drop_original(clip_id)
         out["tracked_on"] = "raw" if raw is not None else "blurred (no raw copy on this server)"
+        out["blur"] = self.blur_status(clip_id)
         out["clip"] = {**rec["clip"], "video_url": f"/api/clips/{clip_id}/video"}
         out["config"] = opts.config
         out["detector"] = {

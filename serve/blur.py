@@ -19,6 +19,12 @@ the other:
 Uploads (``serve.api``: the blurred copy that is tracked and served, and the first-frame still)
 use the default ``face`` mode.
 
+**Missing / unloadable face model.** ``data/models`` is filled on first use (sha256-checked
+download from the official URLs, ``serve.detector.ensure_file``). If YuNet still cannot be loaded
+(offline, an OpenCV build without ``FaceDetectorYN``, a model the build cannot parse), the blur
+falls back to the head region of every person box (``head_boxes``), the result says
+``fallback_blur: true`` with the reason, and tracking still runs (it reads the raw frames).
+
 Boxes are held for ±``hold`` frames (default 2) so that a one-frame detector miss does not
 flash a face. Blurring is pixelate-then-Gaussian, strong enough that faces are not recognisable.
 This is best effort, not a guarantee: check the output before publishing (see docs/licenses.md).
@@ -28,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import subprocess
 import time
 from collections import deque
@@ -37,11 +44,56 @@ from pathlib import Path
 import numpy as np
 
 from serve.clips import DEFAULT_MANIFEST, ROOT, load_manifest
-from serve.detector import MODELS, YUNET, YoloxDetector, model_path
+from serve.detector import MODELS, ModelUnavailable, YoloxDetector, ensure_yolox, ensure_yunet
+
+FFMPEG_FIX = "winget install Gyan.FFmpeg   (or: pip install imageio-ffmpeg)"
 
 
-def face_boxes(fd: object, bgr: np.ndarray, grow: float = 0.4) -> np.ndarray:
+def ffmpeg_exe() -> str:
+    """``ffmpeg`` on PATH, else the one bundled by ``imageio-ffmpeg``; a clear error otherwise."""
+    exe = shutil.which("ffmpeg")
+    if exe:
+        return exe
+    try:
+        import imageio_ffmpeg  # type: ignore[import-not-found]
+
+        return str(imageio_ffmpeg.get_ffmpeg_exe())
+    except Exception as err:
+        why = "ffmpeg is not installed (needed to write the blurred copy)"
+        raise ModelUnavailable("ffmpeg", why, FFMPEG_FIX) from err
+
+
+def face_detector(model_dir: Path, size: tuple[int, int]) -> tuple[object | None, str | None]:
+    """``(YuNet, None)``, or ``(None, reason)`` when it cannot be loaded (callers fall back).
+
+    Works with OpenCV 4.8+ and 5.x: ``cv2.FaceDetectorYN.create`` or ``cv2.FaceDetectorYN_create``.
+    """
+    try:
+        path = ensure_yunet(model_dir)
+    except ModelUnavailable as err:
+        return None, str(err)
+    import cv2
+
+    cls = getattr(cv2, "FaceDetectorYN", None)
+    create = getattr(cls, "create", None) or getattr(cv2, "FaceDetectorYN_create", None)
+    if create is None:
+        return None, f"OpenCV {cv2.__version__} has no FaceDetectorYN"
+    try:
+        return create(str(path), "", (int(size[0]), int(size[1])), 0.4, 0.3, 5000), None
+    except Exception as err:  # cv2.error: unreadable / unsupported ONNX on this build
+        msg = str(err).strip().splitlines()[-1] if str(err).strip() else type(err).__name__
+        return None, f"OpenCV {cv2.__version__} could not load the YuNet face model ({msg})"
+
+
+def person_detector(detector: str, model_dir: Path, threads: int) -> YoloxDetector:
+    return YoloxDetector(ensure_yolox(detector, model_dir), MODELS[detector][0], 0.3,
+                         threads=threads)  # fmt: skip
+
+
+def face_boxes(fd: object | None, bgr: np.ndarray, grow: float = 0.4) -> np.ndarray:
     """``(n, 4)`` xyxy face boxes from YuNet, grown by ``grow`` around the centre."""
+    if fd is None:
+        return np.zeros((0, 4), np.float32)
     _, faces = fd.detect(bgr)  # type: ignore[attr-defined]
     if faces is None or len(faces) == 0:
         return np.zeros((0, 4), np.float32)
@@ -137,9 +189,14 @@ def blur_faces_soft(img: np.ndarray, boxes: np.ndarray, scale: float = 1.2) -> n
 
 
 def frame_boxes(
-    fd: object, tl: np.ndarray, sc: np.ndarray, img: np.ndarray, mode: str
+    fd: object | None, tl: np.ndarray, sc: np.ndarray, img: np.ndarray, mode: str
 ) -> tuple[np.ndarray, np.ndarray]:
-    """YuNet faces and person-box faces (``face``) or heads (``head``) for one frame."""
+    """YuNet faces and person-box faces (``face``) or heads (``head``) for one frame.
+
+    Without YuNet (``fd is None``) the whole head region of every person box is blurred.
+    """
+    if fd is None:
+        return face_boxes(None, img), head_boxes(tl, sc)
     if mode == "face":
         return face_boxes(fd, img, grow=0.0), face_from_person(tl, sc)
     return face_boxes(fd, img), head_boxes(tl, sc)
@@ -157,13 +214,17 @@ def blur_with(mode: str) -> Callable[[np.ndarray, np.ndarray], np.ndarray]:
 
 
 def blur_frame(img: np.ndarray, model_dir: Path, *, detector: str = "yolox_tiny",
-               threads: int = 2, mode: str = "face") -> np.ndarray:  # fmt: skip
-    """Face-blur one frame exactly like :func:`blur_video` (same detectors, same ``mode``)."""
-    import cv2
+               threads: int = 2, mode: str = "face",
+               status: dict[str, object] | None = None) -> np.ndarray:  # fmt: skip
+    """Face-blur one frame exactly like :func:`blur_video` (same detectors, same ``mode``).
 
+    ``status`` (optional) receives ``fallback_blur`` and ``fallback_reason``.
+    """
     h, w = img.shape[:2]
-    fd = cv2.FaceDetectorYN.create(str(model_dir / YUNET[0]), "", (w, h), 0.4, 0.3, 5000)
-    det = YoloxDetector(model_path(detector, model_dir), MODELS[detector][0], 0.3, threads=threads)
+    fd, why = face_detector(model_dir, (w, h))
+    if status is not None:
+        status.update(fallback_blur=fd is None, fallback_reason=why)
+    det = person_detector(detector, model_dir, threads)
     tl, sc = det.detect(img)
     boxes = np.concatenate(frame_boxes(fd, tl, sc, img, mode)).astype(np.float32)
     out = img.copy()
@@ -193,12 +254,13 @@ def blur_video(
     fps = cap.get(cv2.CAP_PROP_FPS)
     total = max(1, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
     w, h = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fd = cv2.FaceDetectorYN.create(str(model_dir / YUNET[0]), "", (w, h), 0.4, 0.3, 5000)
-    det = YoloxDetector(model_path(detector, model_dir), MODELS[detector][0], 0.3, threads=threads)
+    fd, why = face_detector(model_dir, (w, h))
+    det = person_detector(detector, model_dir, threads)
+    ffmpeg = ffmpeg_exe()
     tmp = dst.with_suffix(".tmp.mp4")
     enc = subprocess.Popen(
         [
-            "ffmpeg",
+            ffmpeg,
             "-hide_banner",
             "-loglevel",
             "error",
@@ -286,6 +348,8 @@ def blur_video(
         "gop": gop,
         "hold": hold,
         "mode": mode,
+        "fallback_blur": fd is None,
+        "fallback_reason": why,
     }
 
 

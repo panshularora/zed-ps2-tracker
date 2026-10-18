@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -172,30 +173,88 @@ def model_path(name: str, model_dir: Path | None = None) -> Path:
     """Path of a known model in ``ZED_MODEL_DIR`` (download: ``python -m serve.detector fetch``)."""
     if name not in MODELS:
         raise ValueError(f"unknown detector {name!r}; known: {sorted(MODELS)}")
-    root = model_dir or Path(os.environ.get("ZED_MODEL_DIR", "data/models"))
+    root = Path(model_dir) if model_dir else Path(os.environ.get("ZED_MODEL_DIR", "data/models"))
     return root / f"{name}.onnx"
+
+
+class ModelUnavailable(RuntimeError):
+    """A model file is missing and could not be downloaded; ``fix`` is the command to run."""
+
+    def __init__(self, name: str, cause: str, fix: str) -> None:
+        super().__init__(f"{name}: {cause}")
+        self.name, self.cause, self.fix = name, cause, fix
+
+
+FETCH_FIX = "python -m serve.detector fetch --out data/models"
+DOWNLOAD_TIMEOUT_S = 60.0
+_verified: set[tuple[str, str]] = set()
+_dl_lock = threading.Lock()
+
+
+def auto_download() -> bool:
+    """Missing models are fetched on first use unless ``ZED_AUTO_DOWNLOAD=0``."""
+    return os.environ.get("ZED_AUTO_DOWNLOAD", "1").strip().lower() not in ("0", "false", "no")
+
+
+def _download(url: str, tmp: Path, timeout: float) -> None:
+    import urllib.request
+
+    with urllib.request.urlopen(url, timeout=timeout) as r, tmp.open("wb") as fh:
+        while chunk := r.read(2**20):
+            fh.write(chunk)
+
+
+def ensure_file(dst: Path, url: str, digest: str, *, timeout: float = DOWNLOAD_TIMEOUT_S) -> Path:
+    """``dst`` with the right sha256: kept if present, else downloaded (``dst.parent`` is created).
+
+    Raises :class:`ModelUnavailable` with a one-line cause and the fix when that is not possible.
+    """
+    dst = Path(dst)
+    key = (str(dst.resolve()), digest)
+    if key in _verified and dst.is_file():
+        return dst
+    with _dl_lock:
+        if dst.is_file() and sha256(dst) == digest:
+            _verified.add(key)
+            return dst
+        name = dst.name
+        if not auto_download():
+            why = "file is missing" if not dst.exists() else "file has the wrong sha256"
+            raise ModelUnavailable(name, f"{why} at {dst} (auto-download is off)", FETCH_FIX)
+        tmp = dst.with_name(dst.name + ".part")
+        try:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            print(f"fetch {url}")
+            _download(url, tmp, timeout)
+        except Exception as err:  # offline, proxy, timeout, read-only disk...
+            tmp.unlink(missing_ok=True)
+            raise ModelUnavailable(name, f"could not download {url} ({err})", FETCH_FIX) from err
+        if sha256(tmp) != digest:
+            tmp.unlink(missing_ok=True)
+            raise ModelUnavailable(name, f"download from {url} has the wrong sha256", FETCH_FIX)
+        tmp.replace(dst)
+        _verified.add(key)
+        return dst
+
+
+def ensure_yolox(name: str, model_dir: Path | None = None) -> Path:
+    """The YOLOX ONNX file for ``name``, downloaded on first use."""
+    p = model_path(name, model_dir)
+    return ensure_file(p, MODELS[name][1], MODELS[name][2])
+
+
+def ensure_yunet(model_dir: Path) -> Path:
+    """The YuNet face model (OpenCV Zoo), downloaded on first use."""
+    return ensure_file(Path(model_dir) / YUNET[0], YUNET[1], YUNET[2])
 
 
 def fetch_models(out: Path, names: list[str] | None = None) -> list[Path]:
     """Download the demo models into ``out`` and check their sha256 (idempotent)."""
-    import urllib.request
-
-    out.mkdir(parents=True, exist_ok=True)
-    want = {n: (MODELS[n][1], MODELS[n][2]) for n in (names or list(MODELS))}
-    want[YUNET[0].removesuffix(".onnx")] = (YUNET[1], YUNET[2])
-    done = []
-    for name, (url, digest) in want.items():
-        dst = out / f"{name}.onnx"
-        if not (dst.exists() and sha256(dst) == digest):
-            print(f"fetch {url}")
-            tmp = dst.with_suffix(".part")
-            urllib.request.urlretrieve(url, tmp)
-            if sha256(tmp) != digest:
-                tmp.unlink()
-                raise RuntimeError(f"{name}: sha256 mismatch")
-            tmp.replace(dst)
-        print(f"ok    {dst}")
-        done.append(dst)
+    out = Path(out)
+    done = [ensure_yolox(n, out) for n in (names or list(MODELS))]
+    done.append(ensure_yunet(out))
+    for d in done:
+        print(f"ok    {d}")
     return done
 
 
