@@ -7,6 +7,8 @@ import { IdentityPlayer } from "../../identity/IdentityPlayer";
 import { boxAt, cropRect, crossingsCsv, frameTime, fromJobResult, gateFromClicks, mmss, NO_GT_LABEL, REID_OFF_LABEL, reviewNotesJson, rowSeek, suggestions, timeSeek, unsureKey, unsureMoments, uploadSummary, type Decision, type Decisions, type SeekReq, type XYWH } from "../../upload/fromJob";
 import { useThumbs, type Grabber, type ThumbReq } from "../../upload/thumbs";
 import { neutralColor } from "../../lib/scenarios";
+import { ErrorCard } from "../../upload/ErrorCard";
+import { explainError, type Explained } from "../../upload/explain";
 
 type Phase = "pick" | "uploading" | "gate" | "running" | "done";
 type Pt = [number, number];
@@ -14,8 +16,15 @@ type Pt = [number, number];
 const DEFAULT_GATE: [number, number, number, number] = [0, 0.6, 1, 0.6];
 const TERMINAL = new Set(["succeeded", "failed", "cancelled"]);
 
-function errText(e: unknown): string {
-  return e instanceof ApiError ? e.message : String(e);
+/** The first frame failed to load as an image: read the JSON error the backend sent instead. */
+async function frameError(url: string): Promise<unknown> {
+  try {
+    const r = await fetch(url);
+    const b = (await r.json()) as { error?: { code?: string; message?: string; fix?: string } };
+    return new ApiError(r.status, b.error?.code ?? "error", b.error?.message ?? `${r.status}`, b.error?.fix);
+  } catch (e) {
+    return new ApiError(0, "network", `cannot reach the service (${(e as Error).message})`);
+  }
 }
 
 export function YourVideo() {
@@ -25,18 +34,22 @@ export function YourVideo() {
   const [pts, setPts] = useState<Pt[]>([]);
   const [job, setJob] = useState<Job | null>(null);
   const [result, setResult] = useState<JobResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Explained | null>(null);
+  const [retry, setRetry] = useState<(() => void) | null>(null);
+  const [frame, setFrame] = useState<"loading" | "ok" | "error">("loading");
+  const [frameTry, setFrameTry] = useState(0);
+  const fail = (e: unknown, again: () => void) => { setError(explainError(e)); setRetry(() => again); };
   const [seek, setSeek] = useState<SeekReq | null>(null);
   const img = useRef<HTMLImageElement>(null);
 
   async function onFile(f: File | undefined) {
     if (!f) return;
-    setError(null); setPhase("uploading"); setPts([]); setResult(null); setJob(null);
+    setError(null); setPhase("uploading"); setPts([]); setResult(null); setJob(null); setFrame("loading");
     try {
       const c = await api.upload(f, consent);
       setClip(c); setPhase("gate");
     } catch (e) {
-      setError(errText(e)); setPhase("pick");
+      fail(e, () => void onFile(f)); setPhase("pick");
     }
   }
 
@@ -63,11 +76,11 @@ export function YourVideo() {
         j = await api.job(j.id);
         setJob(j);
       }
-      if (j.status !== "succeeded") throw new Error(j.error?.message ?? `job ${j.status}`);
+      if (j.status !== "succeeded") throw j.error ?? new Error(`job ${j.status}`);
       setResult(await api.result(j.id));
       setPhase("done");
     } catch (e) {
-      setError(errText(e)); setPhase("gate");
+      fail(e, () => void run(g)); setPhase("gate");
     }
   }
 
@@ -95,8 +108,11 @@ export function YourVideo() {
           <div className="text-[13px] text-ink font-semibold">Click two points on the first frame to draw your gate line</div>
           <div className="text-[11px] text-mute">IN = crossing to the right-hand side of the line as you look from your first click to your second (arrow).</div>
           <div className="relative inline-block max-w-full" data-testid="gate-editor">
-            <img ref={img} src={api.firstFrameUrl(clip.id)} alt="First frame of your clip (faces blurred)" onClick={onImgClick}
-              className="max-w-full max-h-[420px] cursor-crosshair border border-line" data-testid="first-frame" onLoad={() => setPts((p) => [...p])} />
+            {frame !== "ok" && <div className="yv-frame rounded-sm" data-testid="first-frame-empty" aria-label={frame === "loading" ? "Loading the first frame" : "No first frame"} />}
+            <img ref={img} key={frameTry} src={api.firstFrameUrl(clip.id) + (frameTry ? `?try=${frameTry}` : "")} alt="First frame of your clip (faces blurred)" onClick={onImgClick}
+              className={`max-w-full max-h-[420px] cursor-crosshair border border-line${frame === "ok" ? "" : " hidden"}`} data-testid="first-frame"
+              onLoad={() => { setFrame("ok"); setPts((p) => [...p]); }}
+              onError={() => { setFrame("error"); void frameError(api.firstFrameUrl(clip.id)).then((e) => fail(e, () => { setError(null); setFrame("loading"); setFrameTry((n) => n + 1); })); }} />
             {img.current && pts.length > 0 && (
               <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox={`0 0 ${img.current.naturalWidth} ${img.current.naturalHeight}`} preserveAspectRatio="none">
                 {pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r={Math.max(4, img.current!.naturalWidth / 160)} fill="#F5A524" />)}
@@ -130,7 +146,7 @@ export function YourVideo() {
           )}
         </div>
       )}
-      {error && <div className="text-fail text-[12px]" role="alert">{error}</div>}
+      {error && <ErrorCard err={error} onRetry={retry ? () => { setError(null); retry(); } : undefined} />}
       {phase === "done" && result && job && <UploadResult result={result} jobId={job.id} seek={seek} onSeek={(f, mode) => setSeek((s) => (mode === "row" ? rowSeek : timeSeek)(f, (s?.n ?? 0) + 1))} onAgain={() => { setPhase("pick"); setClip(null); }} />}
     </section>
   );

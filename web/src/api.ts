@@ -82,7 +82,7 @@ export interface Job {
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
-  error: { code: string; message: string } | null;
+  error: { code: string; message: string; cause?: string; fix?: string } | null;
   metrics: JobMetrics | null;
   timing: JobTiming | null;
   frames_done?: number | null;
@@ -177,6 +177,7 @@ export class ApiError extends Error {
     readonly status: number,
     readonly code: string,
     message: string,
+    readonly fix?: string,
   ) {
     super(message);
     this.name = "ApiError";
@@ -195,14 +196,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     let code = "error";
     let message = `${res.status} ${res.statusText}`;
+    let fix: string | undefined;
     try {
-      const body = (await res.json()) as { error?: { code?: string; message?: string }; detail?: unknown };
+      const body = (await res.json()) as { error?: { code?: string; message?: string; fix?: string }; detail?: unknown };
       code = body.error?.code ?? code;
       message = body.error?.message ?? (typeof body.detail === "string" ? body.detail : message);
+      fix = body.error?.fix;
     } catch {
       /* non-JSON error body */
     }
-    throw new ApiError(res.status, code, message);
+    throw new ApiError(res.status, code, message, fix);
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
