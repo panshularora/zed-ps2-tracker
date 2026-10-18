@@ -16,9 +16,12 @@
 # are hidden by the barriers, so the bottom edge jitters on the barrier top; 50 px there was set
 # by looking at this clip's own trajectories (demo only: there is no ground truth to tune on).
 #
-# gate: the virtual line in normalised image coordinates [x1, y1, x2, y2] (0..1), chosen by eye
-# on the first frame for the demo. direction "in" = crossing in the line's left-hand normal
-# direction (eval/gate_events.py convention).
+# gate: the virtual line in normalised image coordinates [x1, y1, x2, y2] (0..1). Every clip uses
+# the same rule (docs/demo_gates.md, scripts/demo/guide.py::motion_gate): perpendicular to the
+# dominant walking direction of the tracks (camera pan removed), through the median track
+# mid-point, across the whole frame; chosen from motion only, before any tracker count was looked
+# at. direction "in" = crossing in the line's left-hand normal direction (eval/gate_events.py
+# convention) = the direction most people walk.
 clips:
   - id: subway_turnstile
     title: Subway turnstiles
@@ -28,7 +31,7 @@ clips:
     note: Closest to a Zed gate; the main demo clip.
     consent: false
     event_styling: neutral
-    gate: [0.0, 0.5, 1.0, 0.5]
+    gate: [0.501, 1.0, 0.509, 0.0]  # walk rule: walking 0.8 deg, 52 tracks
     hysteresis_px: 50
   - id: mexico_city_entrance
     title: Mexico City metro entrance
@@ -38,7 +41,7 @@ clips:
     note: Longest and densest crowd; the occlusion stress clip (111 s; run with a frame limit on CPU).
     consent: false
     event_styling: neutral
-    gate: [0.0, 0.6, 1.0, 0.6]
+    gate: [0.117, 0.0, 0.601, 1.0]  # walk rule: walking 139.3 deg, 2 tracks
   - id: milan_turnstiles
     title: Milan metro turnstiles
     pexels_id: 31540854
@@ -47,7 +50,7 @@ clips:
     note: Turnstile close-up (59.94 fps source).
     consent: false
     event_styling: neutral
-    gate: [0.0, 0.6, 1.0, 0.6]
+    gate: [0.292, 1.0, 0.235, 0.0]  # walk rule: walking -5.8 deg, 16 tracks
   - id: rabat_stadium
     title: Stadium entrance, Rabat
     pexels_id: 34452568
@@ -56,7 +59,7 @@ clips:
     note: Portrait stadium entrance (Fast Lane angle).
     consent: false
     event_styling: neutral
-    gate: [0.0, 0.6, 1.0, 0.6]
+    gate: [0.0, 0.795, 1.0, 0.734]  # walk rule: walking 83.8 deg, 23 tracks
   - id: man_entering_metro
     title: Single passenger, metro
     pexels_id: 7251031
@@ -65,7 +68,7 @@ clips:
     note: One person; intro shot.
     consent: false
     event_styling: neutral
-    gate: [0.0, 0.6, 1.0, 0.6]
+    gate: [0.335, 1.0, 0.146, 0.0]  # walk rule: walking -18.6 deg, 2 tracks
   - id: shibuya_crossing
     title: Shibuya crossing, Tokyo
     pexels_id: 25947490
@@ -74,4 +77,4 @@ clips:
     note: Densest crowd; heavy occlusion and lookalikes (source 64 s, 59.94 fps; the blurred demo copy is the first 20 s).
     consent: false
     event_styling: neutral
-    gate: [0.0, 0.6, 1.0, 0.6]
+    gate: [0.49, 1.0, 0.45, 0.0]  # walk rule: walking -4.1 deg, 166 tracks
