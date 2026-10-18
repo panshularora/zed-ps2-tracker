@@ -218,14 +218,89 @@ GO_NO_GO_CRITERIA = {
 }
 
 
+def _int(v: Any) -> int | None:
+    return int(v) if isinstance(v, int | float) else None
+
+
 def _gpu_row(r: dict[str, Any]) -> dict[str, Any]:
+    tot = (r.get("stress") or {}).get("totals") or {}
     return {
         "name": r["name"],
         "label": r["label"],
         "group": r["group"],
         **{k: _round(r.get(k)) for k in ("HOTA", "IDF1", "MOTA", "AssA", "DetA")},
-        "IDSW": int(r["IDSW"]) if isinstance(r.get("IDSW"), int | float) else None,
+        "IDSW": _int(r.get("IDSW")),
+        # CLEAR totals of the same TrackEval run (ablation.json -> stress.totals)
+        "FP": _int(tot.get("FP")),
+        "FN": _int(tot.get("FN")),
         "p95_ms": _round(r.get("p95_ms"), 2),
+    }
+
+
+# the visibility rule added on top of re-ID: (tracker + re-ID, same tracker + re-ID + rule)
+REID_PAIRS = (
+    ("bytetrack_reid", "reid_vis_gated", "ByteTrack"),
+    ("botsort_reid", "botsort_reid_vis_gated", "BoT-SORT"),
+)
+
+
+def _reid_rule(datasets: list[dict[str, Any]], raw: dict[str, list[dict[str, Any]]]) -> dict:
+    """Per dataset: tracker + re-ID vs the same tracker + re-ID + visibility rule (raw values)."""
+    pairs = []
+    for base, ours, family in REID_PAIRS:
+        rows = []
+        for ds in datasets:
+            by = {r["name"]: r for r in raw[ds["id"]]}
+            if base not in by or ours not in by:
+                continue
+            a, b = by[base], by[ours]
+            rows.append(
+                {
+                    "dataset": ds["id"],
+                    "base": {
+                        "label": a["label"],
+                        "HOTA": _round(a["HOTA"]),
+                        "IDSW": _int(a["IDSW"]),
+                        "IDF1": _round(a["IDF1"]),
+                    },
+                    "ours": {
+                        "label": b["label"],
+                        "HOTA": _round(b["HOTA"]),
+                        "IDSW": _int(b["IDSW"]),
+                        "IDF1": _round(b["IDF1"]),
+                    },
+                    "d_HOTA": _round(float(b["HOTA"]) - float(a["HOTA"]), 2),
+                    "d_IDF1": _round(float(b["IDF1"]) - float(a["IDF1"]), 2),
+                    "d_IDSW": int(b["IDSW"]) - int(a["IDSW"]),
+                }
+            )
+        pairs.append(
+            {
+                "family": family,
+                "base": base,
+                "ours": ours,
+                "rows": rows,
+                "fewer_idsw_everywhere": bool(rows) and all(r["d_IDSW"] < 0 for r in rows),
+                "hota_never_lower": bool(rows) and all(r["d_HOTA"] >= 0 for r in rows),
+            }
+        )
+    return {"source": "docs/results/phase3/<id>/ablation.json", "pairs": pairs}
+
+
+def _stress_scale(root: Path) -> dict[str, Any] | None:
+    """Size of the simulated Stress Map, counted from its JSON (docs/results/stress)."""
+    sm = _load(root / "stress" / "stress_map.json")
+    if not sm or not sm.get("cells"):
+        return None
+    per_cell = sorted({len(c.get("seeds") or []) for c in sm["cells"]})
+    trackers = len(sm.get("trackers") or {})
+    return {
+        "source": "docs/results/stress/stress_map.json",
+        "cells": len(sm["cells"]),
+        "seeds_per_cell": per_cell[0] if len(per_cell) == 1 else None,
+        "seeds": [min(sm.get("seeds", [0])), max(sm.get("seeds", [0]))],
+        "trackers": trackers,
+        "runs": sum(len(c.get("seeds") or []) for c in sm["cells"]) * trackers,
     }
 
 
@@ -274,11 +349,14 @@ def gpu(root: Path) -> dict[str, Any] | None:
     run_info = _load(d / "run_info.json") or {}
     detectors = run_info.get("detectors", {})
     datasets = []
+    raw: dict[str, list[dict[str, Any]]] = {}
     for c in ran:
         abl = _load(d / c["id"] / "ablation.json")
-        if abl is None:
+        if abl is None or c.get("saw_eval_half", False):
             continue
+        raw[c["id"]] = abl
         det = detectors.get(c["cache"], {})
+        st0 = abl[0].get("stress") or {}
         datasets.append(
             {
                 "id": c["id"],
@@ -289,6 +367,9 @@ def gpu(root: Path) -> dict[str, Any] | None:
                 "trained_on": det.get("trained_on"),
                 "input_size": det.get("input_size"),
                 "source": f"docs/results/phase3/{c['id']}/ablation.md",
+                "sequences": len(st0.get("sequences") or []),
+                # frames scored = sum of the per-density-bin frame counts of the same run
+                "frames": sum(int(b.get("frames", 0)) for b in st0.get("density") or []),
                 "rows": [_gpu_row(r) for r in abl],
                 "plots": {
                     k: f"/api/benchmarks/plots/gpu-{c['id']}-{k}.png"
@@ -360,7 +441,30 @@ def gpu(root: Path) -> dict[str, Any] | None:
             ],
         }
     ge = _load(d / "gate_events" / "gate_events.json")
+    gcrit = (go_no_go_v2 or {}).get("criteria", [])
+    scale = {
+        "evaluations": len(datasets),
+        "tracker_runs": sum(len(x["rows"]) for x in datasets),
+        "tracker_configs": len({r["name"] for x in datasets for r in x["rows"]}),
+        "sequences": sum(x["sequences"] for x in datasets),
+        "frames": sum(x["frames"] for x in datasets),
+        "tracked_frames": sum(x["frames"] * len(x["rows"]) for x in datasets),
+        "excluded": len(excluded),
+        "go_no_go": {
+            "verdict": (go_no_go_v2 or {}).get("verdict"),
+            "failed": sum(1 for c in gcrit if not c["passed"]),
+            "total": len(gcrit),
+        }
+        if go_no_go_v2
+        else None,
+        "stress": _stress_scale(root),
+        "detectors": sorted({x["detector"] for x in datasets if x["detector"]}),
+        "reid": sorted({v.get("reid") for v in detectors.values() if v.get("reid")}),
+        "precision": sorted({v.get("precision") for v in detectors.values() if v.get("precision")}),
+    }
     return {
+        "scale": scale,
+        "reid_rule": _reid_rule(datasets, raw),
         "source": "docs/results/phase3",
         "analysis": "docs/results/gpu/ANALYSIS.md",
         "gpu": (run_info.get("gpu") or {}).get("name"),
