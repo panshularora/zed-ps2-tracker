@@ -44,7 +44,7 @@ from pathlib import Path
 import numpy as np
 
 from serve.clips import DEFAULT_MANIFEST, ROOT, load_manifest
-from serve.detector import MODELS, ModelUnavailable, YoloxDetector, ensure_yolox, ensure_yunet
+from serve.detector import MODELS, ModelUnavailable, YoloxDetector, ensure_yunet, pick_yolox
 
 FFMPEG_FIX = "winget install Gyan.FFmpeg   (or: pip install imageio-ffmpeg)"
 
@@ -86,8 +86,8 @@ def face_detector(model_dir: Path, size: tuple[int, int]) -> tuple[object | None
 
 
 def person_detector(detector: str, model_dir: Path, threads: int) -> YoloxDetector:
-    return YoloxDetector(ensure_yolox(detector, model_dir), MODELS[detector][0], 0.3,
-                         threads=threads)  # fmt: skip
+    used, path = pick_yolox(detector, model_dir)
+    return YoloxDetector(path, MODELS[used][0], 0.3, threads=threads)
 
 
 def face_boxes(fd: object | None, bgr: np.ndarray, grow: float = 0.4) -> np.ndarray:

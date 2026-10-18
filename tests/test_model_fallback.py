@@ -162,6 +162,47 @@ def test_upload_job_runs_with_fallback_blur_and_counts(tmp_path, monkeypatch) ->
         assert c.get(f"/api/clips/{up['id']}/video").status_code == 200
 
 
+def _hash_ok(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Treat any on-disk ``yolox_*.onnx`` as the official weights (tests never ship the files)."""
+
+    def fake_sha(path: Path) -> str:
+        stem = Path(path).stem
+        if stem in detector.MODELS:
+            return detector.MODELS[stem][2]
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    monkeypatch.setattr(detector, "sha256", fake_sha)
+
+
+def test_pick_yolox_uses_tiny_already_on_disk_instead_of_downloading_s(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Studio's default is yolox_s; Windows clones often only have yolox_tiny.onnx."""
+    _hash_ok(monkeypatch)
+    (tmp_path / "yolox_tiny.onnx").write_bytes(b"tiny-weights")
+    downloads: list[str] = []
+
+    def no_net(url: str, tmp: Path, timeout: float) -> None:
+        downloads.append(url)
+        raise TimeoutError("timed out")
+
+    monkeypatch.setattr(detector, "_download", no_net)
+    name, path = detector.pick_yolox("yolox_s", tmp_path)
+    assert name == "yolox_tiny"
+    assert path == tmp_path / "yolox_tiny.onnx"
+    assert downloads == []
+
+
+def test_pick_yolox_keeps_the_requested_file_when_it_is_already_on_disk(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _hash_ok(monkeypatch)
+    (tmp_path / "yolox_s.onnx").write_bytes(b"s-weights")
+    (tmp_path / "yolox_tiny.onnx").write_bytes(b"tiny-weights")
+    name, path = detector.pick_yolox("yolox_s", tmp_path)
+    assert (name, path) == ("yolox_s", tmp_path / "yolox_s.onnx")
+
+
 def test_model_missing_job_error_carries_cause_and_fix(tmp_path, monkeypatch) -> None:
     def no_model(self: Service, name: str) -> Any:
         raise ModelUnavailable("yolox_s.onnx", "could not download x (offline)", "fix-cmd")

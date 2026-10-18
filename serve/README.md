@@ -86,11 +86,11 @@ Accuracy is the benchmark (`/api/benchmarks`).
   the browser-side row stills (grabbed from the served blurred video). No raw pixels are written
   by the service apart from the uploaded file itself.
 * **Lifetime of a raw upload**: written to `ZED_DATA_DIR/uploads/<id>/original.<ext>` on upload;
-  read for the first-frame still and by the first job; **deleted when that first job ends**
-  (succeeded, failed or cancelled while running). An upload that never gets a job is deleted
-  after `ZED_UPLOAD_RAW_TTL_S` (3600 s), checked on every new upload. Later jobs on the same
-  upload get 410 `original_gone`: upload the clip again. The blurred copy, the stills and the job
-  outputs (boxes, events) stay until the upload / job is deleted.
+  read for the first-frame still and by the first job; **deleted when that first job succeeds**.
+  A failed or cancelled job keeps the original so Retry can run. An upload that never gets a job
+  is deleted after `ZED_UPLOAD_RAW_TTL_S` (3600 s), checked on every new upload. Later jobs after
+  a success get 410 `original_gone`: upload the clip again. The blurred copy, the stills and the
+  job outputs (boxes, events) stay until the upload / job is deleted.
 
 ## Errors
 

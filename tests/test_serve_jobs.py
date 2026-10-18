@@ -728,9 +728,12 @@ def test_raw_upload_is_deleted_when_its_first_job_ends(env: dict[str, Any]) -> N
     assert r.json()["error"]["code"] == "original_gone"
 
 
-def test_raw_upload_is_deleted_when_its_job_fails(
+def test_raw_upload_is_kept_when_its_job_fails_so_retry_works(
     env: dict[str, Any], monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """A failed first job used to delete original.mp4, so Retry returned 410 original_gone."""
+    from serve.pipeline import run_video as real_run
+
     c, s = env["client"], env["settings"]
 
     def boom(*a: Any, **k: Any) -> Any:
@@ -741,9 +744,16 @@ def test_raw_upload_is_deleted_when_its_job_fails(
         "/api/uploads",
         files={"file": ("gate.mp4", (s.clip_dir / "walk.mp4").read_bytes(), "video/mp4")},
     ).json()
+    raw = s.uploads_dir / up["id"].removeprefix("upload-") / "original.mp4"
     job = wait(c, c.post("/api/jobs", json={"clip_id": up["id"]}).json()["id"])
     assert job["status"] == "failed"
-    assert not (s.uploads_dir / up["id"].removeprefix("upload-") / "original.mp4").exists()
+    assert raw.exists()
+    monkeypatch.setattr("serve.api.run_video", real_run)
+    retry = wait(
+        c, c.post("/api/jobs", json={"clip_id": up["id"], "reuse": False}).json()["id"]
+    )
+    assert retry["status"] == "succeeded", retry
+    assert not raw.exists()  # privacy: drop the original only after a successful job
 
 
 def test_stale_raw_uploads_without_a_job_are_swept(env: dict[str, Any]) -> None:

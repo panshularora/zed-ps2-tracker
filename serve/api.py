@@ -16,8 +16,9 @@ demo clip in ``raw_clip_dir``. Blurring applies only to what is shown or saved: 
 the first-frame still, the poster and the annotated render are made from the face-blurred copy,
 so the blur mode can never change a count. Uploaded videos are face-blurred as the first stage
 of their first job, and only the blurred copy is ever served back. The raw upload is deleted when
-that first job ends (succeeded, failed or cancelled), or after ``upload_raw_ttl_s`` if no job ever
-runs; later jobs on the same upload get 410 ``original_gone`` (upload it again).
+that first job **succeeds**, or after ``upload_raw_ttl_s`` if no job ever runs. A failed or
+cancelled job keeps the original so Retry can run; later jobs after a success get 410
+``original_gone`` (upload it again).
 Uploads default to neutral event styling; ``consent=true`` (the uploader
 states that the people shown agreed) switches on the full alert contract.
 """
@@ -40,7 +41,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from serve.benchmarks import PLOTS, benchmarks, gpu_plot_path
 from serve.clips import DemoClip, load_manifest
-from serve.detector import MODELS, ModelUnavailable, YoloxDetector, ensure_yolox
+from serve.detector import MODELS, ModelUnavailable, YoloxDetector, pick_yolox
 from serve.errors import ApiError
 from serve.jobs import TERMINAL, JobManager, JobStore, now
 from serve.pipeline import (
@@ -415,10 +416,14 @@ class Service:
     def detector(self, name: str) -> YoloxDetector:
         with self._det_lock:
             if name not in self._detectors:
-                p = ensure_yolox(name, self.settings.model_dir)  # fetched on first use
-                det = YoloxDetector(p, MODELS[name][0], 0.1, threads=self.settings.detector_threads)
-                det.name = name  # type: ignore[attr-defined]
-                self._detectors[name] = det
+                used, p = pick_yolox(name, self.settings.model_dir)
+                if used not in self._detectors:
+                    det = YoloxDetector(
+                        p, MODELS[used][0], 0.1, threads=self.settings.detector_threads
+                    )
+                    det.name = used  # type: ignore[attr-defined]
+                    self._detectors[used] = det
+                self._detectors[name] = self._detectors[used]
             return self._detectors[name]
 
     def create_job(self, req: JobRequest) -> tuple[dict[str, Any], bool]:
@@ -482,39 +487,41 @@ class Service:
         opts = JobOptions(**{**o, "gate": tuple(o["gate"]) if o["gate"] else None})
         clip_id = rec["clip"]["id"]
         upload = clip_id.startswith("upload-")
-        try:
-            raw = self.raw_path(clip_id)
-            if upload:
-                assert raw is not None
-                blurred = self.upload_dir(clip_id) / "blurred.mp4"
-                if not blurred.exists():  # the copy that is shown; the tracker never reads it
-                    from serve.blur import blur_video
+        raw = self.raw_path(clip_id)
+        if upload:
+            assert raw is not None
+            blurred = self.upload_dir(clip_id) / "blurred.mp4"
+            if not blurred.exists():  # the copy that is shown; the tracker never reads it
+                from serve.blur import blur_video
 
-                    info = blur_video(
-                        raw,
-                        blurred,
-                        self.settings.model_dir,
-                        threads=self.settings.detector_threads,
-                        progress=progress,
-                        mode=self.settings.upload_blur,
-                    )
-                    (self.upload_dir(clip_id) / "blur.json").write_text(json.dumps(
-                        {k: info.get(k) for k in ("mode", "fallback_blur", "fallback_reason")}
-                    ))  # fmt: skip
-            cfg = load_config(available_configs(self.settings.config_root)[opts.config])
-            # detection + tracking on the unblurred frames (decoded in memory, never written)
-            video = raw if raw is not None else self.video_path(clip_id)
-            out = run_video(video, opts, cfg, self.detector(opts.detector), progress)
-        finally:
-            if upload:
-                self.drop_original(clip_id)
+                info = blur_video(
+                    raw,
+                    blurred,
+                    self.settings.model_dir,
+                    threads=self.settings.detector_threads,
+                    progress=progress,
+                    mode=self.settings.upload_blur,
+                )
+                (self.upload_dir(clip_id) / "blur.json").write_text(json.dumps(
+                    {k: info.get(k) for k in ("mode", "fallback_blur", "fallback_reason")}
+                ))  # fmt: skip
+        cfg = load_config(available_configs(self.settings.config_root)[opts.config])
+        # detection + tracking on the unblurred frames (decoded in memory, never written)
+        video = raw if raw is not None else self.video_path(clip_id)
+        det = self.detector(opts.detector)
+        used = getattr(det, "name", opts.detector)
+        if used not in MODELS:
+            used = opts.detector
+        out = run_video(video, opts, cfg, det, progress)
+        if upload:
+            self.drop_original(clip_id)
         out["tracked_on"] = "raw" if raw is not None else "blurred (no raw copy on this server)"
         out["blur"] = self.blur_status(clip_id)
         out["clip"] = {**rec["clip"], "video_url": f"/api/clips/{clip_id}/video"}
         out["config"] = opts.config
         out["detector"] = {
-            "name": opts.detector,
-            "input": MODELS[opts.detector][0],
+            "name": used,
+            "input": MODELS[used][0],
             "weights": "YOLOX COCO (Megvii release 0.1.1rc0)",
             "score_floor": 0.1,
         }

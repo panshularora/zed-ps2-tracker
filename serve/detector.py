@@ -187,6 +187,8 @@ class ModelUnavailable(RuntimeError):
 
 FETCH_FIX = "python -m serve.detector fetch --out data/models"
 DOWNLOAD_TIMEOUT_S = 60.0
+# Prefer a smaller file already on disk over waiting on a yolox_s download that often times out.
+FALLBACK_ORDER = ("yolox_tiny", "yolox_nano", "yolox_s")
 _verified: set[tuple[str, str]] = set()
 _dl_lock = threading.Lock()
 
@@ -241,6 +243,46 @@ def ensure_yolox(name: str, model_dir: Path | None = None) -> Path:
     """The YOLOX ONNX file for ``name``, downloaded on first use."""
     p = model_path(name, model_dir)
     return ensure_file(p, MODELS[name][1], MODELS[name][2])
+
+
+def local_yolox(name: str, model_dir: Path | None = None) -> Path | None:
+    """``name`` if the file is already on disk with the right sha256 (no download)."""
+    p = model_path(name, model_dir)
+    digest = MODELS[name][2]
+    key = (str(p.resolve()), digest)
+    if key in _verified and p.is_file():
+        return p
+    if p.is_file() and sha256(p) == digest:
+        _verified.add(key)
+        return p
+    return None
+
+
+def pick_yolox(name: str, model_dir: Path | None = None) -> tuple[str, Path]:
+    """Requested weights if present; otherwise any YOLOX already on disk; else download.
+
+    Studio defaults to ``yolox_s``. A Windows clone often only has ``yolox_tiny.onnx``
+    (the blur detector). Using that file avoids a 60s download timeout of ``yolox_s``.
+    """
+    if name not in MODELS:
+        raise ValueError(f"unknown detector {name!r}; known: {sorted(MODELS)}")
+    found = local_yolox(name, model_dir)
+    if found is not None:
+        return name, found
+    for other in FALLBACK_ORDER:
+        if other == name:
+            continue
+        found = local_yolox(other, model_dir)
+        if found is not None:
+            return other, found
+    last: ModelUnavailable | None = None
+    for cand in (name, *[o for o in FALLBACK_ORDER if o != name]):
+        try:
+            return cand, ensure_yolox(cand, model_dir)
+        except ModelUnavailable as err:
+            last = err
+    assert last is not None
+    raise last
 
 
 def ensure_yunet(model_dir: Path) -> Path:

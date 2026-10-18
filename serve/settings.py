@@ -6,7 +6,7 @@
 | ``ZED_CLIP_DIR`` | ``data/demo/blurred`` | face-blurred demo clips (the only clips served) |
 | ``ZED_RAW_CLIP_DIR`` | ``data/demo/raw`` | unblurred demo clips (tracker input, not served) |
 | ``ZED_UPLOAD_BLUR`` | ``face`` | blur of an upload's served copy (``face``/``head``/``none``) |
-| ``ZED_UPLOAD_RAW_TTL_S`` | ``3600`` | raw upload deleted after its first job, or after this |
+| ``ZED_UPLOAD_RAW_TTL_S`` | ``3600`` | raw upload deleted after a successful job, or after this |
 | ``ZED_CLIP_MANIFEST`` | ``configs/demo/clips.yaml`` | clip metadata (consent, styling, gate) |
 | ``ZED_MODEL_DIR`` | ``data/models`` | ONNX models (``python -m serve.detector fetch``) |
 | ``ZED_RESULTS_DIR`` | ``docs/results`` | benchmark results served by ``/api/benchmarks`` |
