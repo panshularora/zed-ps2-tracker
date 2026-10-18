@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { beatCopy, firstKeepId, involvedBetween, isDefault, lineSplitter, personIdLabel, readStream, recentEvents, recordingUrl, streamUrl, DEFAULTS, type SimFrame } from "../src/lib/gateSim";
-import GateScene from "../src/pages/GateScene";
+import GateScene, { hideRangeText } from "../src/pages/GateScene";
 
 const pane = (events: [number, number, number, number, number][] = [], counted = 0) => ({ ids: [[1, 4]] as [number, number][], extra: [], held: [] as [number, number, number][], events, counted, id_changes: events.length });
 const frame = (f: number, ev: [number, number, number, number, number][] = []): SimFrame => ({ type: "frame", f, people: [[1, 10, 10, 1]], dets: [], true_count: 1, beat: null, focus: null, bytetrack: pane(ev, 2), ours: pane() });
@@ -47,6 +47,26 @@ describe("gate sim client", () => {
   });
 });
 
+describe("gate scene hide range line", () => {
+  it("says whether the hide is inside the Stress Map winning range", () => {
+    expect(hideRangeText(1.5)).toBe("#1 is hidden for 1.5 s, inside the range where our rule wins (about 1–2.5 s). Longer hides: see Stress Map.");
+    expect(hideRangeText(3.5)).toMatch(/outside the range/);
+  });
+});
+
+describe("keep recording (real trackers, no relabelling)", () => {
+  it("ours keeps #1 on one number; ByteTrack issues a new one", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const lines = readFileSync(resolve(__dirname, "../public/offline/gate-keep.ndjson"), "utf8").trim().split("\n").map((l) => JSON.parse(l));
+    const ids = (pane: "ours" | "bytetrack") => [...new Set(lines.filter((l) => l.type === "frame").map((l) => new Map(l[pane].ids as [number, number][]).get(1)).filter((v) => v != null))];
+    expect(lines[0].focus).toBe(1);
+    expect(lines[0].trackers.ours.config).toBe("configs/ours/visibility_botsort.yaml");
+    expect(ids("ours")).toHaveLength(1);
+    expect(ids("bytetrack").length).toBeGreaterThan(1);
+  });
+});
+
 describe("gate scene page", () => {
   it("streams real tracker output into two panes with counters", async () => {
     const body = [meta, frame(1), frame(2, [[1, 4, 9, 10, 10]]), { type: "end", frames: 2, true_count: 1, summary: {} }].map((x) => JSON.stringify(x)).join("\n") + "\n";
@@ -59,7 +79,7 @@ describe("gate scene page", () => {
     expect(f.mock.calls.map((c) => String(c[0])).find((u) => u.includes("/api/gate-sim/stream"))).toContain("/api/gate-sim/stream?seed=7");
     await waitFor(() => expect(screen.getByText("ByteTrack")).toBeTruthy());
     expect(screen.getByTestId("seed-chip").textContent).toContain("seed 7");
-    expect(screen.getByTestId("gate-caption").textContent).toBe("Left: ByteTrack, the published tracker we start from. Right: ours = ByteTrack + rules that keep a hidden person's number.");
+    expect(screen.getByTestId("gate-caption").textContent).toBe("Left: ByteTrack, the published tracker we start from. Right: ours = BoT-SORT + a rule that remembers a hidden person longer.");
     expect(screen.getByTestId("scene-counters-bytetrack").textContent).toContain("True people");
     expect(screen.getByTestId("play-keep").textContent).toMatch(/one body, one number/i);
     expect(screen.getByTestId("how-id-kept").textContent).toContain("HELD #N");

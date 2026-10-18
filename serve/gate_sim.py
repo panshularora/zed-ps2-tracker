@@ -31,6 +31,7 @@ ROOT = Path(__file__).resolve().parents[1]
 W, H = 800, 450
 GATE_Y = 225.0
 BOX = 24.0  # true footprint box side (px) the detector reports around each person
+PEEL_SPEED = 45.0  # keep play: px/s sideways when #1 steps out from behind #2 (walking pace)
 MAX_PEOPLE = 40
 TRACKERS = {
     "bytetrack": ("ByteTrack", "configs/baselines/bytetrack.yaml"),
@@ -93,11 +94,16 @@ class World:
     spawn_acc: float = 0.0
 
     def seed_play(self) -> None:
-        """Two people: #1 slides behind #2 at the gate, box dropped, then #1 peels out."""
+        """Two people: #1 slides behind #2 at the gate, box dropped, then #1 steps back out.
+
+        The world is physical, nothing is scripted for a tracker: #1 finishes its sideways step
+        about a second before the gate (walking straight when its box drops), #2 walks 10 px ahead
+        so #1 is mostly covered when the detector loses it, and #1 steps back out at walking pace.
+        """
         v = 52.0 * self.p.speed
         self.people = [
             Person(1, 358.0, 28.0, 0.0, v, 0.0, 0.0, GATE_Y),
-            Person(2, 424.0, 46.0, 0.0, v, 0.0, 0.0, None),
+            Person(2, 424.0, 38.0, 0.0, v, 0.0, 0.0, None),
         ]
         self.next_pid = 3
 
@@ -150,10 +156,12 @@ class World:
             if a is not None and b is not None:
                 if a.occl_left > 0:
                     a.x = b.x - 5.0
-                elif not a.occl_done and a.y >= GATE_Y - 55:
+                elif not a.occl_done and a.y >= GATE_Y - 85:
                     a.x += (b.x - 5.0 - a.x) * min(1.0, dt * 3.5)
                 elif a.occl_done and a.occl_left == 0:
-                    a.x += (318.0 - a.x) * min(1.0, dt * 3.2)
+                    # step back out sideways at walking pace (no jump on the first visible frame)
+                    lim = PEEL_SPEED * self.p.speed * dt
+                    a.x += max(-lim, min(lim, (318.0 - a.x) * min(1.0, dt * 3.2)))
         self.people = [q for q in self.people if -20 <= q.y <= H + 20]
 
 
@@ -311,6 +319,8 @@ def simulate(
         "trackers": {k: _tracker_card(k, p.play) for k in trackers},
         "max_people": MAX_PEOPLE,
         "play": p.play,
+        # the simulated person the keep play is about (ground-truth person id, not a track id)
+        "focus": 1 if p.play == "keep" else None,
     }
     n = round(p.seconds * p.fps)
     for f in range(1, n + 1):

@@ -111,13 +111,17 @@ def test_committed_recording_matches_backend():
     assert rec[-1] == list(simulate(p))[-1]
 
 
-def test_keep_play_runs_the_real_ours_tracker_no_relabel():
-    """The scripted two-person hide runs BoT-SORT + visibility, not a display relabeller.
+def test_committed_keep_recording_matches_backend():
+    from pathlib import Path
 
-    Honest outcome on seed 7 (recorded, not tuned for): ByteTrack mints a new number after the
-    1.5 s hide; ours does too, because the hidden person's last box was still >= 0.7 visible, so the
-    visibility rule did not extend its 30-frame buffer.
-    """
+    root = Path(__file__).resolve().parents[1]
+    lines = (root / "web/public/offline/gate-keep.ndjson").read_text().strip().split("\n")
+    rec = [json.loads(x) for x in lines]
+    assert rec == json.loads(json.dumps(frames(SimParams(**rec[0]["params"]))))
+
+
+def test_keep_play_runs_the_real_ours_tracker_no_relabel():
+    """The planned two-person hide runs BoT-SORT + visibility, not a display relabeller."""
     xs = frames(SimParams(play="keep", seed=7, occlusion_s=1.5, noise=0.15, speed=1.0))
     meta, end = xs[0], xs[-1]
     assert meta["play"] == "keep"
@@ -137,3 +141,43 @@ def test_keep_id_relabeller_is_gone():
     import importlib.util
 
     assert importlib.util.find_spec("tracker.keep_id") is None
+
+
+def _ids_of(xs, pane: str, pid: int) -> list[int]:
+    """The tracker numbers simulated person ``pid`` had in ``pane``, in order, without repeats."""
+    out: list[int] = []
+    for x in xs[1:-1]:
+        tid = dict(x[pane]["ids"]).get(pid)
+        if tid is not None and (not out or out[-1] != tid):
+            out.append(tid)
+    return out
+
+
+def test_keep_play_ours_keeps_person_1_on_one_id_bytetrack_does_not():
+    """Default keep play (1.5 s hide): the real trackers decide; nothing relabels a number.
+
+    #1 is mostly covered when its box drops (visibility ~0.5 < 0.7), so ours keeps the track for 90
+    frames; ByteTrack's 30-frame buffer expires during the 45-frame hide.
+    """
+    xs = frames(SimParams(play="keep"), ("bytetrack", "ours"))
+    assert xs[0]["focus"] == 1
+    assert len(_ids_of(xs, "ours", 1)) == 1
+    assert len(_ids_of(xs, "bytetrack", 1)) == 2
+    assert len(_ids_of(xs, "ours", 2)) == 1
+    hidden = [x["f"] for x in xs[1:-1] if any(q[0] == 1 and q[3] == 0 for q in x["people"])]
+    assert len(hidden) == 45  # 1.5 s at 30 fps, longer than ByteTrack's 30-frame buffer
+
+
+def test_keep_play_ours_wins_only_inside_its_memory_range():
+    """Same world, longer hides: past the 90-frame (3 s) memory ours issues a new number too."""
+    keeps = {}
+    for occ in (0.5, 1.0, 2.0, 3.0, 3.5):
+        xs = frames(SimParams(play="keep", occlusion_s=occ), ("bytetrack", "ours"))
+        keeps[occ] = (len(_ids_of(xs, "bytetrack", 1)) == 1, len(_ids_of(xs, "ours", 1)) == 1)
+    assert keeps == {
+        0.5: (True, True),
+        1.0: (False, True),
+        2.0: (False, True),
+        3.0: (False, True),
+        3.5: (False, False),
+    }

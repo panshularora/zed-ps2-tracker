@@ -108,7 +108,7 @@ function drawChestId(ctx: CanvasRenderingContext2D, x: number, y: number, text: 
 
 const FIG_HEAD_ABOVE = 6 * 1.7 * 2 + 15 * 1.7 + 4;
 
-function paintPane(ctx: CanvasRenderingContext2D, cw: number, ch: number, meta: SimMeta, frames: SimFrame[], idx: number, pane: PaneKey, highlight: Set<number> | null, lookPid: number | null) {
+function paintPane(ctx: CanvasRenderingContext2D, cw: number, ch: number, meta: SimMeta, frames: SimFrame[], idx: number, pane: PaneKey, highlight: Set<number> | null, lookPid: number | null, focusPid: number | null = null) {
   const s = cw / meta.width, sy = ch / meta.height;
   ctx.fillStyle = "#1a1510";
   ctx.fillRect(0, 0, cw, ch);
@@ -133,6 +133,9 @@ function paintPane(ctx: CanvasRenderingContext2D, cw: number, ch: number, meta: 
   const dimEv = ev.filter((x) => x.age <= DIM_S * fps);
   const bright = highlight ?? (lookPid != null ? new Set([lookPid]) : (dimEv.length ? new Set(dimEv.map((x) => x.e[0])) : null));
   const alphaOf = (pid: number) => (bright && !bright.has(pid) ? 0.28 : 1);
+  // focus styling: the person the scene is about gets a solid chip and a 2 px box; everyone else is
+  // a thin grey outline at 40 % with no chip or number
+  const dim = (pid: number) => focusPid != null && pid !== focusPid;
   ctx.globalAlpha = 1;
   for (const d of fr.dets) {
     const [dx, dy, dw, dh] = d;
@@ -179,6 +182,13 @@ function paintPane(ctx: CanvasRenderingContext2D, cw: number, ch: number, meta: 
   ctx.font = "600 11px Inter, sans-serif";
   const tagFor = new Map(ev.map((x) => [x.e[0], x]));
   for (const [pid, x, y, vis] of people) {
+    if (dim(pid)) {
+      ctx.save();
+      ctx.globalAlpha = 0.4;
+      drawPerson(ctx, x * s, y * sy, "#8A929C", false, idx * 0.35 + pid);
+      ctx.restore();
+      continue;
+    }
     const c = neutralColor(pid);
     ctx.globalAlpha = alphaOf(pid);
     drawPerson(ctx, x * s, y * sy, c, !!vis, idx * 0.35 + pid);
@@ -189,16 +199,26 @@ function paintPane(ctx: CanvasRenderingContext2D, cw: number, ch: number, meta: 
     if (vis && (tid != null || keep != null)) {
       drawChestId(ctx, x * s, y * sy, `#${tid ?? keep}`, badge.kind === "fail" ? "#fff" : "#0e1013");
     }
-    if (lookPid === pid) {
-      const pulse = 0.65 + 0.35 * Math.sin(idx * 0.45);
+    if (focusPid === pid) {
       ctx.save();
-      ctx.globalAlpha = pulse;
-      ctx.strokeStyle = GATE;
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.ellipse(x * s, y * sy - 18, 30, 46, 0, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.strokeStyle = CHIP_FILL[badge.kind];
+      ctx.lineWidth = 2;
+      if (!vis) ctx.setLineDash([5, 4]);
+      ctx.strokeRect(x * s - 18, y * sy - FIG_HEAD_ABOVE + 2, 36, FIG_HEAD_ABOVE + 26);
       ctx.restore();
+    }
+    if (lookPid === pid) {
+      if (focusPid !== pid) {
+        const pulse = 0.65 + 0.35 * Math.sin(idx * 0.45);
+        ctx.save();
+        ctx.globalAlpha = pulse;
+        ctx.strokeStyle = GATE;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.ellipse(x * s, y * sy - 18, 30, 46, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
       const tag = vis ? `Look here · #${pid}` : `Look here · hidden #${pid}`;
       ctx.font = "700 12px Inter, sans-serif";
       const tw = ctx.measureText(tag).width + 16;
@@ -225,6 +245,14 @@ function paintPane(ctx: CanvasRenderingContext2D, cw: number, ch: number, meta: 
     ctx.strokeStyle = `rgba(229,72,77,${1 - k})`; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(e[3] * s, e[4] * sy - 18, 10 + 14 * k, 0, Math.PI * 2); ctx.stroke();
   }
+}
+
+/** Where this hide sits on the Stress Map (synthetic grid: ours wins for hides of 1–2.5 s). */
+export function hideRangeText(hiddenS: number): string {
+  const s = `#1 is hidden for ${Number(hiddenS.toFixed(2))} s`;
+  return hiddenS >= 1 && hiddenS <= 2.5
+    ? `${s}, inside the range where our rule wins (about 1–2.5 s). Longer hides: see Stress Map.`
+    : `${s}, outside the range where our rule wins (about 1–2.5 s). See Stress Map.`;
 }
 
 function GateSceneLive() {
@@ -309,7 +337,8 @@ function GateSceneLive() {
       if (replay.current && idx >= replay.current.until) replay.current = null;
       const frNow = fs[idx];
       const hidden = frNow?.people.filter((p) => p[3] === 0).map((p) => p[0]) ?? [];
-      const lookPid = (ctl.play === "keep" ? (frNow?.focus ?? hidden[0] ?? null) : (frNow?.beat ? frNow.focus : null)) ?? null;
+      const focusPid = ctl.play === "keep" ? (meta.focus ?? null) : null;
+      const lookPid = (ctl.play === "keep" ? (frNow?.beat ? frNow.focus : null) ?? (focusPid == null ? hidden[0] : null) : (frNow?.beat ? frNow.focus : null)) ?? null;
       for (const p of PANES) {
         const c = cv[p].current;
         let ctx: CanvasRenderingContext2D | null = null;
@@ -318,7 +347,7 @@ function GateSceneLive() {
         const dpr = window.devicePixelRatio || 1, cw = c.clientWidth, ch = c.clientHeight;
         if (c.width !== Math.round(cw * dpr) || c.height !== Math.round(ch * dpr)) { c.width = Math.round(cw * dpr); c.height = Math.round(ch * dpr); }
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        paintPane(ctx, cw, ch, meta, fs, idx, p, replay.current?.ids ?? null, lookPid);
+        paintPane(ctx, cw, ch, meta, fs, idx, p, replay.current?.ids ?? null, lookPid, focusPid);
       }
       if (now - lastUi > 120) { lastUi = now; setUi({ idx, slow: rate < 1, buffered: fs.length }); }
       raf = requestAnimationFrame(tick);
@@ -386,7 +415,8 @@ function GateSceneLive() {
         </div>
       )}
       {error && <div className="panel muted" role="alert" data-testid="scene-error" style={{ padding: 12 }}>{error}</div>}
-      <p className="gs-caption" data-testid="gate-caption"><b className="base">Left: ByteTrack</b>, the published tracker we start from. <b className="ours">Right: ours</b> = ByteTrack + rules that keep a hidden person&apos;s number.</p>
+      <p className="gs-caption" data-testid="gate-caption"><b className="base">Left: ByteTrack</b>, the published tracker we start from. <b className="ours">Right: ours</b> = BoT-SORT + a rule that remembers a hidden person longer.</p>
+      {ctl.play === "keep" && typeof meta?.params.occlusion_s === "number" && <p className="gs-caption muted" data-testid="hide-range">{hideRangeText(meta.params.occlusion_s)}</p>}
       {cmp && (
         <div className="cmp-strip tabular" data-testid="compare-strip">
           <div><div className="k">Same seed {meta?.params.seed} · {end ? "whole run" : "so far"}</div><div className="row"><b className="base">ByteTrack (left)</b><b className="ours">ours (right)</b></div></div>
@@ -463,7 +493,7 @@ function GateSceneLive() {
               onClick={() => setCtl((c) => ({ ...c, seed: Math.floor(Math.random() * 100000) }))}>seed {ctl.seed}</button>
           </>
         )}
-        {ctl.play === "keep" && <span className="gs-hint" data-testid="seed-chip">seed {ctl.seed} · scripted hide</span>}
+        {ctl.play === "keep" && <span className="gs-hint" data-testid="seed-chip">seed {ctl.seed} · planned hide, real trackers</span>}
         {!isDefault(ctl) && <button type="button" className="btn" onClick={() => setCtl(DEFAULTS)}>Reset</button>}
         <button type="button" className="btn" onClick={doReplay} disabled={!meta} title="Rewind 5 s, only the people involved highlighted">⟲ Replay 5 s</button>
         <button type="button" className="btn" onClick={() => (atEnd ? (head.current = 0, setPlaying(true)) : setPlaying((x) => !x))} aria-label={playing && !atEnd ? "Pause" : "Play"}>

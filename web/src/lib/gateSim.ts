@@ -12,6 +12,8 @@ export interface SimMeta {
   trackers: Record<PaneKey, { label: string; config: string }>;
   max_people: number;
   play?: string;
+  /** keep play: the simulated (ground-truth) person the scene is about */
+  focus?: number | null;
 }
 /** [person id, from tracker id, to tracker id, x, y] */
 export type IdEvent = [number, number, number, number, number];
