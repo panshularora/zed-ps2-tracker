@@ -37,7 +37,7 @@ from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field, field_validator
 
-from serve.benchmarks import PLOTS, benchmarks
+from serve.benchmarks import PLOTS, benchmarks, gpu_plot_path
 from serve.clips import DemoClip, load_manifest
 from serve.detector import MODELS, YoloxDetector, model_path
 from serve.errors import ApiError
@@ -642,8 +642,9 @@ def get_benchmarks(request: Request) -> dict[str, Any]:
 
 @router.get("/benchmarks/plots/{name}.png")
 def benchmark_plot(name: str, request: Request) -> FileResponse:
+    root = svc(request).settings.results_dir
     rel = PLOTS.get(name)
-    p = svc(request).settings.results_dir / rel if rel else None
+    p = root / rel if rel else gpu_plot_path(root, name)
     if p is None or not p.exists():
         raise ApiError(404, "plot_not_found", f"no plot {name!r}")
     return FileResponse(p, media_type="image/png")

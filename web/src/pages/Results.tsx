@@ -3,6 +3,7 @@ import { FoundChecks } from "../components/Checks";
 import { Term } from "../components/Term";
 import { loadSummary } from "../lib/summary";
 import { DatasetTable } from "../components/DatasetTable";
+import { GpuRunSection } from "../components/GpuRun";
 import { Mot20Status } from "../components/Mot20Status";
 import { api, type AblationRow, type Benchmarks } from "../api";
 import StressChart from "../components/StressChart";
@@ -54,8 +55,9 @@ export function ResultsView({ b }: { b: Benchmarks }) {
         <p className="sub">Provisional. Only what the repo's files contain; every value below is parsed from the named file at build time.</p>
         <Mot20Status />
       </section>
+      {b.gpu && <GpuRunSection g={b.gpu} />}
       <section className="section">
-        <h2>Tracking accuracy</h2>
+        <h2>Tracking accuracy{b.gpu ? " (CPU box, public detections)" : ""}</h2>
         <p className="sub">{abl ? abl.setting : "docs/results/ablation/ablation.json not found."}</p>
         {abl && (
           <>
@@ -89,6 +91,7 @@ export function ResultsView({ b }: { b: Benchmarks }) {
                       <td>{num(r.p95_ms, 2)}</td>
                     </tr>
                   ))}
+                  {!b.gpu && (
                   <tr className="bar-ours">
                     <td>Ours on YOLOX-X detections + re-ID</td>
                     {PENDING}
@@ -99,6 +102,7 @@ export function ResultsView({ b }: { b: Benchmarks }) {
                     <td className="pending">{DASH}</td>
                     <td className="pending">{DASH}</td>
                   </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -146,6 +150,7 @@ export function ResultsView({ b }: { b: Benchmarks }) {
                     </td>
                   </tr>
                 ))}
+                {!b.gpu && (
                 <tr className="bar-ours">
                   <td>Ours on GPU detections</td>
                   {PENDING}
@@ -155,6 +160,7 @@ export function ResultsView({ b }: { b: Benchmarks }) {
                   <td className="pending">{DASH}</td>
                   <td className="pending">{DASH}</td>
                 </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -239,6 +245,7 @@ export function ResultsView({ b }: { b: Benchmarks }) {
         </section>
       )}
 
+      {b.phase3.status === "pending" && (
       <section className="section">
         <h2>Pending the DGX run</h2>
         <p className="sub">These need YOLOX-X detections and re-ID embeddings from the GPU session; they come back through make ingest and make phase3.</p>
@@ -265,10 +272,11 @@ export function ResultsView({ b }: { b: Benchmarks }) {
           </table>
         </div>
       </section>
+      )}
 
       {abl && (
         <section className="section">
-          <h2>Stress curves</h2>
+          <h2>Stress curves{b.gpu ? " (CPU box)" : ""}</h2>
           <p className="sub">The same runs, broken down by how visible each ground-truth person was. Below 50 % visibility the public detector finds almost nobody, so every tracker's ID recall collapses there.</p>
           <div className="charts">
             <StressChart rows={rows} names={["botsort", "ours_vis_botsort"]} metric="id_recall" title="ID recall by visibility (BoT-SORT vs ours)" />

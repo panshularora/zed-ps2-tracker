@@ -376,8 +376,8 @@ def test_benchmarks_come_from_repo_files(env: dict[str, Any]) -> None:
     head = b["headline"]
     assert head["name"] == "ours_vis_botsort"
     assert (head["HOTA"], head["IDF1"], head["IDSW"]) == (52.5, 59.8, 180)
-    assert b["phase3"]["status"] == "pending"
-    assert b["phase3"]["label"] == "pending DGX run"
+    assert b["phase3"]["status"] == "available"  # docs/results/phase3 = laptop GPU run
+    assert "docs/results/phase3/go_no_go_v2.md" in b["phase3"]["files"]
     assert b["go_no_go"]["sanity_check"] is True
     assert b["go_no_go"]["verdict"] == "no-go"
     assert any(r["check"] for r in b["gate_events"]["rows"])
@@ -387,12 +387,46 @@ def test_benchmarks_come_from_repo_files(env: dict[str, Any]) -> None:
     assert env["client"].get("/api/benchmarks/plots/nope.png").status_code == 404
 
 
+def test_benchmarks_gpu_run_comes_from_phase3_files(env: dict[str, Any]) -> None:
+    g = env["client"].get("/api/benchmarks").json()["gpu"]
+    p3 = ROOT / "docs/results/phase3"
+    summary = json.loads((p3 / "summary.json").read_text())
+    assert [d["id"] for d in g["datasets"]] == [c["id"] for c in summary["ran"]]
+    assert "mot20_val_half__mot20full_SAW_EVAL_HALF" in g["excluded"]
+    assert all("SAW_EVAL_HALF" not in d["id"] for d in g["datasets"])
+    for d in g["datasets"]:
+        raw = {r["name"]: r for r in json.loads((p3 / d["id"] / "ablation.json").read_text())}
+        assert [r["name"] for r in d["rows"]] == list(raw)
+        for r in d["rows"]:
+            for k in ("HOTA", "IDF1", "MOTA", "AssA"):
+                assert r[k] == round(raw[r["name"]][k], 1)
+            assert r["IDSW"] == int(raw[r["name"]]["IDSW"])
+        plot = env["client"].get(d["plots"]["stress_visibility"])
+        assert plot.status_code == 200
+        assert plot.content[:4] == b"\x89PNG"
+    mot17 = {r["name"]: r for r in g["datasets"][0]["rows"]}
+    assert (mot17["botsort"]["HOTA"], mot17["botsort_reid_vis_gated"]["HOTA"]) == (64.6, 63.9)
+    gng = json.loads((p3 / "go_no_go_v2.json").read_text())
+    assert g["go_no_go_v2"]["verdict"] == gng["verdict"] == "NO-GO"
+    assert {c["id"]: c["passed"] for c in g["go_no_go_v2"]["criteria"]} == gng["criteria"]
+    crit = {c["id"]: c["got"] for c in g["go_no_go_v2"]["criteria"]}
+    assert crit["1_idsw"] == "IDSW 183 -> 198"
+    assert crit["5_replication"] == "MOT20 IDSW 1462 -> 1575 (fail)"
+    rep = {r["metric"]: r for r in g["reproduction"]["rows"]}
+    assert g["reproduction"]["verdict"] == "NOT REPRODUCED"
+    assert (rep["MOTA"]["paper"], rep["MOTA"]["ours"], rep["MOTA"]["delta"]) == (76.6, 66.4, -10.2)
+    assert (rep["IDF1"]["delta"], rep["IDF1"]["within"]) == (-5.5, False)
+    for bad in ("gpu-..-stress_density", "gpu-mot17_val_half-ablation", "gpu-a-b-c"):
+        assert env["client"].get(f"/api/benchmarks/plots/{bad}.png").status_code == 404
+
+
 def test_benchmarks_missing_files(tmp_path: Path) -> None:
     b = benchmarks(tmp_path)
     assert b["ablation"] is None
     assert b["headline"] is None
     assert b["plots"] == {}
     assert b["phase3"]["status"] == "pending"
+    assert b["gpu"] is None
 
 
 def test_visibility_botsort_config_is_the_ablation_row() -> None:

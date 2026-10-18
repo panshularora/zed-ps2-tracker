@@ -146,6 +146,21 @@ export interface Benchmarks {
   go_no_go: { source: string; verdict: string; sanity_check: boolean; summary: string; rows: { condition: string; K: number; K_ms_mean: number; HOTA: number; IDF1: number; IDSW_trackeval: number; p95_ms: number }[] } | null;
   phase3: { status: "pending" | "available"; label?: string; items: { id: string; what: string; source: string }[]; files?: string[] };
   plots: Record<string, string>;
+  gpu?: GpuRun | null;
+}
+
+export interface GpuRow { name: string; label: string; group: string; HOTA: number | null; IDF1: number | null; MOTA: number | null; AssA: number | null; DetA: number | null; IDSW: number | null; p95_ms: number | null }
+export interface GpuRun {
+  source: string;
+  analysis: string;
+  gpu: string | null;
+  profile: string | null;
+  tuned: Record<string, number> | null;
+  datasets: { id: string; cache: string; dataset: string; clean: boolean; detector: string | null; trained_on: string | null; input_size: string | null; source: string; rows: GpuRow[]; plots: Record<string, string> }[];
+  excluded: string[];
+  reproduction: { verdict: string; source: string; reference: string; rows: { metric: string; paper: number | null; ours: number | null; delta: number | null; tolerance: number | null; within: boolean | null }[] } | null;
+  go_no_go_v2: { verdict: string; source: string; rule: string; what: string; criteria: { id: string; what: string; rule: string; got: string | null; passed: boolean }[]; rows: { arm: string; HOTA: number; IDF1: number; MOTA: number; AssA: number; IDSW: number; p95_ms: number; flag_pct: number }[] } | null;
+  gate_events: { source: string; rows: { label: string; check: boolean; gt_crossings: number; trk_crossings: number; count_error: number; precision: number; recall: number; attribution_error: number; tailgate_precision: number; tailgate_recall: number }[] } | null;
 }
 
 export interface Health {

@@ -15,6 +15,11 @@ function offlineFiles(): Record<string, string> {
   for (const f of readdirSync(repo("viewer/data")).filter((x) => x.endsWith(".json.gz"))) out[`viewer-clips/${f}`] = repo(`viewer/data/${f}`);
   const plots = { stress_visibility: "ablation/stress_visibility.png", stress_density: "ablation/stress_density.png", go_no_go_curve: "go_no_go/curve.png" };
   for (const [k, v] of Object.entries(plots)) if (existsSync(repo(`docs/results/${v}`))) out[`plots/${k}.png`] = repo(`docs/results/${v}`);
+  // GPU run plots (docs/results/phase3/<condition>/<plot>.png) as plots/gpu-<condition>-<plot>.png, like the API
+  const p3 = repo("docs/results/phase3");
+  if (existsSync(p3))
+    for (const c of readdirSync(p3, { withFileTypes: true }).filter((d) => d.isDirectory()))
+      for (const k of ["stress_visibility", "stress_density"]) if (existsSync(`${p3}/${c.name}/${k}.png`)) out[`plots/gpu-${c.name}-${k}.png`] = `${p3}/${c.name}/${k}.png`;
   return out;
 }
 function offlineData(): Plugin {
