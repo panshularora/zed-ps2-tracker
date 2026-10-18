@@ -12,9 +12,13 @@ This is Zed Digital problem statement 2 (PS-2): every person crossing a crowded 
 > * `make ablate`, the gate-event metrics (`make gates`) and a static **viewer** (`make viewer`).
 >
 > **Headline:** on public detections without re-ID, visibility helps exactly as much as a longer
-> buffer, and the delayed assignment is a **no-go**. Both are reported, not hidden. The next step
-> is the GPU session, which brings YOLOX detections and re-ID: see
-> [docs/next_gpu_session.md](docs/next_gpu_session.md). No number in this README uses YOLOX.
+> buffer, and the delayed assignment is a **no-go**. Both are reported, not hidden.
+>
+> **GPU run (laptop RTX 3050, 16–18 Oct 2026), provisional:** YOLOX-X + OSNet re-ID on MOT17,
+> MOT20 and DanceTrack are in [Results (GPU)](#results-gpu-laptop-yolox-x--re-id-provisional).
+> ByteTrack reproduction: **NOT REPRODUCED** (MOTA 66.4 vs 76.6 in the paper); go/no-go v2 for the
+> delayed decision: **NO-GO** (all five pre-registered criteria failed). Write-up:
+> [docs/results/gpu/ANALYSIS.md](docs/results/gpu/ANALYSIS.md).
 
 ## Product demo (CPU): web app + job API
 
@@ -31,6 +35,27 @@ make demo                  # API on :8000 + web app on http://localhost:5173 (Ct
 # or, with Docker:
 docker compose up --build  # web app on http://localhost:8080, API on :8000 (mounts data/models + data/demo/blurred)
 ```
+
+### Run on Windows (PowerShell, no WSL)
+
+```powershell
+cd $HOME\Desktop\zed-ps2-tracker-main
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -U pip
+python -m pip install -e ".[serve]" imageio-ffmpeg     # imageio-ffmpeg = a bundled ffmpeg for uploads
+python -m serve.detector fetch --out data\models       # = make models (YOLOX nano/tiny/s + YuNet, sha256-checked)
+python -m uvicorn serve.app:app --host 127.0.0.1 --port 8000   # backend; keep this window open
+```
+
+In a second PowerShell window: `cd web; npm ci; npm run dev`, then open http://localhost:5173
+(or `npm run build` once and use http://127.0.0.1:8000, which serves `web/dist`).
+If you skip the `fetch` step the backend downloads each model on first use into `data\models`
+(60 s timeout, sha256-checked; `ZED_AUTO_DOWNLOAD=0` turns that off). If the face model still
+cannot be loaded (offline, an OpenCV build that cannot read it), uploads are blurred over the head
+region of every person box instead, the result says `fallback_blur: true`, and the tracker still
+runs. The library clips play from the committed 720p cuts in `web/public/demo`, so
+`make clips blur` is optional.
 
 | Overview | Demo (subway turnstile, after a CPU run) |
 |---|---|
@@ -144,6 +169,37 @@ python -m tracker.cli --caches <cache dir> --config configs/baselines/bytetrack.
 The GPU side is in [docs/dgx_runbook.md](docs/dgx_runbook.md) (checked, step by step) and
 [docs/dgx_guide.md](docs/dgx_guide.md): `bash scripts/dgx/setup.sh`, one `run.sh` per dataset,
 `finalize.sh`, then `pack.sh` → `scp` → `make ingest` → `make phase3`.
+
+## Results (GPU, laptop): YOLOX-X + re-ID, provisional
+
+> One `run.sh all --profile laptop` on an RTX 3050 6 GB (16–18 Oct 2026), TrackEval on the
+> val halves; installed with `make ingest` into [docs/results/phase3/](docs/results/phase3/).
+> **Provisional:** our ByteTrack is 10.2 MOTA / 5.5 IDF1 below the ByteTrack paper on MOT17
+> (FP +2021, FN +3471, IDSW 165 vs 159), so the gap is on the detection side; comparisons between
+> trackers on the same detections stay fair. Full tables and reasons:
+> [docs/results/gpu/ANALYSIS.md](docs/results/gpu/ANALYSIS.md).
+
+| Dataset (detector) | Tracker | HOTA | IDF1 | MOTA | IDSW | AssA |
+|---|---|---|---|---|---|---|
+| MOT17 val-half (`bytetrack_ablation`) | ByteTrackLike | 63.4 | 73.8 | 66.4 | 165 | 66.5 |
+| | BoT-SORT (CMC, IoU) | **64.6** | **76.3** | **67.1** | 135 | **68.6** |
+| | Deep OC-SORT | 63.3 | 74.6 | 64.6 | **125** | 68.2 |
+| | ours: BoT-SORT + re-ID + visibility gate | 63.9 | 75.1 | 66.8 | 156 | 67.1 |
+| MOT20 val-half (`sparsetrack_ablation`) | ByteTrackLike | 69.4 | 84.1 | 87.9 | **1011** | 66.8 |
+| | BoT-SORT (CMC, IoU) | 69.3 | 83.9 | 87.9 | 1162 | 66.5 |
+| | ours: ByteTrack + re-ID + visibility gate | **69.5** | **84.5** | 87.9 | 1019 | **66.9** |
+| | ours: BoT-SORT + re-ID + visibility gate | 69.2 | 84.0 | 87.9 | 1162 | 66.3 |
+| DanceTrack val (`dancetrack_bytetrack_x`) | ByteTrackLike | 52.5 | 54.9 | 88.1 | 1775 | 36.3 |
+| | BoT-SORT (IoU) | 52.3 | 53.2 | 88.1 | 1934 | 35.9 |
+| | Hybrid-SORT | **57.4** | **58.5** | 87.3 | **1667** | **42.9** |
+| | ours: BoT-SORT + re-ID + visibility gate | 54.3 | 55.8 | 88.1 | 1897 | 38.8 |
+
+No single tracker wins: BoT-SORT (IoU) on MOT17, ours (ByteTrack base) by a hair on MOT20,
+Hybrid-SORT on DanceTrack. What the visibility gate does reliably is undo the damage raw re-ID
+does in crowds (MOT20: ByteTrack + re-ID 67.5 HOTA / 1278 IDSW → 69.5 / 1019 with the gate).
+**Go/no-go v2 (delayed decision): NO-GO**, K = 5 vs K = 0 on MOT17: IDSW 183 → 198 (needed ≤ 164.7),
+IDF1 73.0 → 71.9, trigger on 50.7 % of frames (≤ 10 %), p95 170 ms (≤ 20 ms); MOT20 IDSW
+1462 → 1575. A second MOT20 cache whose detector saw the evaluation half is excluded.
 
 ## Results (phase 2): MOT17 val-half, public FRCNN detections, no re-ID
 
@@ -274,7 +330,9 @@ detector and perfect identities that never coast) gives:
 
 ### Not yet available
 
-* **YOLOX-based results** for MOT17/MOT20/DanceTrack. These need the Stage A caches from the DGX.
+* **A reproduced ByteTrack baseline** on YOLOX-X: the laptop GPU run is 10.2 MOTA below the paper
+  (see [Results (GPU)](#results-gpu-laptop-yolox-x--re-id-provisional)), so its numbers stay provisional.
+* **SOMPT22 scores:** Stage A ran, but its test split has no public ground truth.
 * **MOT20 public-detection numbers:** MOT20's public detections carry confidences that are
   almost all 0/1, so a score-thresholded tracker discards nearly all of them.
 * **MOTChallenge test numbers:** the server is offline (archive notice of 16 Apr 2026). Published
