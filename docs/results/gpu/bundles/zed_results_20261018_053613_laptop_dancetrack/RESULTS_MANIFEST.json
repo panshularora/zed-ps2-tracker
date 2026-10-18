@@ -1,0 +1,768 @@
+{
+ "kind": "zed-ps2-final-results",
+ "schema": 1,
+ "created": "2026-10-18T05:36:13+00:00",
+ "profile": "laptop",
+ "label": "dancetrack",
+ "run_info": {
+  "profile": "laptop",
+  "host": "LAPTOP-OK8Q1S1N",
+  "gpu": {
+   "index": 0,
+   "name": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+   "memory_mib": 6144,
+   "driver": "581.86",
+   "compute_cap": "8.6"
+  },
+  "detectors": {
+   "DanceTrack/dancetrack/val": {
+    "detector": "yolox_x (ByteTrack)",
+    "weights": "dancetrack_bytetrack_x.pth.tar",
+    "trained_on": "DanceTrack train (DanceTrack authors' ByteTrack YOLOX-X)",
+    "precision": "fp16",
+    "input_size": "800x1440",
+    "saw_eval_half": false,
+    "gpu_in_cache": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+    "reid": "osnet_ain_x1_0"
+   },
+   "MOT17/ablation/train": {
+    "detector": "yolox_x (ByteTrack)",
+    "weights": "bytetrack_ablation.pth.tar",
+    "trained_on": "CrowdHuman + MOT17 train first half (ByteTrack ablation)",
+    "precision": "fp16",
+    "input_size": "800x1440",
+    "saw_eval_half": false,
+    "gpu_in_cache": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+    "reid": "osnet_ain_x1_0"
+   },
+   "MOT20/mot17full_xdomain/train": {
+    "detector": "yolox_x (ByteTrack)",
+    "weights": "bytetrack_x_mot17.pth.tar",
+    "trained_on": "CrowdHuman + MOT17 + CityPersons + ETHZ (no MOT20)",
+    "precision": "fp16",
+    "input_size": "896x1600",
+    "saw_eval_half": false,
+    "gpu_in_cache": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+    "reid": "osnet_ain_x1_0"
+   },
+   "MOT20/sparsetrack_ablation/train": {
+    "detector": "yolox_x (ByteTrack)",
+    "weights": "sparsetrack_mot20_ablation.pth.tar",
+    "trained_on": "CrowdHuman + MOT20 train first half (SparseTrack ablation)",
+    "precision": "fp16",
+    "input_size": "896x1600",
+    "saw_eval_half": false,
+    "gpu_in_cache": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+    "reid": "osnet_ain_x1_0"
+   },
+   "SOMPT22/mot17full/test": {
+    "detector": "yolox_x (ByteTrack)",
+    "weights": "bytetrack_x_mot17.pth.tar",
+    "trained_on": "CrowdHuman + MOT17 + CityPersons + ETHZ (no SOMPT22)",
+    "precision": "fp16",
+    "input_size": "800x1440",
+    "saw_eval_half": false,
+    "gpu_in_cache": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+    "reid": "osnet_ain_x1_0"
+   },
+   "SOMPT22/mot17full/train": {
+    "detector": "yolox_x (ByteTrack)",
+    "weights": "bytetrack_x_mot17.pth.tar",
+    "trained_on": "CrowdHuman + MOT17 + CityPersons + ETHZ (no SOMPT22)",
+    "precision": "fp16",
+    "input_size": "800x1440",
+    "saw_eval_half": false,
+    "gpu_in_cache": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+    "reid": "osnet_ain_x1_0"
+   }
+  },
+  "laptop_detector_caches": []
+ },
+ "verdicts": {
+  "go_no_go_v2": "NO-GO",
+  "reproduction": "NOT REPRODUCED"
+ },
+ "phase3_summary": {
+  "plan": "configs/phase3/plan.yaml",
+  "ran": [
+   {
+    "id": "mot17_val_half",
+    "cache": "MOT17/ablation/train",
+    "saw_eval_half": false,
+    "laptop_detector": false
+   },
+   {
+    "id": "mot20_val_half__mot17full_xdomain",
+    "cache": "MOT20/mot17full_xdomain/train",
+    "saw_eval_half": false,
+    "laptop_detector": false
+   },
+   {
+    "id": "mot20_val_half__sparsetrack_ablation",
+    "cache": "MOT20/sparsetrack_ablation/train",
+    "saw_eval_half": false,
+    "laptop_detector": false
+   },
+   {
+    "id": "dancetrack_val",
+    "cache": "DanceTrack/dancetrack/val",
+    "saw_eval_half": false,
+    "laptop_detector": false
+   }
+  ],
+  "waiting": [],
+  "tune_cache": "MOT17/ablation/train",
+  "tuned": {
+   "tau_update": 0.5,
+   "tau_cost": 0.7
+  },
+  "reproduction": {
+   "reference": {
+    "MOTA": 76.6,
+    "IDF1": 79.3,
+    "IDSW": 159,
+    "FP": 3358,
+    "FN": 9081
+   },
+   "ours": {
+    "MOTA": 66.42048617554278,
+    "IDF1": 73.80798552784597,
+    "IDSW": 165.0,
+    "FP": 5379.0,
+    "FN": 12552.0
+   },
+   "within_tolerance": {
+    "MOTA": false,
+    "IDF1": false
+   },
+   "verdict": "NOT REPRODUCED"
+  },
+  "go_no_go_v2": "NO-GO",
+  "run_info": {
+   "run_profile": "laptop",
+   "run_gpu": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+   "run_gpu_mem_mib": "6144",
+   "run_detector": "bytetrack_ablation.pth.tar; bytetrack_x_mot17.pth.tar; dancetrack_bytetrack_x.pth.tar; sparsetrack_mot20_ablation.pth.tar",
+   "run_precision": "see detectors",
+   "run_input_size": "see detectors",
+   "cache": null
+  }
+ },
+ "git": {
+  "commit": "7559df867793c4dfe1e5fb766dbe85f6bce57ef6",
+  "dirty": true
+ },
+ "frozen_files_sha256_lf": {
+  "configs/phase3/plan.yaml": "3abb1229aa336917a0b39eded278076f5b67ad0ff896564d1200c591cd73912a",
+  "docs/preregistration/go_no_go_v2.md": "3599ba63c6f805ed12cdd0439a95438801d74343334b546900c3e61e59728322",
+  "configs/ours/delayed_v2_reid.yaml": "9f92440da8da99db807cdfcc9556ab2de0307d00d4020695f3ac6fcb043a2825"
+ },
+ "skipped": [],
+ "files": [
+  {
+   "path": "configs/ablations/README.md",
+   "bytes": 577,
+   "sha256": "1213299a6bb951b9e6c3e3f2670f096b4c37c5b24341ae3e0a4a5230a3a39e53"
+  },
+  {
+   "path": "configs/ablations/bytetrack_buffer90.yaml",
+   "bytes": 250,
+   "sha256": "28beb46284a64897be0b1020ebedb41e6ab647a81a85c729615a54883cd65d63"
+  },
+  {
+   "path": "configs/ablations/manifest.yaml",
+   "bytes": 1914,
+   "sha256": "ddb2b617b89f74f32a1a590266b1c7229c802b75f7e3659777aea030b53c2730"
+  },
+  {
+   "path": "configs/baselines/botsort.yaml",
+   "bytes": 2444,
+   "sha256": "a535ea7b2074b04e73aa1a3d0e22a78052a9c6866039f8eaa062698d8968ca26"
+  },
+  {
+   "path": "configs/baselines/botsort_mot20.yaml",
+   "bytes": 357,
+   "sha256": "0af4afd1989a0beebd12cae51c2177b866ff86e496bbf8ef70615525ed13f4d8"
+  },
+  {
+   "path": "configs/baselines/botsort_reid.yaml",
+   "bytes": 163,
+   "sha256": "9501078ad38897f1c8d752cc908d91f82a8f4a3e040eb4043acaa6c6fa4e4b5d"
+  },
+  {
+   "path": "configs/baselines/bytetrack.yaml",
+   "bytes": 1173,
+   "sha256": "cef19d4a3bb2eb6ec3781b76f2d2d97076976e02bc00e09a7680a795c5508bc2"
+  },
+  {
+   "path": "configs/baselines/bytetrack_mot20.yaml",
+   "bytes": 154,
+   "sha256": "8f5f256ade8c80c987df56953987f2465dca2ed399047f0fcf730cdb7489c106"
+  },
+  {
+   "path": "configs/baselines/bytetrack_official.yaml",
+   "bytes": 808,
+   "sha256": "712678e2abc7223b0aecdfbe6de6fc4ec1bdaf47bce67daeb8b2b5ab2d97c077"
+  },
+  {
+   "path": "configs/baselines/bytetrack_reid.yaml",
+   "bytes": 401,
+   "sha256": "9f5908df99c85c3d8137814692b85cd6167b4463939f4832f3c42af5b3011d80"
+  },
+  {
+   "path": "configs/baselines/deep_ocsort.yaml",
+   "bytes": 1631,
+   "sha256": "c8928c3245ab194d29a7aa155ecee057260de913be56890bc474a9204c34f6b8"
+  },
+  {
+   "path": "configs/baselines/deep_ocsort_mot20.yaml",
+   "bytes": 114,
+   "sha256": "96e3d443f52b6588bab997477442ebce126f370cc851473fae7eb0b035bf4bac"
+  },
+  {
+   "path": "configs/baselines/hybrid_sort.yaml",
+   "bytes": 1439,
+   "sha256": "5451963fe52ed10a518e2a8720cee9a13dffe43af18f81b636a6796109ae022d"
+  },
+  {
+   "path": "configs/baselines/hybrid_sort_mot20.yaml",
+   "bytes": 161,
+   "sha256": "5e203d8ef1d91f6f5e55152ee4feb3b17c0eff2aa09baac50203e7dddd3e33f7"
+  },
+  {
+   "path": "configs/baselines/ocsort.yaml",
+   "bytes": 1558,
+   "sha256": "31f974c1637d1a76a47ca8b299b5005e2f3e3d74e81c210a3871c39283257fda"
+  },
+  {
+   "path": "configs/baselines/ocsort_mot20.yaml",
+   "bytes": 118,
+   "sha256": "f73fe632f3d67090e83f97dafcb3df2572d02e671e61f591beb2551e19ca68f6"
+  },
+  {
+   "path": "configs/demo/clips.yaml",
+   "bytes": 3640,
+   "sha256": "e41102b4b0ad9064d88ab1ab69b67194af3e3a064e2cd6f199d279dec2db14a8"
+  },
+  {
+   "path": "configs/gates/mot17_val_half.yaml",
+   "bytes": 1036,
+   "sha256": "213ebc60e4ec3e7830045999f5f4b70bc668707a976b929b0d5283a694048a65"
+  },
+  {
+   "path": "configs/ours/README.md",
+   "bytes": 798,
+   "sha256": "095212ec21419a2e40c27adb0864e836e695d7a47d62d17f8b2d6c1f3e99afae"
+  },
+  {
+   "path": "configs/ours/delayed.yaml",
+   "bytes": 792,
+   "sha256": "b26fb1683b86bec7987df65d9ba6337f1af91caabd1fde52e873d9bfe0ec5fab"
+  },
+  {
+   "path": "configs/ours/delayed_v2_reid.yaml",
+   "bytes": 1019,
+   "sha256": "9f92440da8da99db807cdfcc9556ab2de0307d00d4020695f3ac6fcb043a2825"
+  },
+  {
+   "path": "configs/ours/delayed_v3_strict.yaml",
+   "bytes": 644,
+   "sha256": "1b8c48c808f3ad03f5a3f1ec03d3890c520c73ec762eb18e87c03648470def6f"
+  },
+  {
+   "path": "configs/ours/visibility.yaml",
+   "bytes": 874,
+   "sha256": "9d02e5d7a7d2dddd2dc92a1592e5440a0b11f4ac4f664b97531e77cc607fd6e2"
+  },
+  {
+   "path": "configs/ours/visibility_botsort.yaml",
+   "bytes": 716,
+   "sha256": "f102dfca289deb688623658245225cdacefadb2b194b82d51a500c581e5c49ab"
+  },
+  {
+   "path": "configs/phase3/plan.yaml",
+   "bytes": 10213,
+   "sha256": "3abb1229aa336917a0b39eded278076f5b67ad0ff896564d1200c591cd73912a"
+  },
+  {
+   "path": "docs/preregistration/go_no_go_v2.md",
+   "bytes": 4069,
+   "sha256": "3599ba63c6f805ed12cdd0439a95438801d74343334b546900c3e61e59728322"
+  },
+  {
+   "path": "logs/dancetrack.log",
+   "bytes": 4662,
+   "sha256": "9a753962d0a869468b22d595c2e38b52e292b278dd000237781bf9b1e12a7b7f"
+  },
+  {
+   "path": "logs/download_20261009_230616.log",
+   "bytes": 31042,
+   "sha256": "972cf3e8020fa71678147a6639981ea8ead69937fabb9620bdb077fb988724d4"
+  },
+  {
+   "path": "logs/finalize_20261011_065526.log",
+   "bytes": 645,
+   "sha256": "45c38d0cd80f3d74dca0af9a5c09150e57baabd655049d2433b92bb2af541b7e"
+  },
+  {
+   "path": "logs/run_all/run_all_20261009_161357.log",
+   "bytes": 1342,
+   "sha256": "ed579e41852c4ece856040c39d23072043538654236b05a445645f8e504aba2f"
+  },
+  {
+   "path": "logs/run_all/run_all_20261009_161858.log",
+   "bytes": 23225,
+   "sha256": "6e4052d391048e750ac20c24c9f97fc0b6ca68a75d95c658afa771b8fb2c1767"
+  },
+  {
+   "path": "logs/run_all/run_all_20261010_152658.log",
+   "bytes": 4779,
+   "sha256": "1b3afc2089964b69acd24327491865635628839a3aee92f33311fb67ca4c8393"
+  },
+  {
+   "path": "logs/run_all/run_all_20261016_202316.log",
+   "bytes": 6443,
+   "sha256": "358a9d4716816c6380ec80002fa631b7659115047d77d2f9a586b0b50f2e89af"
+  },
+  {
+   "path": "logs/run_all/run_all_20261016_203407.log",
+   "bytes": 12808,
+   "sha256": "acd2ffd2b0f3b0ffe34e94fd4c9c25d6781a50d46cdc0f0d10c935a34f7b0833"
+  },
+  {
+   "path": "logs/run_all/run_all_20261017_113303.log",
+   "bytes": 6703,
+   "sha256": "3c7f6f753f4fdcb024c399da01e2ddc8aa027ef9c196a9f90d7183572928e74c"
+  },
+  {
+   "path": "logs/run_all/run_all_20261017_211357.log",
+   "bytes": 35884,
+   "sha256": "589ec8cf633b3942cf516a159859064e264c48a4ad535730d7036761381dd844"
+  },
+  {
+   "path": "logs/run_dancetrack_20261010_213547.log",
+   "bytes": 4662,
+   "sha256": "99b5d7c2807f884a96d3aa1d132b48de94102fb7ddd500f6a1852fcfe93edd52"
+  },
+  {
+   "path": "logs/run_dancetrack_20261010_213555.log",
+   "bytes": 4433,
+   "sha256": "09c1b7255cd248ed95c5134a706bad6973af25f3115e7937308f4f21ad61c6d4"
+  },
+  {
+   "path": "logs/run_dancetrack_20261010_213730.log",
+   "bytes": 12598,
+   "sha256": "864cdd6df5f3dabb55d90a36f82e98e92831edab3ece32e5d8dc92e1aa3b7775"
+  },
+  {
+   "path": "logs/run_dancetrack_20261011_045349.log",
+   "bytes": 7860,
+   "sha256": "16c7787d3c5dc93e7de7b58cedc05d9edd89cedf3363fe92caf8ae4659a1ec1a"
+  },
+  {
+   "path": "logs/run_dancetrack_20261018_025341.log",
+   "bytes": 7861,
+   "sha256": "124d614d05df633b0eaedddb560d21743300b9a96750f45503f6914efdcda5e9"
+  },
+  {
+   "path": "logs/run_mot17_20261010_024111.log",
+   "bytes": 2615,
+   "sha256": "42c042024c7a7f8fc2f98e597b72ed77de196039b63311bd244056bfd9384c87"
+  },
+  {
+   "path": "logs/run_mot17_20261010_152705.log",
+   "bytes": 1319,
+   "sha256": "b2c838803ea817129e52f34daddf27144ca4738bea59ba0946375e1fec35056a"
+  },
+  {
+   "path": "logs/run_mot17_20261016_202500.log",
+   "bytes": 749,
+   "sha256": "42eda9b49ad535b0706330ec1d94de2ba1c4ac080ce875422821e0546e08fb55"
+  },
+  {
+   "path": "logs/run_mot17_20261016_203412.log",
+   "bytes": 2424,
+   "sha256": "4b2fbc22cd72a9e8e3290895ec8b1669eb73565627c8b91089084b3e36e2e3bb"
+  },
+  {
+   "path": "logs/run_mot20_20261010_030224.log",
+   "bytes": 2757,
+   "sha256": "f53be7e0fe094fe5ce3d1aced67509708187fe562df8d13754d082ca516beda1"
+  },
+  {
+   "path": "logs/run_mot20_20261010_054109.log",
+   "bytes": 1523,
+   "sha256": "e0e9c17d76d98dbfd0df65679e59f9d4d2468eea57ba34ea7327e648e6bb9723"
+  },
+  {
+   "path": "logs/run_mot20_20261010_062835.log",
+   "bytes": 1523,
+   "sha256": "318766ba6f09fd56b75cde22e4a54e5996f7c8f16a6c3a3485f1a033178005a5"
+  },
+  {
+   "path": "logs/run_mot20_20261010_102940.log",
+   "bytes": 2313,
+   "sha256": "a82dbc34ebc91202e7f8750655846729343e7f5581e1e3f6f271782595d521e8"
+  },
+  {
+   "path": "logs/run_mot20_20261010_121434.log",
+   "bytes": 2986,
+   "sha256": "cb48531c11a141872bb344076cf1dad551d5d18ee01a6bdb8130832d4de41917"
+  },
+  {
+   "path": "logs/run_mot20_20261016_204923.log",
+   "bytes": 2447,
+   "sha256": "a707f0037b630d52090c8fc1e761fd6cce1deaec1a659455b3d8c2b9007a34fb"
+  },
+  {
+   "path": "logs/run_mot20_20261017_113307.log",
+   "bytes": 4176,
+   "sha256": "b69487f82a86e7a96159bfd72b9607f8d5863a7af4ca9590364ec3000b25ae3f"
+  },
+  {
+   "path": "logs/run_mot20_20261017_211402.log",
+   "bytes": 2821,
+   "sha256": "4f27963fd65b1c6f037d7353e7b27b14b4b9e9b6fd7210de85e2ac06f1ffb8b2"
+  },
+  {
+   "path": "logs/run_sompt22_20261018_040257.log",
+   "bytes": 5419,
+   "sha256": "d066ee0417468015f00d641dc90bd18a699dd617a98ecaeb217a7a83729e667e"
+  },
+  {
+   "path": "logs/setup_20261009_161904.log",
+   "bytes": 20641,
+   "sha256": "5b3cd4247106234fbd91aa676c6f1a8da0ea0939fc87df6dde98d176d39521c1"
+  },
+  {
+   "path": "logs/setup_20261016_202317.log",
+   "bytes": 2196,
+   "sha256": "5fb3b510ecdf552e7dfff35f21e6964f5639f5acff4ee40191952874ffc87110"
+  },
+  {
+   "path": "phase3/report/README.md",
+   "bytes": 764,
+   "sha256": "1fd2c6c4100a18b2fec9a2d777332003731e35525fd4d8abcf891d64bafddf03"
+  },
+  {
+   "path": "phase3/report/dancetrack_val/ablation.csv",
+   "bytes": 3144,
+   "sha256": "098775ee930df72fbc1707e01658232fcaca216400322d7acf08fd748c894e30"
+  },
+  {
+   "path": "phase3/report/dancetrack_val/ablation.json",
+   "bytes": 39668,
+   "sha256": "a452eaa65d545fbc47e6fafc6bb0406e62bbadf37e726d57c4424c947dcabda9"
+  },
+  {
+   "path": "phase3/report/dancetrack_val/ablation.md",
+   "bytes": 1473,
+   "sha256": "1c4dd8919972b8f41c0504cd75b9443e952df756c7752f049ec3fba40156893a"
+  },
+  {
+   "path": "phase3/report/dancetrack_val/stress_density.png",
+   "bytes": 221645,
+   "sha256": "ffb806206dad7a232899489a4bcbe7bd2547d0fa0b53f2b154e8c176840a0264"
+  },
+  {
+   "path": "phase3/report/dancetrack_val/stress_visibility.png",
+   "bytes": 76370,
+   "sha256": "553c9b9897facd356a70a8f32ba2acea52b46152dede7f24e998acd4d9b099e5"
+  },
+  {
+   "path": "phase3/report/gate_events/gate_events.json",
+   "bytes": 6318,
+   "sha256": "8164251d6e2a1d8adf8a84de219da0e1471aeb1a266a4a88e0e342d217599457"
+  },
+  {
+   "path": "phase3/report/gate_events/gate_events.md",
+   "bytes": 1567,
+   "sha256": "2a52f9599e57308f9cc560e5f1ec9f69151aa6113e34294d68372d8d9cc64e6f"
+  },
+  {
+   "path": "phase3/report/go_no_go_v2.json",
+   "bytes": 1785,
+   "sha256": "fc2c014a69a1e66fe4bfba64f0056a9409360dc5e0404d8fec2f2fc372d66109"
+  },
+  {
+   "path": "phase3/report/go_no_go_v2.md",
+   "bytes": 887,
+   "sha256": "d6fd3486345c4ba86d9d9a43fa8db5c4bcdbc232f604e50f05c538665b06159b"
+  },
+  {
+   "path": "phase3/report/go_no_go_v2/ablation.csv",
+   "bytes": 959,
+   "sha256": "cdef918d4faa11f2c3ce7de80a9d553a440a49af938d3522c8d72d75a9bce5cf"
+  },
+  {
+   "path": "phase3/report/go_no_go_v2/ablation.json",
+   "bytes": 11450,
+   "sha256": "dbba7d74bb9bfc6e9e35216cb4847ccb59c6b722551dc88d1b559c6bb87cffb3"
+  },
+  {
+   "path": "phase3/report/go_no_go_v2/ablation.md",
+   "bytes": 697,
+   "sha256": "2f32d7f5a89815f9fd7a8a3d03aaddb507766afe813c2f833eec7b9ffe760d9e"
+  },
+  {
+   "path": "phase3/report/go_no_go_v2/stress_density.png",
+   "bytes": 128848,
+   "sha256": "66a3b3fd05735fda1282fcf3cc06368ad2da4342d6b7a318e1fa674ad37263b4"
+  },
+  {
+   "path": "phase3/report/go_no_go_v2/stress_visibility.png",
+   "bytes": 91189,
+   "sha256": "fee93a62a37deb5d645c26d9f42abd1ca6c0371869f31a94fa6a0a464416e950"
+  },
+  {
+   "path": "phase3/report/mot17_val_half/ablation.csv",
+   "bytes": 4354,
+   "sha256": "5667ca3815240e45c44295c20ad88c1807753d80c301236bd491c1bdbad9d2de"
+  },
+  {
+   "path": "phase3/report/mot17_val_half/ablation.json",
+   "bytes": 53932,
+   "sha256": "915723e03c8741eff7444d1ea9c36544d9bfefc582eb11cb698392caca712272"
+  },
+  {
+   "path": "phase3/report/mot17_val_half/ablation.md",
+   "bytes": 1920,
+   "sha256": "30eaa22c84fa209d8ae9fb58ac21c966fc0a2598c62c2af8ff9d763e3800b605"
+  },
+  {
+   "path": "phase3/report/mot17_val_half/stress_density.png",
+   "bytes": 288110,
+   "sha256": "37be2cd4905ddbca644661052a086d875e2a84bebbfba57f949cbda1f15da851"
+  },
+  {
+   "path": "phase3/report/mot17_val_half/stress_visibility.png",
+   "bytes": 215803,
+   "sha256": "2c8fc7e0325f94483a67f36b89df14e0074a8ad0a1e0d51e8ba517a835dc999d"
+  },
+  {
+   "path": "phase3/report/mot20_val_half__mot17full_xdomain/ablation.csv",
+   "bytes": 3101,
+   "sha256": "ec8e03d82ec285f4d08d0476b6df7adb4549ee91f4a6a9b3fc41a4af3c44e127"
+  },
+  {
+   "path": "phase3/report/mot20_val_half__mot17full_xdomain/ablation.json",
+   "bytes": 38414,
+   "sha256": "36fcb9142fe5ee78fc3508cae3ee6e4bd427d477cd3a74a7cf2ec839bbec3e67"
+  },
+  {
+   "path": "phase3/report/mot20_val_half__mot17full_xdomain/ablation.md",
+   "bytes": 1497,
+   "sha256": "b0cc92d811ea3e2a2b15652b0dea07ce512d73ffe1d7006ac8fbb7f6aba7b3dc"
+  },
+  {
+   "path": "phase3/report/mot20_val_half__mot17full_xdomain/stress_density.png",
+   "bytes": 259985,
+   "sha256": "cd6da2664a0509594e42e910ac0b203e3d73f4433e77735bab29535a9abbf301"
+  },
+  {
+   "path": "phase3/report/mot20_val_half__mot17full_xdomain/stress_visibility.png",
+   "bytes": 174039,
+   "sha256": "bcdd8f946bd7ff36e6395b7bace7b45f0b169b689f0a15ad343943a04aa14b3d"
+  },
+  {
+   "path": "phase3/report/mot20_val_half__mot20full_SAW_EVAL_HALF/ablation.csv",
+   "bytes": 3965,
+   "sha256": "4c9ce244bc71d4e9b66ed5d4c3ca6b0f3b2b0020eb4991c6d6cdc5e2a2fb6795"
+  },
+  {
+   "path": "phase3/report/mot20_val_half__mot20full_SAW_EVAL_HALF/ablation.json",
+   "bytes": 38924,
+   "sha256": "71e5fc2f2458693bea5ac05720d4334ab4e2e88ce2d27b320de5603f9a5af452"
+  },
+  {
+   "path": "phase3/report/mot20_val_half__mot20full_SAW_EVAL_HALF/ablation.md",
+   "bytes": 1583,
+   "sha256": "0c64ba135527297b3cbb7bee4fbba432705420c5201c3ab6037d99c4147f545b"
+  },
+  {
+   "path": "phase3/report/mot20_val_half__mot20full_SAW_EVAL_HALF/stress_density.png",
+   "bytes": 231750,
+   "sha256": "caec7eb185183146bbf7abb3e3377e9301ca715553ee68d90549369c64b3307a"
+  },
+  {
+   "path": "phase3/report/mot20_val_half__mot20full_SAW_EVAL_HALF/stress_visibility.png",
+   "bytes": 172580,
+   "sha256": "c6e7254255db3cbafc32f47308ed672f83f980f100202cd174d0342b86517a70"
+  },
+  {
+   "path": "phase3/report/mot20_val_half__sparsetrack_ablation/ablation.csv",
+   "bytes": 3176,
+   "sha256": "66fe646b0c2e0e364974c62558ead20dad0857a052a4e56b9ba70b5f555f9df6"
+  },
+  {
+   "path": "phase3/report/mot20_val_half__sparsetrack_ablation/ablation.json",
+   "bytes": 38489,
+   "sha256": "18ad0e0fb8e293a76706083e4266225be80419a18498573004648a921ee6c46e"
+  },
+  {
+   "path": "phase3/report/mot20_val_half__sparsetrack_ablation/ablation.md",
+   "bytes": 1504,
+   "sha256": "8b7d3aab5e6d8c57bb63de2c80541d91a26ac83d74ee5641c539a8871c3c2f32"
+  },
+  {
+   "path": "phase3/report/mot20_val_half__sparsetrack_ablation/stress_density.png",
+   "bytes": 245772,
+   "sha256": "8a6ab9ca0de5d21e5819aeb3e9688b4c8d67d402b0c654a68bf2b2c0b655dd19"
+  },
+  {
+   "path": "phase3/report/mot20_val_half__sparsetrack_ablation/stress_visibility.png",
+   "bytes": 172999,
+   "sha256": "df8d9afec2c95709d0450fdd94bb7df1ac313e99847144af799cd088f198200b"
+  },
+  {
+   "path": "phase3/report/reproduction.json",
+   "bytes": 601,
+   "sha256": "6c8d68aed631f419902454296ba382c9c76217146991d41d09d56fedce398107"
+  },
+  {
+   "path": "phase3/report/reproduction.md",
+   "bytes": 1097,
+   "sha256": "0d261ee8e212516033c954701ccb390ee057c69d6bafa6f792b961775511d399"
+  },
+  {
+   "path": "phase3/report/run_info.json",
+   "bytes": 2443,
+   "sha256": "cf0c366f756e38e3f501665b648d971e4c7abee0d0677b0759a00336aa1dd312"
+  },
+  {
+   "path": "phase3/report/summary.json",
+   "bytes": 1471,
+   "sha256": "0063158ec4dcf8fbde2ab3153ccd5a2b43f30d8fffdc1c7bf3362caf319aaf14"
+  },
+  {
+   "path": "phase3/report/tune.json",
+   "bytes": 1344,
+   "sha256": "c672f01b4d2d80c42f20e4d49953d1299e0911d5e82d6849be2a1220f35af734"
+  },
+  {
+   "path": "phase3/stagea_index.json",
+   "bytes": 2887,
+   "sha256": "7aa7f806b96fcd942a282271de0a675f6464564a548c828f37dbff0154a98b3e"
+  },
+  {
+   "path": "results/SOMPT22/bytetrack_like/test/SOMPT22-01.txt",
+   "bytes": 2481322,
+   "sha256": "f3c9be8ce2e4c3dbdbeb55fe42b5063aa9cfd449f70eb623b682da33465a1faf"
+  },
+  {
+   "path": "results/SOMPT22/bytetrack_like/test/SOMPT22-03.txt",
+   "bytes": 883584,
+   "sha256": "e5660dc1bac297ba4d598d1735ffb4f3df960de273b923ecc4d4d9c25796bad0"
+  },
+  {
+   "path": "results/SOMPT22/bytetrack_like/test/SOMPT22-06.txt",
+   "bytes": 5653555,
+   "sha256": "5020aab26007b89d5ede3b6dc772d88283c2e4df450d3d71c628ae2f02cfa9bc"
+  },
+  {
+   "path": "results/SOMPT22/bytetrack_like/test/SOMPT22-09.txt",
+   "bytes": 2443309,
+   "sha256": "47f660a318bf392af4b494d8c0c0909bad44eb7288237d59e03559e95f8df773"
+  },
+  {
+   "path": "results/SOMPT22/bytetrack_like/test/SOMPT22-14.txt",
+   "bytes": 671600,
+   "sha256": "09584bf1e3a27895d11967abf51529457ac50d7e5c339a6cbda31e15bce02924"
+  },
+  {
+   "path": "results/SOMPT22/bytetrack_like/test/latency.json",
+   "bytes": 3099,
+   "sha256": "125c3fdb01feb414151f8808865c374c7e3000b4cbb81d741cb8e901282f6937"
+  },
+  {
+   "path": "results/SOMPT22/bytetrack_like_test_results.zip",
+   "bytes": 3924505,
+   "sha256": "71aa3d2712c40b3f15984f5c15a6fee920f8be2e229cf1f88575f3744feb1912"
+  },
+  {
+   "path": "run/STATUS",
+   "bytes": 1671,
+   "sha256": "8695ec45f9022da75cde98f788b8e097d3f2f98125190bb5e55bc1b865ff53cc"
+  },
+  {
+   "path": "run/env.txt",
+   "bytes": 2492,
+   "sha256": "509572664e59bfc691b03bb6640848462cfb97b6815ea943292e50c195c709fe"
+  },
+  {
+   "path": "run/eta_mot17.json",
+   "bytes": 310,
+   "sha256": "91e85386eed59793e13806aabe5c9865b3cab5430ae277decb0775b56bc7ca45"
+  },
+  {
+   "path": "run/gpu.json",
+   "bytes": 125,
+   "sha256": "f70394dc5843af1f09f83261dbe55fe68dddade4e0b74cfaf6fc7832c6704963"
+  },
+  {
+   "path": "run/notes.txt",
+   "bytes": 501,
+   "sha256": "e912b81f008a741a980ca7d1a376e0590fa2fc619446cd4fcdccf4de95f2d6aa"
+  },
+  {
+   "path": "run/profile.env",
+   "bytes": 15,
+   "sha256": "0db4536565711cef94febe33be0f43f401666dd463f0c1f9ee7a1d5f2cf82411"
+  },
+  {
+   "path": "run/run_info.json",
+   "bytes": 2443,
+   "sha256": "cf0c366f756e38e3f501665b648d971e4c7abee0d0677b0759a00336aa1dd312"
+  },
+  {
+   "path": "run/torch.json",
+   "bytes": 213,
+   "sha256": "9a6dfb0255e9a36d95a404f57c7507c44a7fd34e2a822f98d01954931d52383d"
+  },
+  {
+   "path": "run/verdict.txt",
+   "bytes": 179,
+   "sha256": "4b0e790104b5ec90b08ea7c1df56217600a6b54a2ca3a4c0800e2d88f20c8941"
+  },
+  {
+   "path": "stagea/MANIFEST.json",
+   "bytes": 31617,
+   "sha256": "4165c463d5cee3c52b378f82633712821e83c0852eedc724a0d902da43e8b985"
+  },
+  {
+   "path": "stagea/cache/DanceTrack/dancetrack/val/stage_a_log.jsonl",
+   "bytes": 6214,
+   "sha256": "211a47eb0ec10184d820ea3d3f6c4b678d3349dc852dafd554c9547667afbbf9"
+  },
+  {
+   "path": "stagea/cache/MOT17/ablation/train/stage_a_log.jsonl",
+   "bytes": 1709,
+   "sha256": "b330370dabee01c14dd2128981df049437bb640bf72818d3b2e99aec5930f616"
+  },
+  {
+   "path": "stagea/cache/MOT20/mot17full_xdomain/train/stage_a_log.jsonl",
+   "bytes": 980,
+   "sha256": "fa104bb02b6b9119099ffd2145344053320fe377e30ee1dd66f13b8cccbb3bf9"
+  },
+  {
+   "path": "stagea/cache/MOT20/sparsetrack_ablation/train/stage_a_log.jsonl",
+   "bytes": 991,
+   "sha256": "5c4dc78c0fd45db0be4d8cf1a722f96aae5298ac5ebc3aca014671df2da48d0e"
+  },
+  {
+   "path": "stagea/cache/SOMPT22/mot17full/test/stage_a_log.jsonl",
+   "bytes": 1201,
+   "sha256": "20ce400e131f097467aa05ab27bc0c85747586bc99c84a58c956974fe7765c50"
+  },
+  {
+   "path": "stagea/cache/SOMPT22/mot17full/train/stage_a_log.jsonl",
+   "bytes": 2168,
+   "sha256": "caefc45a45ae117b4308406faeb5d3f9290ca9ae5324d73ed5aa85a8d35a827b"
+  },
+  {
+   "path": "stagea/weights_SHA256SUMS",
+   "bytes": 579,
+   "sha256": "27da9216545827a863017f30e21fbfc0317d2293fdb57a165c91eff1e020f6de"
+  }
+ ]
+}

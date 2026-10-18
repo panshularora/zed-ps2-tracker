@@ -1,0 +1,25 @@
+run.sh all --profile laptop (ZED_ROOT=/home/panshul/zed-ps2-stagea)   state: RUNNING   (updated 2026-10-18 05:36:13 UTC)
+current stage: finalize_dancetrack
+log: /home/panshul/zed-ps2-stagea/run_all/logs/run_all_20261017_211357.log
+
+  1. [done]     preflight              0h00m01s
+  2. [done]     setup                  (earlier run: 2026-10-16 20:24:53 UTC)
+  3. [done]     gpucheck               0h00m04s
+  4. [done]     stagea_mot17           (earlier run: 2026-10-16 20:49:07 UTC)
+  5. [done]     ingest_mot17           (earlier run: 2026-10-16 20:49:14 UTC)
+  6. [done]     phase3_mot17           (earlier run: 2026-10-16 20:49:23 UTC)
+  7. [done]     finalize_mot17         (earlier run: 2026-10-16 20:49:23 UTC)
+  8. [done]     stagea_mot20           2h08m32s
+  9. [done]     ingest_mot20           0h01m35s
+ 10. [done]     phase3_mot20           3h29m31s
+ 11. [done]     finalize_mot20         0h00m01s
+ 12. [done]     stagea_dancetrack      1h09m16s
+ 13. [done]     stagea_sompt22         1h27m40s
+ 14. [done]     ingest_dancetrack      0h02m33s
+ 15. [done]     phase3_dancetrack      0h03m03s
+ 16. [running]  finalize_dancetrack    since 05:36:13
+
+notes:
+  [02:53] phase3 (mot20): ByteTrack reproduction: NOT REPRODUCED; go/no-go v2: NO-GO; ran: ['mot17_val_half', 'mot20_val_half__mot17full_xdomain', 'mot20_val_half__sparsetrack_ablation']
+  [02:53] results (mot20): /home/panshul/zed-ps2-stagea/final/zed_results_20261018_025340_laptop_mot20.tar.gz
+  [05:36] phase3 (dancetrack): ByteTrack reproduction: NOT REPRODUCED; go/no-go v2: NO-GO; ran: ['mot17_val_half', 'mot20_val_half__mot17full_xdomain', 'mot20_val_half__sparsetrack_ablation', 'dancetrack_val']

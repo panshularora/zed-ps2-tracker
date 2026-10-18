@@ -1,0 +1,15 @@
+[1;34m[06:55:26][0m logging to /home/panshul/zed-ps2-stagea/logs/finalize_20261011_065526.log
+
+category         size
+cache        3230.6 MB
+clips          57.4 MB
+gt             58.6 MB
+logs            0.1 MB
+weights_SHA256SUMS      0.0 MB
+TOTAL          3.35 GB   (139 files) -> /home/panshul/zed-ps2-stagea/bring_back
+
+INTEGRITY OK: 44 caches verified
+
+Next, still on the DGX:  bash scripts/dgx/pack.sh   (a few tars to scp; docs/dgx_runbook.md step 7-8)
+On the CPU box, each tar is checked against SHA256SUMS by:  make ingest BRING_BACK=<tar>
+(Or run everything, phase 3 included, on the GPU host: bash run.sh all, then copy ONE tar home.)

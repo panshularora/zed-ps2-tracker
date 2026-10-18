@@ -1,0 +1,16 @@
+[1;34m[05:41:09][0m logging to /home/panshul/zed-ps2-stagea/logs/run_mot20_20261010_054109.log
+[1;34m[05:41:09][0m detector: x, batch 8, GPU 0
+[1;34m[05:41:09][0m have MOT20.zip (5028926248 bytes)
+[1;34m[05:41:09][0m MOT20 variants: sparsetrack_ablation mot17full_xdomain mot20full_SAW_EVAL_HALF
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-01.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-02.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-03.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-05.npz (already complete)
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-01.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-02.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-03.npz (already complete)
+[run ] MOT20-05: 3315 frames

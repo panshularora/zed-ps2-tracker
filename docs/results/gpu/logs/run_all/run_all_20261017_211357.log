@@ -1,0 +1,379 @@
+[1;34m[21:13:57][0m logging to /home/panshul/zed-ps2-stagea/run_all/logs/run_all_20261017_211357.log ; status: cat /home/panshul/zed-ps2-stagea/STATUS
+
+[1;35m[21:13:57] ===== stage preflight: GPU via nvidia-smi (WSL2), tools, disk, datasets, frozen files =====[0m
+[1;34m[21:13:57][0m WSL2 detected (6.6.87.2-microsoft-standard-WSL2); the GPU comes from the WINDOWS NVIDIA driver
+GPU 0: NVIDIA GeForce RTX 3050 6GB Laptop GPU (UUID: GPU-b060f840-bcab-5362-2ae9-bac4a27c6285)
+[1;34m[21:13:57][0m GPU 0: NVIDIA GeForce RTX 3050 6GB Laptop GPU, 6144 MiB; profile laptop; detector policy: auto (now: x); batch 1; phase-3 jobs 6
+[1;34m[21:13:57][0m under 8 GB: still YOLOX-X fp16, batch 1 at 800x1440; only a real CUDA out-of-memory error switches to YOLOX-S
+[1;34m[21:13:57][0m free disk under /home/panshul/zed-ps2-stagea: 907 GB
+[1;34m[21:13:57][0m dataset mot17: extracted
+[1;34m[21:13:57][0m dataset mot20: extracted
+[1;34m[21:13:57][0m dataset dancetrack: extracted
+[1;34m[21:13:57][0m SOMPT22: extracted at /home/panshul/zed-ps2-stagea/data/SOMPT22
+[1;34m[21:13:57][0m repo 7559df8 on main; frozen files unmodified
+[1;34m[21:13:58][0m stage setup: done earlier, skipped (--force=setup to redo)
+
+[1;35m[21:13:58] ===== stage gpucheck: torch/CUDA versions; torch sees the GPU (cu118 rebuild if not) =====[0m
+{"torch": "2.7.1+cu126", "cuda_build": "12.6", "cuda_available": true, "cudnn": 90501, "device": "NVIDIA GeForce RTX 3050 6GB Laptop GPU", "memory_mib": 6143, "capability": "8.6", "fp16_matmul_ok": true}
+[1;34m[21:14:02][0m stage stagea_mot17: done earlier, skipped (--force=stagea_mot17 to redo)
+[1;34m[21:14:02][0m stage ingest_mot17: done earlier, skipped (--force=ingest_mot17 to redo)
+[1;34m[21:14:02][0m stage phase3_mot17: done earlier, skipped (--force=phase3_mot17 to redo)
+[1;34m[21:14:02][0m stage finalize_mot17: done earlier, skipped (--force=finalize_mot17 to redo)
+
+[1;35m[21:14:02] ===== stage stagea_mot20: Stage A mot20: detector + re-ID caches =====[0m
+[1;34m[21:14:02][0m Stage A mot20 with detector x (batch 1)
+[1;34m[21:14:02][0m logging to /home/panshul/zed-ps2-stagea/logs/run_mot20_20261017_211402.log
+[1;34m[21:14:02][0m detector: x, batch 1, GPU 0
+[1;34m[21:14:02][0m have MOT20.zip (5028926248 bytes)
+[1;34m[21:14:02][0m MOT20 variants: sparsetrack_ablation mot17full_xdomain
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-01.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-02.npz (already complete)
+[run ] MOT20-03: 2405 frames
+[done] {"sequence": "MOT20-03", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-03.npz", "frames": 2405, "detections": 346089, "dets_per_frame": 143.9, "bytes": 269445560, "stage_a_seconds": 1223.96, "stage_a_fps": 1.96}
+[run ] MOT20-05: 3315 frames
+[done] {"sequence": "MOT20-05", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-05.npz", "frames": 3315, "detections": 727298, "dets_per_frame": 219.4, "bytes": 570942552, "stage_a_seconds": 2260.05, "stage_a_fps": 1.47}
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[run ] MOT20-01: 429 frames
+[done] {"sequence": "MOT20-01", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-01.npz", "frames": 429, "detections": 21286, "dets_per_frame": 49.62, "bytes": 16531889, "stage_a_seconds": 132.5, "stage_a_fps": 3.24}
+[run ] MOT20-02: 2782 frames
+[done] {"sequence": "MOT20-02", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-02.npz", "frames": 2782, "detections": 158363, "dets_per_frame": 56.92, "bytes": 122908466, "stage_a_seconds": 894.77, "stage_a_fps": 3.11}
+[run ] MOT20-03: 2405 frames
+[done] {"sequence": "MOT20-03", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-03.npz", "frames": 2405, "detections": 338196, "dets_per_frame": 140.62, "bytes": 262890722, "stage_a_seconds": 1198.48, "stage_a_fps": 2.01}
+[run ] MOT20-05: 3315 frames
+[done] {"sequence": "MOT20-05", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-05.npz", "frames": 3315, "detections": 732879, "dets_per_frame": 221.08, "bytes": 574924277, "stage_a_seconds": 2275.82, "stage_a_fps": 1.46}
+[1;34m[23:22:34][0m clip exists: /home/panshul/zed-ps2-stagea/clips/MOT20-02.mp4
+[1;34m[23:22:34][0m run.sh mot20 finished. When all targets are done: bash scripts/dgx/finalize.sh
+
+[1;35m[23:22:34] ===== stage ingest_mot20: integrity check + make ingest -> $ZED_ROOT/stagea (all caches so far) =====[0m
+
+category         size
+cache        2074.0 MB
+clips          57.4 MB
+gt             52.2 MB
+logs            0.1 MB
+weights_SHA256SUMS      0.0 MB
+TOTAL          2.18 GB   (64 files) -> /home/panshul/zed-ps2-stagea/bring_back
+
+INTEGRITY OK: 15 caches verified
+python -m eval.ingest --bring-back "/home/panshul/zed-ps2-stagea/bring_back" --dest /home/panshul/zed-ps2-stagea/stagea --data /home/panshul/zed-ps2-stagea/data \
+	--report docs/results/phase3 --results-dest data/dgx_results \
+	
+[ok] bring_back: 64 files, 2183.8 MB, 15 caches verified
+
+cache folder                                  seqs  emb  gt_root
+MOT17/ablation/train                             7  yes  /home/panshul/zed-ps2-stagea/stagea/gt/MOT17
+MOT20/mot17full_xdomain/train                    4  yes  /home/panshul/zed-ps2-stagea/stagea/gt/MOT20
+MOT20/sparsetrack_ablation/train                 4  yes  /home/panshul/zed-ps2-stagea/stagea/gt/MOT20
+
+INGEST OK
+
+[1;35m[23:24:09] ===== stage phase3_mot20: make phase3 (trackers, TrackEval, reproduction, go/no-go v2) + gate events + run-info stamp =====[0m
+[1;34m[23:24:09][0m make phase3 (jobs 6) with: --timeout-min MOT20=240
+python -m eval.phase3 --plan configs/phase3/plan.yaml --index /home/panshul/zed-ps2-stagea/stagea/index.json \
+	--out /home/panshul/zed-ps2-stagea/phase3/out --report /home/panshul/zed-ps2-stagea/phase3/report --jobs 6 --timeout-min MOT20=240
+### Ablation: MOT17 val-half, YOLOX-X bytetrack_ablation + OSNet-AIN re-ID
+
+| Group | Tracker | HOTA | IDF1 | MOTA | IDSW | AssA | DetA | p50 / p95 / max ms |
+|---|---|---|---|---|---|---|---|---|
+| baseline | ByteTrackLike (IoU) | 63.4 | 73.8 | 66.4 | 165 | 66.5 | 61.1 | 1.04 / 2.63 / 12.3 |
+| baseline | OC-SORT | 61.8 | 72.3 | 64.0 | 204 | 65.7 | 58.6 | 0.79 / 2.48 / 15.3 |
+| baseline | Deep OC-SORT (emb + CMC) | 63.3 | 74.6 | 64.6 | 125 | 68.2 | 59.2 | 1.39 / 4.60 / 15.1 |
+| baseline | Hybrid-SORT | 62.4 | 72.2 | 64.2 | 240 | 65.4 | 60.2 | 1.66 / 4.75 / 15.6 |
+| baseline | BoT-SORT (CMC, IoU) | 64.6 | 76.3 | 67.1 | 135 | 68.6 | 61.5 | 1.08 / 2.80 / 11.9 |
+| baseline | ByteTrackLike + re-ID | 62.5 | 73.0 | 66.5 | 183 | 64.9 | 60.8 | 1.30 / 3.64 / 13.1 |
+| baseline | BoT-SORT (CMC) + re-ID | 63.4 | 74.3 | 66.9 | 193 | 66.3 | 61.4 | 1.39 / 3.75 / 13.5 |
+| control | ByteTrackLike + re-ID, buffer 90 (control) | 62.3 | 73.1 | 66.6 | 172 | 64.8 | 60.7 | 1.36 / 3.63 / 13.6 |
+| ours | + re-ID + visibility (buffer) | 62.3 | 73.1 | 66.6 | 172 | 64.8 | 60.7 | 1.58 / 4.68 / 15.0 |
+| ours | + re-ID + appearance update gate (min_visibility) | 62.0 | 72.6 | 66.2 | 201 | 64.0 | 60.8 | 1.44 / 4.52 / 14.9 |
+| ours | + re-ID + appearance cost gate (cost_min_visibility) | 63.2 | 73.3 | 66.3 | 174 | 66.2 | 61.0 | 1.50 / 4.64 / 12.9 |
+| ours | + re-ID + visibility-gated appearance (full) | 63.2 | 73.9 | 66.2 | 167 | 66.2 | 61.0 | 1.57 / 4.63 / 13.6 |
+| control | BoT-SORT + re-ID, buffer 90 (control) | 63.3 | 74.4 | 66.9 | 183 | 66.1 | 61.4 | 1.43 / 3.71 / 13.1 |
+| ours | BoT-SORT + re-ID + visibility-gated appearance | 63.9 | 75.1 | 66.8 | 156 | 67.1 | 61.6 | 1.60 / 4.72 / 40.7 |
+
+### Ablation: MOT20 val-half, mot17full_xdomain + OSNet-AIN re-ID
+
+| Group | Tracker | HOTA | IDF1 | MOTA | IDSW | AssA | DetA | p50 / p95 / max ms |
+|---|---|---|---|---|---|---|---|---|
+| baseline | ByteTrackLike (IoU) | 60.8 | 76.8 | 79.6 | 1070 | 58.6 | 63.3 | 10.71 / 21.45 / 1211.8 |
+| baseline | OC-SORT | 59.8 | 77.0 | 76.4 | 1286 | 58.8 | 61.1 | 12.57 / 25.66 / 1260.1 |
+| baseline | Deep OC-SORT (emb + CMC) | 60.4 | 78.0 | 76.4 | 1227 | 59.8 | 61.2 | 22.99 / 84.46 / 308.6 |
+| baseline | Hybrid-SORT | 62.9 | 79.9 | 82.6 | 1471 | 60.6 | 65.5 | 22.52 / 44.74 / 2057.4 |
+| baseline | BoT-SORT (CMC, IoU) | 60.9 | 77.1 | 79.8 | 1248 | 58.8 | 63.4 | 9.09 / 14.55 / 119.1 |
+| baseline | ByteTrackLike + re-ID | 60.3 | 75.9 | 79.6 | 1160 | 57.7 | 63.2 | 30.96 / 74.85 / 227.8 |
+| baseline | BoT-SORT (CMC) + re-ID | 60.4 | 76.0 | 79.7 | 1367 | 57.9 | 63.3 | 31.60 / 72.95 / 217.2 |
+| control | ByteTrackLike + re-ID, buffer 90 (control) | 60.5 | 76.7 | 79.8 | 1118 | 58.1 | 63.3 | 30.17 / 71.54 / 210.3 |
+| ours | + re-ID + visibility-gated appearance (full) | 60.9 | 77.5 | 79.8 | 1039 | 58.8 | 63.4 | 56.17 / 106.96 / 229.9 |
+| ours | BoT-SORT + re-ID + visibility-gated appearance | 61.1 | 77.7 | 80.0 | 1193 | 58.9 | 63.5 | 57.36 / 107.89 / 273.0 |
+
+### Ablation: MOT20 val-half, sparsetrack_ablation + OSNet-AIN re-ID
+
+| Group | Tracker | HOTA | IDF1 | MOTA | IDSW | AssA | DetA | p50 / p95 / max ms |
+|---|---|---|---|---|---|---|---|---|
+| baseline | ByteTrackLike (IoU) | 69.4 | 84.1 | 87.9 | 1011 | 66.8 | 72.4 | 9.65 / 13.66 / 85.9 |
+| baseline | OC-SORT | 68.0 | 82.7 | 86.7 | 1293 | 64.9 | 71.5 | 11.18 / 16.78 / 375.9 |
+| baseline | Deep OC-SORT (emb + CMC) | 68.7 | 83.8 | 86.8 | 1171 | 66.1 | 71.6 | 25.44 / 54.95 / 228.5 |
+| baseline | Hybrid-SORT | 68.8 | 83.4 | 87.2 | 1365 | 66.0 | 71.9 | 20.42 / 29.62 / 115.6 |
+| baseline | BoT-SORT (CMC, IoU) | 69.3 | 83.9 | 87.9 | 1162 | 66.5 | 72.4 | 9.96 / 13.51 / 90.7 |
+| baseline | ByteTrackLike + re-ID | 67.5 | 81.1 | 87.7 | 1278 | 63.5 | 72.0 | 21.03 / 57.38 / 228.1 |
+| baseline | BoT-SORT (CMC) + re-ID | 67.6 | 81.2 | 87.8 | 1429 | 63.6 | 72.1 | 30.45 / 65.31 / 223.5 |
+| control | ByteTrackLike + re-ID, buffer 90 (control) | 67.4 | 81.2 | 87.7 | 1272 | 63.2 | 72.0 | 28.36 / 57.88 / 224.0 |
+| ours | + re-ID + visibility-gated appearance (full) | 69.5 | 84.5 | 87.9 | 1019 | 66.9 | 72.4 | 50.60 / 95.16 / 245.6 |
+| ours | BoT-SORT + re-ID + visibility-gated appearance | 69.2 | 84.0 | 87.9 | 1162 | 66.3 | 72.4 | 48.45 / 87.48 / 179.0 |
+
+waiting: dancetrack_val: no cache matching DanceTrack/dancetrack/val
+| Tracker | gt / trk crossings | count error % | event P / R % | attribution error % | tailgates gt / trk | tailgate P / R % |
+|---|---|---|---|---|---|---|
+| gt as tracker (check) | 25 / 25 | 0.0 | 100.0 / 100.0 | 0.0 | 9 / 9 | 100.0 / 100.0 |
+| botsort | 25 / 28 | 12.0 | 67.9 / 76.0 | 31.6 | 9 / 7 | 85.7 / 66.7 |
+| botsort_reid | 25 / 31 | 24.0 | 64.5 / 80.0 | 40.0 | 9 / 9 | 77.8 / 77.8 |
+| botsort_reid_buffer90 | 25 / 36 | 44.0 | 58.3 / 84.0 | 38.1 | 9 / 12 | 66.7 / 88.9 |
+| botsort_reid_vis_gated | 25 / 32 | 28.0 | 62.5 / 80.0 | 25.0 | 9 / 9 | 77.8 / 77.8 |
+| bytetrack | 25 / 28 | 12.0 | 67.9 / 76.0 | 26.3 | 9 / 7 | 85.7 / 66.7 |
+| bytetrack_reid | 25 / 30 | 20.0 | 66.7 / 80.0 | 40.0 | 9 / 10 | 80.0 / 88.9 |
+| deep_ocsort | 25 / 25 | 0.0 | 72.0 / 72.0 | 16.7 | 9 / 5 | 100.0 / 55.6 |
+| hybrid_sort | 25 / 33 | 32.0 | 60.6 / 80.0 | 35.0 | 9 / 14 | 50.0 / 77.8 |
+| ocsort | 25 / 25 | 0.0 | 72.0 / 72.0 | 22.2 | 9 / 5 | 100.0 / 55.6 |
+| reid_buffer90 | 25 / 35 | 40.0 | 62.9 / 88.0 | 40.9 | 9 / 12 | 75.0 / 100.0 |
+| reid_costgate | 25 / 29 | 16.0 | 65.5 / 76.0 | 26.3 | 9 / 8 | 75.0 / 66.7 |
+| reid_minvis | 25 / 33 | 32.0 | 63.6 / 84.0 | 38.1 | 9 / 12 | 66.7 / 88.9 |
+| reid_vis | 25 / 35 | 40.0 | 62.9 / 88.0 | 40.9 | 9 / 12 | 75.0 / 100.0 |
+| reid_vis_gated | 25 / 37 | 48.0 | 56.8 / 84.0 | 23.8 | 9 / 11 | 72.7 / 88.9 |
+stamped 25 files under /home/panshul/zed-ps2-stagea/phase3/report
+ByteTrack reproduction: NOT REPRODUCED; go/no-go v2: NO-GO; ran: ['mot17_val_half', 'mot20_val_half__mot17full_xdomain', 'mot20_val_half__sparsetrack_ablation']
+waiting: dancetrack_val: no cache matching DanceTrack/dancetrack/val
+[1;32m[02:53:40] NOTE:[0m phase3 (mot20): ByteTrack reproduction: NOT REPRODUCED; go/no-go v2: NO-GO; ran: ['mot17_val_half', 'mot20_val_half__mot17full_xdomain', 'mot20_val_half__sparsetrack_ablation']
+
+[1;35m[02:53:40] ===== stage finalize_mot20: finalize.sh --results: one tar + manifest + sha256 -> $ZED_ROOT/final/ =====[0m
+/home/panshul/zed-ps2-stagea/final/zed_results_20261018_025340_laptop_mot20.tar.gz  (2.04 MB, 104 files)
+verdicts: {'go_no_go_v2': 'NO-GO', 'reproduction': 'NOT REPRODUCED'}
+RESULTS BUNDLE OK: /home/panshul/zed-ps2-stagea/final/zed_results_20261018_025340_laptop_mot20.tar.gz
+[1;32m[02:53:41] NOTE:[0m results (mot20): /home/panshul/zed-ps2-stagea/final/zed_results_20261018_025340_laptop_mot20.tar.gz
+
+[1;35m[02:53:41] ===== stage stagea_dancetrack: Stage A dancetrack: detector + re-ID caches =====[0m
+[1;34m[02:53:41][0m Stage A dancetrack with detector x (batch 1)
+[1;34m[02:53:41][0m logging to /home/panshul/zed-ps2-stagea/logs/run_dancetrack_20261018_025341.log
+[1;34m[02:53:41][0m detector: x, batch 1, GPU 0
+[1;34m[02:53:41][0m have dancetrack_val.zip (4209785614 bytes)
+[1;34m[02:53:41][0m already extracted dancetrack_val.zip
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[run ] dancetrack0004: 1203 frames
+[done] {"sequence": "dancetrack0004", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0004.npz", "frames": 1203, "detections": 4899, "dets_per_frame": 4.07, "bytes": 3803981, "stage_a_seconds": 202.73, "stage_a_fps": 5.93}
+[run ] dancetrack0005: 1203 frames
+[done] {"sequence": "dancetrack0005", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0005.npz", "frames": 1203, "detections": 4886, "dets_per_frame": 4.06, "bytes": 3757783, "stage_a_seconds": 203.65, "stage_a_fps": 5.91}
+[run ] dancetrack0007: 1203 frames
+[done] {"sequence": "dancetrack0007", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0007.npz", "frames": 1203, "detections": 9421, "dets_per_frame": 7.83, "bytes": 7030274, "stage_a_seconds": 205.58, "stage_a_fps": 5.85}
+[run ] dancetrack0010: 1203 frames
+[done] {"sequence": "dancetrack0010", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0010.npz", "frames": 1203, "detections": 7069, "dets_per_frame": 5.88, "bytes": 5377636, "stage_a_seconds": 204.83, "stage_a_fps": 5.87}
+[run ] dancetrack0014: 1203 frames
+[done] {"sequence": "dancetrack0014", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0014.npz", "frames": 1203, "detections": 13279, "dets_per_frame": 11.04, "bytes": 10279924, "stage_a_seconds": 208.97, "stage_a_fps": 5.76}
+[run ] dancetrack0018: 503 frames
+[done] {"sequence": "dancetrack0018", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0018.npz", "frames": 503, "detections": 2834, "dets_per_frame": 5.63, "bytes": 2180444, "stage_a_seconds": 85.35, "stage_a_fps": 5.89}
+[run ] dancetrack0019: 2402 frames
+[done] {"sequence": "dancetrack0019", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0019.npz", "frames": 2402, "detections": 17700, "dets_per_frame": 7.37, "bytes": 13425192, "stage_a_seconds": 411.56, "stage_a_fps": 5.84}
+[run ] dancetrack0025: 803 frames
+[done] {"sequence": "dancetrack0025", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0025.npz", "frames": 803, "detections": 8097, "dets_per_frame": 10.08, "bytes": 6371347, "stage_a_seconds": 139.04, "stage_a_fps": 5.78}
+[run ] dancetrack0026: 302 frames
+[done] {"sequence": "dancetrack0026", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0026.npz", "frames": 302, "detections": 4897, "dets_per_frame": 16.22, "bytes": 3867861, "stage_a_seconds": 57.49, "stage_a_fps": 5.25}
+[run ] dancetrack0030: 1263 frames
+[done] {"sequence": "dancetrack0030", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0030.npz", "frames": 1263, "detections": 7752, "dets_per_frame": 6.14, "bytes": 5943117, "stage_a_seconds": 216.31, "stage_a_fps": 5.84}
+[run ] dancetrack0034: 923 frames
+[done] {"sequence": "dancetrack0034", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0034.npz", "frames": 923, "detections": 12338, "dets_per_frame": 13.37, "bytes": 9540191, "stage_a_seconds": 165.05, "stage_a_fps": 5.59}
+[run ] dancetrack0035: 703 frames
+[done] {"sequence": "dancetrack0035", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0035.npz", "frames": 703, "detections": 5537, "dets_per_frame": 7.88, "bytes": 4242726, "stage_a_seconds": 121.85, "stage_a_fps": 5.77}
+[run ] dancetrack0041: 1003 frames
+[done] {"sequence": "dancetrack0041", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0041.npz", "frames": 1003, "detections": 21077, "dets_per_frame": 21.01, "bytes": 16202187, "stage_a_seconds": 199.29, "stage_a_fps": 5.03}
+[run ] dancetrack0043: 183 frames
+[done] {"sequence": "dancetrack0043", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0043.npz", "frames": 183, "detections": 2093, "dets_per_frame": 11.44, "bytes": 1628199, "stage_a_seconds": 32.79, "stage_a_fps": 5.58}
+[run ] dancetrack0047: 1203 frames
+[done] {"sequence": "dancetrack0047", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0047.npz", "frames": 1203, "detections": 11114, "dets_per_frame": 9.24, "bytes": 8553380, "stage_a_seconds": 208.02, "stage_a_fps": 5.78}
+[run ] dancetrack0058: 1601 frames
+[done] {"sequence": "dancetrack0058", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0058.npz", "frames": 1601, "detections": 11217, "dets_per_frame": 7.01, "bytes": 8426625, "stage_a_seconds": 276.69, "stage_a_fps": 5.79}
+[run ] dancetrack0063: 1000 frames
+[done] {"sequence": "dancetrack0063", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0063.npz", "frames": 1000, "detections": 12982, "dets_per_frame": 12.98, "bytes": 9899906, "stage_a_seconds": 182.83, "stage_a_fps": 5.47}
+[run ] dancetrack0065: 702 frames
+[done] {"sequence": "dancetrack0065", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0065.npz", "frames": 702, "detections": 3803, "dets_per_frame": 5.42, "bytes": 2955977, "stage_a_seconds": 121.06, "stage_a_fps": 5.8}
+[run ] dancetrack0073: 703 frames
+[done] {"sequence": "dancetrack0073", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0073.npz", "frames": 703, "detections": 8245, "dets_per_frame": 11.73, "bytes": 6339814, "stage_a_seconds": 125.64, "stage_a_fps": 5.6}
+[run ] dancetrack0077: 1203 frames
+[done] {"sequence": "dancetrack0077", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0077.npz", "frames": 1203, "detections": 11575, "dets_per_frame": 9.62, "bytes": 9072104, "stage_a_seconds": 211.17, "stage_a_fps": 5.7}
+[run ] dancetrack0079: 1202 frames
+[done] {"sequence": "dancetrack0079", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0079.npz", "frames": 1202, "detections": 14573, "dets_per_frame": 12.12, "bytes": 11065309, "stage_a_seconds": 218.3, "stage_a_fps": 5.51}
+[run ] dancetrack0081: 984 frames
+[done] {"sequence": "dancetrack0081", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0081.npz", "frames": 984, "detections": 19543, "dets_per_frame": 19.86, "bytes": 14957386, "stage_a_seconds": 202.86, "stage_a_fps": 4.85}
+[run ] dancetrack0090: 1004 frames
+[done] {"sequence": "dancetrack0090", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0090.npz", "frames": 1004, "detections": 14251, "dets_per_frame": 14.19, "bytes": 11089019, "stage_a_seconds": 183.95, "stage_a_fps": 5.46}
+[run ] dancetrack0094: 603 frames
+[done] {"sequence": "dancetrack0094", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0094.npz", "frames": 603, "detections": 13431, "dets_per_frame": 22.27, "bytes": 10254920, "stage_a_seconds": 126.26, "stage_a_fps": 4.78}
+[run ] dancetrack0097: 1203 frames
+[done] {"sequence": "dancetrack0097", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0097.npz", "frames": 1203, "detections": 4651, "dets_per_frame": 3.87, "bytes": 3597738, "stage_a_seconds": 206.07, "stage_a_fps": 5.84}
+[1;34m[04:02:57][0m run.sh dancetrack finished. When all targets are done: bash scripts/dgx/finalize.sh
+
+[1;35m[04:02:57] ===== stage stagea_sompt22: Stage A sompt22 (optional) =====[0m
+[1;34m[04:02:57][0m Stage A sompt22 with detector x (batch 1)
+[1;34m[04:02:57][0m logging to /home/panshul/zed-ps2-stagea/logs/run_sompt22_20261018_040257.log
+[1;34m[04:02:57][0m detector: x, batch 1, GPU 0
+[1;34m[04:02:57][0m SOMPT22 already extracted at /home/panshul/zed-ps2-stagea/data/SOMPT22
+train: 9 sequences ['SOMPT22-02', 'SOMPT22-04', 'SOMPT22-05', 'SOMPT22-07', 'SOMPT22-08', 'SOMPT22-10', 'SOMPT22-11', 'SOMPT22-12', 'SOMPT22-13']
+test: 5 sequences ['SOMPT22-01', 'SOMPT22-03', 'SOMPT22-06', 'SOMPT22-09', 'SOMPT22-14']
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[run ] SOMPT22-02: 600 frames
+[done] {"sequence": "SOMPT22-02", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-02.npz", "frames": 600, "detections": 16483, "dets_per_frame": 27.47, "bytes": 12856146, "stage_a_seconds": 130.06, "stage_a_fps": 4.61}
+[run ] SOMPT22-04: 1800 frames
+[done] {"sequence": "SOMPT22-04", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-04.npz", "frames": 1800, "detections": 39029, "dets_per_frame": 21.68, "bytes": 30060986, "stage_a_seconds": 368.21, "stage_a_fps": 4.89}
+[run ] SOMPT22-05: 1800 frames
+[done] {"sequence": "SOMPT22-05", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-05.npz", "frames": 1800, "detections": 72372, "dets_per_frame": 40.21, "bytes": 56653409, "stage_a_seconds": 442.03, "stage_a_fps": 4.07}
+[run ] SOMPT22-07: 1800 frames
+[done] {"sequence": "SOMPT22-07", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-07.npz", "frames": 1800, "detections": 117317, "dets_per_frame": 65.18, "bytes": 90182209, "stage_a_seconds": 546.67, "stage_a_fps": 3.29}
+[run ] SOMPT22-08: 1800 frames
+[done] {"sequence": "SOMPT22-08", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-08.npz", "frames": 1800, "detections": 124174, "dets_per_frame": 68.99, "bytes": 97114213, "stage_a_seconds": 555.88, "stage_a_fps": 3.24}
+[run ] SOMPT22-10: 1800 frames
+[done] {"sequence": "SOMPT22-10", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-10.npz", "frames": 1800, "detections": 128137, "dets_per_frame": 71.19, "bytes": 98957505, "stage_a_seconds": 568.85, "stage_a_fps": 3.16}
+[run ] SOMPT22-11: 1800 frames
+[done] {"sequence": "SOMPT22-11", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-11.npz", "frames": 1800, "detections": 56953, "dets_per_frame": 31.64, "bytes": 42777247, "stage_a_seconds": 408.05, "stage_a_fps": 4.41}
+[run ] SOMPT22-12: 1800 frames
+[done] {"sequence": "SOMPT22-12", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-12.npz", "frames": 1800, "detections": 95447, "dets_per_frame": 53.03, "bytes": 73259822, "stage_a_seconds": 499.72, "stage_a_fps": 3.6}
+[run ] SOMPT22-13: 900 frames
+[done] {"sequence": "SOMPT22-13", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-13.npz", "frames": 900, "detections": 12758, "dets_per_frame": 14.18, "bytes": 9654511, "stage_a_seconds": 166.88, "stage_a_fps": 5.39}
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[run ] SOMPT22-01: 1800 frames
+[done] {"sequence": "SOMPT22-01", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/test/SOMPT22-01.npz", "frames": 1800, "detections": 69690, "dets_per_frame": 38.72, "bytes": 54108336, "stage_a_seconds": 442.27, "stage_a_fps": 4.07}
+[run ] SOMPT22-03: 1200 frames
+[done] {"sequence": "SOMPT22-03", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/test/SOMPT22-03.npz", "frames": 1200, "detections": 20509, "dets_per_frame": 17.09, "bytes": 15599625, "stage_a_seconds": 234.85, "stage_a_fps": 5.11}
+[run ] SOMPT22-06: 1800 frames
+[done] {"sequence": "SOMPT22-06", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/test/SOMPT22-06.npz", "frames": 1800, "detections": 151868, "dets_per_frame": 84.37, "bytes": 117724115, "stage_a_seconds": 624.61, "stage_a_fps": 2.88}
+[run ] SOMPT22-09: 1800 frames
+[done] {"sequence": "SOMPT22-09", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/test/SOMPT22-09.npz", "frames": 1800, "detections": 70118, "dets_per_frame": 38.95, "bytes": 54501002, "stage_a_seconds": 441.79, "stage_a_fps": 4.07}
+[run ] SOMPT22-14: 902 frames
+[done] {"sequence": "SOMPT22-14", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/test/SOMPT22-14.npz", "frames": 902, "detections": 20893, "dets_per_frame": 23.16, "bytes": 15976467, "stage_a_seconds": 190.91, "stage_a_fps": 4.72}
+SOMPT22-01: 1800 frames, p50 1.90 ms, p95 2.76 ms, max 23.37 ms
+SOMPT22-03: 1200 frames, p50 1.28 ms, p95 2.01 ms, max 5.17 ms
+SOMPT22-06: 1800 frames, p50 3.62 ms, p95 4.68 ms, max 40.75 ms
+SOMPT22-09: 1800 frames, p50 1.73 ms, p95 2.40 ms, max 47.91 ms
+SOMPT22-14: 902 frames, p50 1.19 ms, p95 1.62 ms, max 2.47 ms
+wrote /home/panshul/zed-ps2-stagea/results/SOMPT22/bytetrack_like_test_results.zip
+[1;34m[05:30:29][0m encoding /home/panshul/zed-ps2-stagea/clips/SOMPT22-02.mp4 at 30 fps
+[1;34m[05:30:37][0m run.sh sompt22 finished. When all targets are done: bash scripts/dgx/finalize.sh
+
+[1;35m[05:30:37] ===== stage ingest_dancetrack: integrity check + make ingest -> $ZED_ROOT/stagea (all caches so far) =====[0m
+
+category         size
+cache        3033.3 MB
+clips          64.3 MB
+gt             74.8 MB
+logs            0.1 MB
+results        16.1 MB
+weights_SHA256SUMS      0.0 MB
+TOTAL          3.19 GB   (189 files) -> /home/panshul/zed-ps2-stagea/bring_back
+
+INTEGRITY OK: 54 caches verified
+python -m eval.ingest --bring-back "/home/panshul/zed-ps2-stagea/bring_back" --dest /home/panshul/zed-ps2-stagea/stagea --data /home/panshul/zed-ps2-stagea/data \
+	--report docs/results/phase3 --results-dest data/dgx_results \
+	
+[ok] bring_back: 189 files, 3188.6 MB, 54 caches verified
+
+cache folder                                  seqs  emb  gt_root
+DanceTrack/dancetrack/val                       25  yes  /home/panshul/zed-ps2-stagea/stagea/gt/DanceTrack
+MOT17/ablation/train                             7  yes  /home/panshul/zed-ps2-stagea/stagea/gt/MOT17
+MOT20/mot17full_xdomain/train                    4  yes  /home/panshul/zed-ps2-stagea/stagea/gt/MOT20
+MOT20/sparsetrack_ablation/train                 4  yes  /home/panshul/zed-ps2-stagea/stagea/gt/MOT20
+SOMPT22/mot17full/test                           5  yes  MISSING (ingest core.tar)
+SOMPT22/mot17full/train                          9  yes  /home/panshul/zed-ps2-stagea/stagea/gt/SOMPT22/_seqs
+
+INGEST OK
+
+[1;35m[05:33:10] ===== stage phase3_dancetrack: make phase3 (trackers, TrackEval, reproduction, go/no-go v2) + gate events + run-info stamp =====[0m
+[1;34m[05:33:10][0m make phase3 (jobs 6) with: --timeout-min MOT20=240
+python -m eval.phase3 --plan configs/phase3/plan.yaml --index /home/panshul/zed-ps2-stagea/stagea/index.json \
+	--out /home/panshul/zed-ps2-stagea/phase3/out --report /home/panshul/zed-ps2-stagea/phase3/report --jobs 6 --timeout-min MOT20=240
+### Ablation: MOT17 val-half, YOLOX-X bytetrack_ablation + OSNet-AIN re-ID
+
+| Group | Tracker | HOTA | IDF1 | MOTA | IDSW | AssA | DetA | p50 / p95 / max ms |
+|---|---|---|---|---|---|---|---|---|
+| baseline | ByteTrackLike (IoU) | 63.4 | 73.8 | 66.4 | 165 | 66.5 | 61.1 | 1.04 / 2.63 / 12.3 |
+| baseline | OC-SORT | 61.8 | 72.3 | 64.0 | 204 | 65.7 | 58.6 | 0.79 / 2.48 / 15.3 |
+| baseline | Deep OC-SORT (emb + CMC) | 63.3 | 74.6 | 64.6 | 125 | 68.2 | 59.2 | 1.39 / 4.60 / 15.1 |
+| baseline | Hybrid-SORT | 62.4 | 72.2 | 64.2 | 240 | 65.4 | 60.2 | 1.66 / 4.75 / 15.6 |
+| baseline | BoT-SORT (CMC, IoU) | 64.6 | 76.3 | 67.1 | 135 | 68.6 | 61.5 | 1.08 / 2.80 / 11.9 |
+| baseline | ByteTrackLike + re-ID | 62.5 | 73.0 | 66.5 | 183 | 64.9 | 60.8 | 1.30 / 3.64 / 13.1 |
+| baseline | BoT-SORT (CMC) + re-ID | 63.4 | 74.3 | 66.9 | 193 | 66.3 | 61.4 | 1.39 / 3.75 / 13.5 |
+| control | ByteTrackLike + re-ID, buffer 90 (control) | 62.3 | 73.1 | 66.6 | 172 | 64.8 | 60.7 | 1.36 / 3.63 / 13.6 |
+| ours | + re-ID + visibility (buffer) | 62.3 | 73.1 | 66.6 | 172 | 64.8 | 60.7 | 1.58 / 4.68 / 15.0 |
+| ours | + re-ID + appearance update gate (min_visibility) | 62.0 | 72.6 | 66.2 | 201 | 64.0 | 60.8 | 1.44 / 4.52 / 14.9 |
+| ours | + re-ID + appearance cost gate (cost_min_visibility) | 63.2 | 73.3 | 66.3 | 174 | 66.2 | 61.0 | 1.50 / 4.64 / 12.9 |
+| ours | + re-ID + visibility-gated appearance (full) | 63.2 | 73.9 | 66.2 | 167 | 66.2 | 61.0 | 1.57 / 4.63 / 13.6 |
+| control | BoT-SORT + re-ID, buffer 90 (control) | 63.3 | 74.4 | 66.9 | 183 | 66.1 | 61.4 | 1.43 / 3.71 / 13.1 |
+| ours | BoT-SORT + re-ID + visibility-gated appearance | 63.9 | 75.1 | 66.8 | 156 | 67.1 | 61.6 | 1.60 / 4.72 / 40.7 |
+
+### Ablation: MOT20 val-half, mot17full_xdomain + OSNet-AIN re-ID
+
+| Group | Tracker | HOTA | IDF1 | MOTA | IDSW | AssA | DetA | p50 / p95 / max ms |
+|---|---|---|---|---|---|---|---|---|
+| baseline | ByteTrackLike (IoU) | 60.8 | 76.8 | 79.6 | 1070 | 58.6 | 63.3 | 10.71 / 21.45 / 1211.8 |
+| baseline | OC-SORT | 59.8 | 77.0 | 76.4 | 1286 | 58.8 | 61.1 | 12.57 / 25.66 / 1260.1 |
+| baseline | Deep OC-SORT (emb + CMC) | 60.4 | 78.0 | 76.4 | 1227 | 59.8 | 61.2 | 22.99 / 84.46 / 308.6 |
+| baseline | Hybrid-SORT | 62.9 | 79.9 | 82.6 | 1471 | 60.6 | 65.5 | 22.52 / 44.74 / 2057.4 |
+| baseline | BoT-SORT (CMC, IoU) | 60.9 | 77.1 | 79.8 | 1248 | 58.8 | 63.4 | 9.09 / 14.55 / 119.1 |
+| baseline | ByteTrackLike + re-ID | 60.3 | 75.9 | 79.6 | 1160 | 57.7 | 63.2 | 30.96 / 74.85 / 227.8 |
+| baseline | BoT-SORT (CMC) + re-ID | 60.4 | 76.0 | 79.7 | 1367 | 57.9 | 63.3 | 31.60 / 72.95 / 217.2 |
+| control | ByteTrackLike + re-ID, buffer 90 (control) | 60.5 | 76.7 | 79.8 | 1118 | 58.1 | 63.3 | 30.17 / 71.54 / 210.3 |
+| ours | + re-ID + visibility-gated appearance (full) | 60.9 | 77.5 | 79.8 | 1039 | 58.8 | 63.4 | 56.17 / 106.96 / 229.9 |
+| ours | BoT-SORT + re-ID + visibility-gated appearance | 61.1 | 77.7 | 80.0 | 1193 | 58.9 | 63.5 | 57.36 / 107.89 / 273.0 |
+
+### Ablation: MOT20 val-half, sparsetrack_ablation + OSNet-AIN re-ID
+
+| Group | Tracker | HOTA | IDF1 | MOTA | IDSW | AssA | DetA | p50 / p95 / max ms |
+|---|---|---|---|---|---|---|---|---|
+| baseline | ByteTrackLike (IoU) | 69.4 | 84.1 | 87.9 | 1011 | 66.8 | 72.4 | 9.65 / 13.66 / 85.9 |
+| baseline | OC-SORT | 68.0 | 82.7 | 86.7 | 1293 | 64.9 | 71.5 | 11.18 / 16.78 / 375.9 |
+| baseline | Deep OC-SORT (emb + CMC) | 68.7 | 83.8 | 86.8 | 1171 | 66.1 | 71.6 | 25.44 / 54.95 / 228.5 |
+| baseline | Hybrid-SORT | 68.8 | 83.4 | 87.2 | 1365 | 66.0 | 71.9 | 20.42 / 29.62 / 115.6 |
+| baseline | BoT-SORT (CMC, IoU) | 69.3 | 83.9 | 87.9 | 1162 | 66.5 | 72.4 | 9.96 / 13.51 / 90.7 |
+| baseline | ByteTrackLike + re-ID | 67.5 | 81.1 | 87.7 | 1278 | 63.5 | 72.0 | 21.03 / 57.38 / 228.1 |
+| baseline | BoT-SORT (CMC) + re-ID | 67.6 | 81.2 | 87.8 | 1429 | 63.6 | 72.1 | 30.45 / 65.31 / 223.5 |
+| control | ByteTrackLike + re-ID, buffer 90 (control) | 67.4 | 81.2 | 87.7 | 1272 | 63.2 | 72.0 | 28.36 / 57.88 / 224.0 |
+| ours | + re-ID + visibility-gated appearance (full) | 69.5 | 84.5 | 87.9 | 1019 | 66.9 | 72.4 | 50.60 / 95.16 / 245.6 |
+| ours | BoT-SORT + re-ID + visibility-gated appearance | 69.2 | 84.0 | 87.9 | 1162 | 66.3 | 72.4 | 48.45 / 87.48 / 179.0 |
+
+### Ablation: DanceTrack val, DanceTrack YOLOX-X + OSNet-AIN re-ID (MOT17 tracker settings)
+
+| Group | Tracker | HOTA | IDF1 | MOTA | IDSW | AssA | DetA | p50 / p95 / max ms |
+|---|---|---|---|---|---|---|---|---|
+| baseline | ByteTrackLike (IoU) | 52.5 | 54.9 | 88.1 | 1775 | 36.3 | 76.1 | 1.62 / 3.78 / 51.6 |
+| baseline | OC-SORT | 51.2 | 51.3 | 85.1 | 1871 | 34.8 | 75.6 | 1.38 / 3.21 / 39.1 |
+| baseline | Deep OC-SORT (emb) | 55.0 | 55.6 | 85.2 | 1738 | 40.2 | 75.6 | 2.39 / 6.05 / 53.4 |
+| baseline | Hybrid-SORT | 57.4 | 58.5 | 87.3 | 1667 | 42.9 | 77.3 | 2.47 / 6.12 / 60.7 |
+| baseline | BoT-SORT (IoU) | 52.3 | 53.2 | 88.1 | 1934 | 35.9 | 76.6 | 1.77 / 4.15 / 44.3 |
+| baseline | ByteTrackLike + re-ID | 53.3 | 54.0 | 87.8 | 1883 | 37.6 | 76.1 | 2.16 / 4.64 / 41.8 |
+| baseline | BoT-SORT + re-ID | 53.4 | 53.8 | 87.7 | 2127 | 37.5 | 76.5 | 1.75 / 3.38 / 34.1 |
+| control | ByteTrackLike + re-ID, buffer 90 (control) | 54.3 | 55.0 | 87.8 | 1887 | 38.9 | 76.0 | 1.60 / 3.22 / 29.6 |
+| ours | + re-ID + visibility-gated appearance (full) | 53.4 | 55.3 | 88.2 | 1681 | 37.7 | 75.9 | 1.75 / 3.78 / 28.9 |
+| ours | BoT-SORT + re-ID + visibility-gated appearance | 54.3 | 55.8 | 88.1 | 1897 | 38.8 | 76.6 | 1.77 / 3.51 / 24.4 |
+
+| Tracker | gt / trk crossings | count error % | event P / R % | attribution error % | tailgates gt / trk | tailgate P / R % |
+|---|---|---|---|---|---|---|
+| gt as tracker (check) | 25 / 25 | 0.0 | 100.0 / 100.0 | 0.0 | 9 / 9 | 100.0 / 100.0 |
+| botsort | 25 / 28 | 12.0 | 67.9 / 76.0 | 31.6 | 9 / 7 | 85.7 / 66.7 |
+| botsort_reid | 25 / 31 | 24.0 | 64.5 / 80.0 | 40.0 | 9 / 9 | 77.8 / 77.8 |
+| botsort_reid_buffer90 | 25 / 36 | 44.0 | 58.3 / 84.0 | 38.1 | 9 / 12 | 66.7 / 88.9 |
+| botsort_reid_vis_gated | 25 / 32 | 28.0 | 62.5 / 80.0 | 25.0 | 9 / 9 | 77.8 / 77.8 |
+| bytetrack | 25 / 28 | 12.0 | 67.9 / 76.0 | 26.3 | 9 / 7 | 85.7 / 66.7 |
+| bytetrack_reid | 25 / 30 | 20.0 | 66.7 / 80.0 | 40.0 | 9 / 10 | 80.0 / 88.9 |
+| deep_ocsort | 25 / 25 | 0.0 | 72.0 / 72.0 | 16.7 | 9 / 5 | 100.0 / 55.6 |
+| hybrid_sort | 25 / 33 | 32.0 | 60.6 / 80.0 | 35.0 | 9 / 14 | 50.0 / 77.8 |
+| ocsort | 25 / 25 | 0.0 | 72.0 / 72.0 | 22.2 | 9 / 5 | 100.0 / 55.6 |
+| reid_buffer90 | 25 / 35 | 40.0 | 62.9 / 88.0 | 40.9 | 9 / 12 | 75.0 / 100.0 |
+| reid_costgate | 25 / 29 | 16.0 | 65.5 / 76.0 | 26.3 | 9 / 8 | 75.0 / 66.7 |
+| reid_minvis | 25 / 33 | 32.0 | 63.6 / 84.0 | 38.1 | 9 / 12 | 66.7 / 88.9 |
+| reid_vis | 25 / 35 | 40.0 | 62.9 / 88.0 | 40.9 | 9 / 12 | 75.0 / 100.0 |
+| reid_vis_gated | 25 / 37 | 48.0 | 56.8 / 84.0 | 23.8 | 9 / 11 | 72.7 / 88.9 |
+stamped 28 files under /home/panshul/zed-ps2-stagea/phase3/report
+ByteTrack reproduction: NOT REPRODUCED; go/no-go v2: NO-GO; ran: ['mot17_val_half', 'mot20_val_half__mot17full_xdomain', 'mot20_val_half__sparsetrack_ablation', 'dancetrack_val']
+[1;32m[05:36:13] NOTE:[0m phase3 (dancetrack): ByteTrack reproduction: NOT REPRODUCED; go/no-go v2: NO-GO; ran: ['mot17_val_half', 'mot20_val_half__mot17full_xdomain', 'mot20_val_half__sparsetrack_ablation', 'dancetrack_val']
+
+[1;35m[05:36:13] ===== stage finalize_dancetrack: finalize.sh --results: one tar + manifest + sha256 -> $ZED_ROOT/final/ =====[0m

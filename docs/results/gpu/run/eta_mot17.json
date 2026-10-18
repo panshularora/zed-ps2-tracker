@@ -1,0 +1,19 @@
+{
+ "sequences_done": 2,
+ "frames_done": 1650,
+ "fps": 3.8326635850502893,
+ "remaining_frames": 3666,
+ "later": [
+  {
+   "name": "MOT20",
+   "frames": 17862,
+   "seconds": 4660.466436363637
+  },
+  {
+   "name": "DanceTrack",
+   "frames": null,
+   "seconds": null
+  }
+ ],
+ "remaining_seconds": 956.5149454545455
+}

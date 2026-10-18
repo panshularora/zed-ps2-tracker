@@ -1,0 +1,74 @@
+{
+ "profile": "laptop",
+ "host": "LAPTOP-OK8Q1S1N",
+ "gpu": {
+  "index": 0,
+  "name": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+  "memory_mib": 6144,
+  "driver": "581.86",
+  "compute_cap": "8.6"
+ },
+ "detectors": {
+  "DanceTrack/dancetrack/val": {
+   "detector": "yolox_x (ByteTrack)",
+   "weights": "dancetrack_bytetrack_x.pth.tar",
+   "trained_on": "DanceTrack train (DanceTrack authors' ByteTrack YOLOX-X)",
+   "precision": "fp16",
+   "input_size": "800x1440",
+   "saw_eval_half": false,
+   "gpu_in_cache": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+   "reid": "osnet_ain_x1_0"
+  },
+  "MOT17/ablation/train": {
+   "detector": "yolox_x (ByteTrack)",
+   "weights": "bytetrack_ablation.pth.tar",
+   "trained_on": "CrowdHuman + MOT17 train first half (ByteTrack ablation)",
+   "precision": "fp16",
+   "input_size": "800x1440",
+   "saw_eval_half": false,
+   "gpu_in_cache": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+   "reid": "osnet_ain_x1_0"
+  },
+  "MOT20/mot17full_xdomain/train": {
+   "detector": "yolox_x (ByteTrack)",
+   "weights": "bytetrack_x_mot17.pth.tar",
+   "trained_on": "CrowdHuman + MOT17 + CityPersons + ETHZ (no MOT20)",
+   "precision": "fp16",
+   "input_size": "896x1600",
+   "saw_eval_half": false,
+   "gpu_in_cache": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+   "reid": "osnet_ain_x1_0"
+  },
+  "MOT20/sparsetrack_ablation/train": {
+   "detector": "yolox_x (ByteTrack)",
+   "weights": "sparsetrack_mot20_ablation.pth.tar",
+   "trained_on": "CrowdHuman + MOT20 train first half (SparseTrack ablation)",
+   "precision": "fp16",
+   "input_size": "896x1600",
+   "saw_eval_half": false,
+   "gpu_in_cache": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+   "reid": "osnet_ain_x1_0"
+  },
+  "SOMPT22/mot17full/test": {
+   "detector": "yolox_x (ByteTrack)",
+   "weights": "bytetrack_x_mot17.pth.tar",
+   "trained_on": "CrowdHuman + MOT17 + CityPersons + ETHZ (no SOMPT22)",
+   "precision": "fp16",
+   "input_size": "800x1440",
+   "saw_eval_half": false,
+   "gpu_in_cache": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+   "reid": "osnet_ain_x1_0"
+  },
+  "SOMPT22/mot17full/train": {
+   "detector": "yolox_x (ByteTrack)",
+   "weights": "bytetrack_x_mot17.pth.tar",
+   "trained_on": "CrowdHuman + MOT17 + CityPersons + ETHZ (no SOMPT22)",
+   "precision": "fp16",
+   "input_size": "800x1440",
+   "saw_eval_half": false,
+   "gpu_in_cache": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+   "reid": "osnet_ain_x1_0"
+  }
+ },
+ "laptop_detector_caches": []
+}

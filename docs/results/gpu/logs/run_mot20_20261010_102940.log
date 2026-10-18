@@ -1,0 +1,22 @@
+[1;34m[10:29:40][0m logging to /home/panshul/zed-ps2-stagea/logs/run_mot20_20261010_102940.log
+[1;34m[10:29:40][0m detector: x, batch 8, GPU 0
+[1;34m[10:29:40][0m have MOT20.zip (5028926248 bytes)
+[1;34m[10:29:40][0m MOT20 variants: sparsetrack_ablation mot17full_xdomain mot20full_SAW_EVAL_HALF
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-01.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-02.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-03.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-05.npz (already complete)
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-01.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-02.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-03.npz (already complete)
+[run ] MOT20-05: 3315 frames
+[done] {"sequence": "MOT20-05", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-05.npz", "frames": 3315, "detections": 732867, "dets_per_frame": 221.08, "bytes": 575443318, "stage_a_seconds": 1946.96, "stage_a_fps": 1.7}
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[run ] MOT20-01: 429 frames
+[done] {"sequence": "MOT20-01", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/mot20full_SAW_EVAL_HALF/train/MOT20-01.npz", "frames": 429, "detections": 22339, "dets_per_frame": 52.07, "bytes": 17430079, "stage_a_seconds": 117.04, "stage_a_fps": 3.67}
+[run ] MOT20-02: 2782 frames

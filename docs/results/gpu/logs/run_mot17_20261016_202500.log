@@ -1,0 +1,8 @@
+[1;34m[20:25:00][0m logging to /home/panshul/zed-ps2-stagea/logs/run_mot17_20261016_202500.log
+[1;34m[20:25:00][0m detector: x, batch 1, GPU 0
+[1;34m[20:25:00][0m have MOT17.zip (5860214001 bytes)
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[run ] MOT17-02-FRCNN: 600 frames
+[done] {"sequence": "MOT17-02-FRCNN", "path": "/home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-02-FRCNN.npz", "frames": 600, "detections": 30742, "dets_per_frame": 51.24, "bytes": 24123889, "stage_a_seconds": 177.57, "stage_a_fps": 3.38}
+[run ] MOT17-04-FRCNN: 1050 frames

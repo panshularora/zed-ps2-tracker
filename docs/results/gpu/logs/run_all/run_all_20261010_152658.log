@@ -1,0 +1,63 @@
+[1;34m[15:26:58][0m logging to /home/panshul/zed-ps2-stagea/run_all/logs/run_all_20261010_152658.log ; status: cat /home/panshul/zed-ps2-stagea/STATUS
+
+[1;35m[15:26:58] ===== stage preflight: GPU via nvidia-smi (WSL2), tools, disk, datasets, frozen files =====[0m
+[1;34m[15:26:58][0m WSL2 detected (6.6.87.2-microsoft-standard-WSL2); the GPU comes from the WINDOWS NVIDIA driver
+GPU 0: NVIDIA GeForce RTX 3050 6GB Laptop GPU (UUID: GPU-b060f840-bcab-5362-2ae9-bac4a27c6285)
+[1;34m[15:26:58][0m GPU 0: NVIDIA GeForce RTX 3050 6GB Laptop GPU, 6144 MiB; profile laptop; detector policy: auto (now: x); batch 1; phase-3 jobs 6
+[1;34m[15:26:58][0m under 8 GB: still YOLOX-X fp16, batch 1 at 800x1440; only a real CUDA out-of-memory error switches to YOLOX-S
+[1;34m[15:26:58][0m free disk under /home/panshul/zed-ps2-stagea: 914 GB
+[1;34m[15:26:58][0m dataset mot17: extracted
+[1;34m[15:26:58][0m dataset mot20: extracted
+[1;34m[15:26:59][0m dataset dancetrack: not here yet; will download 4209 MB from https://huggingface.co/datasets/noahcao/dancetrack/resolve/main/val.zip (or pre-fetch: bash run.sh download dancetrack)
+[1;34m[15:26:59][0m SOMPT22: no archives in /home/panshul/zed-ps2-stagea/downloads/sompt22 -> that stage will be skipped
+[1;34m[15:26:59][0m repo 1354a75 on main; frozen files unmodified
+[1;34m[15:27:00][0m stage setup: done earlier, skipped (--force=setup to redo)
+
+[1;35m[15:27:00] ===== stage gpucheck: torch/CUDA versions; torch sees the GPU (cu118 rebuild if not) =====[0m
+{"torch": "2.7.1+cu126", "cuda_build": "12.6", "cuda_available": true, "cudnn": 90501, "device": "NVIDIA GeForce RTX 3050 6GB Laptop GPU", "memory_mib": 6143, "capability": "8.6", "fp16_matmul_ok": true}
+
+[1;35m[15:27:05] ===== stage stagea_mot17: Stage A mot17: detector + re-ID caches =====[0m
+[1;34m[15:27:05][0m Stage A mot17 with detector x (batch 1)
+[1;34m[15:27:05][0m logging to /home/panshul/zed-ps2-stagea/logs/run_mot17_20261010_152705.log
+[1;34m[15:27:05][0m detector: x, batch 1, GPU 0
+[1;34m[15:27:05][0m have MOT17.zip (5860214001 bytes)
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-02-FRCNN.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-04-FRCNN.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-05-FRCNN.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-09-FRCNN.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-10-FRCNN.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-11-FRCNN.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-13-FRCNN.npz (already complete)
+[1;34m[15:27:17][0m clip exists: /home/panshul/zed-ps2-stagea/clips/MOT17-04.mp4
+[1;34m[15:27:18][0m run.sh mot17 finished. When all targets are done: bash scripts/dgx/finalize.sh
+
+[1;35m[15:27:18] ===== stage ingest_mot17: integrity check + make ingest -> $ZED_ROOT/stagea (all caches so far) =====[0m
+
+category         size
+cache        3040.6 MB
+clips          57.4 MB
+gt             52.2 MB
+logs            0.1 MB
+weights_SHA256SUMS      0.0 MB
+TOTAL          3.15 GB   (57 files) -> /home/panshul/zed-ps2-stagea/bring_back
+
+INTEGRITY OK: 19 caches verified
+python -m eval.ingest --bring-back "/home/panshul/zed-ps2-stagea/bring_back" --dest /home/panshul/zed-ps2-stagea/stagea --data /home/panshul/zed-ps2-stagea/data \
+	--report docs/results/phase3 --results-dest data/dgx_results \
+	
+[ok] bring_back: 57 files, 3150.3 MB, 19 caches verified
+
+cache folder                                  seqs  emb  gt_root
+MOT17/ablation/train                             7  yes  /home/panshul/zed-ps2-stagea/stagea/gt/MOT17
+MOT20/mot17full_xdomain/train                    4  yes  /home/panshul/zed-ps2-stagea/stagea/gt/MOT20
+MOT20/mot20full_SAW_EVAL_HALF/train              4  yes  /home/panshul/zed-ps2-stagea/stagea/gt/MOT20 SAW_EVAL_HALF
+MOT20/sparsetrack_ablation/train                 4  yes  /home/panshul/zed-ps2-stagea/stagea/gt/MOT20
+
+INGEST OK
+
+[1;35m[15:30:13] ===== stage phase3_mot17: make phase3 (trackers, TrackEval, reproduction, go/no-go v2) + gate events + run-info stamp =====[0m
+[1;34m[15:30:13][0m make phase3 (jobs 6)
+python -m eval.phase3 --plan configs/phase3/plan.yaml --index /home/panshul/zed-ps2-stagea/stagea/index.json \
+	--out /home/panshul/zed-ps2-stagea/phase3/out --report /home/panshul/zed-ps2-stagea/phase3/report --jobs 6 

@@ -1,0 +1,29 @@
+[1;34m[20:23:17][0m logging to /home/panshul/zed-ps2-stagea/logs/setup_20261016_202317.log
+index, name, memory.total [MiB], driver_version, compute_cap
+0, NVIDIA GeForce RTX 3050 6GB Laptop GPU, 6144 MiB, 581.86, 8.6
+[1;34m[20:23:17][0m free disk under /home/panshul/zed-ps2-stagea: 904 GB (need ~60 GB for everything, ~25 GB for MOT17+MOT20)
+torch 2.7.1+cu126 cuda 12.6 -> NVIDIA GeForce RTX 3050 6GB Laptop GPU
+[1;34m[20:23:20][0m ByteTrack @ d1bf019
+[1;34m[20:23:21][0m deep-person-reid @ f8cd150
+[1;34m[20:23:21][0m have bytetrack_ablation.pth.tar (792835795 bytes)
+[1;34m[20:23:21][0m have bytetrack_x_mot17.pth.tar (792835731 bytes)
+[1;34m[20:23:21][0m have bytetrack_x_mot20.pth.tar (792835731 bytes)
+[1;34m[20:23:21][0m have dancetrack_bytetrack_x.pth.tar (792835731 bytes)
+[1;34m[20:23:21][0m have sparsetrack_mot20_ablation.pth.tar (792835731 bytes)
+[1;34m[20:23:21][0m have osnet_ain_x1_0_msmt17.pth (17293009 bytes)
+26cb8d2808664e5068a4c812d53becbc948b47fd6eacf2b45db049ab40c48b1a  ./bytetrack_ablation.pth.tar
+e3945f3523fde1e107708aacd64dab0670c34e371d136e54587cac7a50d3cfba  ./bytetrack_x_mot17.pth.tar
+021d7bc47fe20ae690007454cd2192df6237c2f4446ae92737a79523de89de64  ./bytetrack_x_mot20.pth.tar
+b8d1afba08f801f3fe2cb122faf3fc9af6c7856405a0da94cf91cdd5eb9b3321  ./dancetrack_bytetrack_x.pth.tar
+8a07e8da38946f7cee37f4561617bf8b6d2fe8f3a4027852893ea092e46d919f  ./osnet_ain_x1_0_msmt17.pth
+1fe6d4b6dc211481d5351ba3c8942466e4f72baae3d6f8e9081290e5afe10be8  ./sparsetrack_mot20_ablation.pth.tar
+[ok] bytetrack_ablation.pth.tar: 0 dets on noise, 249.9 ms
+[ok] bytetrack_x_mot17.pth.tar: 0 dets on noise, 169.8 ms
+[ok] bytetrack_x_mot20.pth.tar: 0 dets on noise, 182.2 ms
+[ok] dancetrack_bytetrack_x.pth.tar: 0 dets on noise, 162.7 ms
+[ok] sparsetrack_mot20_ablation.pth.tar: 0 dets on noise, 175.2 ms
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[ok] osnet_ain_x1_0: (2, 512), |e|=[0.9999899  0.99995977]
+SELFTEST OK
+[1;34m[20:24:55][0m SETUP OK. Next: bash scripts/dgx/run.sh mot17

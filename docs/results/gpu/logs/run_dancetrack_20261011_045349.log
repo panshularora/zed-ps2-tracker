@@ -1,0 +1,57 @@
+[1;34m[04:53:49][0m logging to /home/panshul/zed-ps2-stagea/logs/run_dancetrack_20261011_045349.log
+[1;34m[04:53:49][0m detector: x, batch 8, GPU 0
+[1;34m[04:53:49][0m have dancetrack_val.zip (4209785614 bytes)
+[1;34m[04:53:49][0m already extracted dancetrack_val.zip
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[run ] dancetrack0004: 1203 frames
+[done] {"sequence": "dancetrack0004", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0004.npz", "frames": 1203, "detections": 4899, "dets_per_frame": 4.07, "bytes": 3807791, "stage_a_seconds": 195.31, "stage_a_fps": 6.16}
+[run ] dancetrack0005: 1203 frames
+[done] {"sequence": "dancetrack0005", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0005.npz", "frames": 1203, "detections": 4888, "dets_per_frame": 4.06, "bytes": 3763000, "stage_a_seconds": 190.77, "stage_a_fps": 6.31}
+[run ] dancetrack0007: 1203 frames
+[done] {"sequence": "dancetrack0007", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0007.npz", "frames": 1203, "detections": 9419, "dets_per_frame": 7.83, "bytes": 7034420, "stage_a_seconds": 193.31, "stage_a_fps": 6.22}
+[run ] dancetrack0010: 1203 frames
+[done] {"sequence": "dancetrack0010", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0010.npz", "frames": 1203, "detections": 7069, "dets_per_frame": 5.88, "bytes": 5382146, "stage_a_seconds": 196.02, "stage_a_fps": 6.14}
+[run ] dancetrack0014: 1203 frames
+[done] {"sequence": "dancetrack0014", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0014.npz", "frames": 1203, "detections": 13279, "dets_per_frame": 11.04, "bytes": 10287593, "stage_a_seconds": 197.58, "stage_a_fps": 6.09}
+[run ] dancetrack0018: 503 frames
+[done] {"sequence": "dancetrack0018", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0018.npz", "frames": 503, "detections": 2835, "dets_per_frame": 5.64, "bytes": 2182891, "stage_a_seconds": 81.65, "stage_a_fps": 6.16}
+[run ] dancetrack0019: 2402 frames
+[done] {"sequence": "dancetrack0019", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0019.npz", "frames": 2402, "detections": 17699, "dets_per_frame": 7.37, "bytes": 13440641, "stage_a_seconds": 387.58, "stage_a_fps": 6.2}
+[run ] dancetrack0025: 803 frames
+[done] {"sequence": "dancetrack0025", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0025.npz", "frames": 803, "detections": 8097, "dets_per_frame": 10.08, "bytes": 6378462, "stage_a_seconds": 130.21, "stage_a_fps": 6.17}
+[run ] dancetrack0026: 302 frames
+[done] {"sequence": "dancetrack0026", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0026.npz", "frames": 302, "detections": 4897, "dets_per_frame": 16.22, "bytes": 3872333, "stage_a_seconds": 52.37, "stage_a_fps": 5.77}
+[run ] dancetrack0030: 1263 frames
+[done] {"sequence": "dancetrack0030", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0030.npz", "frames": 1263, "detections": 7750, "dets_per_frame": 6.14, "bytes": 5945946, "stage_a_seconds": 203.77, "stage_a_fps": 6.2}
+[run ] dancetrack0034: 923 frames
+[done] {"sequence": "dancetrack0034", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0034.npz", "frames": 923, "detections": 12342, "dets_per_frame": 13.37, "bytes": 9552147, "stage_a_seconds": 156.74, "stage_a_fps": 5.89}
+[run ] dancetrack0035: 703 frames
+[done] {"sequence": "dancetrack0035", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0035.npz", "frames": 703, "detections": 5536, "dets_per_frame": 7.87, "bytes": 4245398, "stage_a_seconds": 115.92, "stage_a_fps": 6.06}
+[run ] dancetrack0041: 1003 frames
+[done] {"sequence": "dancetrack0041", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0041.npz", "frames": 1003, "detections": 21086, "dets_per_frame": 21.02, "bytes": 16222984, "stage_a_seconds": 179.99, "stage_a_fps": 5.57}
+[run ] dancetrack0043: 183 frames
+[done] {"sequence": "dancetrack0043", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0043.npz", "frames": 183, "detections": 2097, "dets_per_frame": 11.46, "bytes": 1633287, "stage_a_seconds": 31.08, "stage_a_fps": 5.89}
+[run ] dancetrack0047: 1203 frames
+[done] {"sequence": "dancetrack0047", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0047.npz", "frames": 1203, "detections": 11111, "dets_per_frame": 9.24, "bytes": 8560328, "stage_a_seconds": 196.26, "stage_a_fps": 6.13}
+[run ] dancetrack0058: 1601 frames
+[done] {"sequence": "dancetrack0058", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0058.npz", "frames": 1601, "detections": 11218, "dets_per_frame": 7.01, "bytes": 8434271, "stage_a_seconds": 262.13, "stage_a_fps": 6.11}
+[run ] dancetrack0063: 1000 frames
+[done] {"sequence": "dancetrack0063", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0063.npz", "frames": 1000, "detections": 12985, "dets_per_frame": 12.98, "bytes": 9912354, "stage_a_seconds": 168.7, "stage_a_fps": 5.93}
+[run ] dancetrack0065: 702 frames
+[done] {"sequence": "dancetrack0065", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0065.npz", "frames": 702, "detections": 3803, "dets_per_frame": 5.42, "bytes": 2959265, "stage_a_seconds": 115.32, "stage_a_fps": 6.09}
+[run ] dancetrack0073: 703 frames
+[done] {"sequence": "dancetrack0073", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0073.npz", "frames": 703, "detections": 8245, "dets_per_frame": 11.73, "bytes": 6345109, "stage_a_seconds": 119.21, "stage_a_fps": 5.9}
+[run ] dancetrack0077: 1203 frames
+[done] {"sequence": "dancetrack0077", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0077.npz", "frames": 1203, "detections": 11572, "dets_per_frame": 9.62, "bytes": 9077799, "stage_a_seconds": 198.72, "stage_a_fps": 6.05}
+[run ] dancetrack0079: 1202 frames
+[done] {"sequence": "dancetrack0079", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0079.npz", "frames": 1202, "detections": 14575, "dets_per_frame": 12.13, "bytes": 11076816, "stage_a_seconds": 201.09, "stage_a_fps": 5.98}
+[run ] dancetrack0081: 984 frames
+[done] {"sequence": "dancetrack0081", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0081.npz", "frames": 984, "detections": 19543, "dets_per_frame": 19.86, "bytes": 14969956, "stage_a_seconds": 172.15, "stage_a_fps": 5.72}
+[run ] dancetrack0090: 1004 frames
+[done] {"sequence": "dancetrack0090", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0090.npz", "frames": 1004, "detections": 14247, "dets_per_frame": 14.19, "bytes": 11097706, "stage_a_seconds": 170.75, "stage_a_fps": 5.88}
+[run ] dancetrack0094: 603 frames
+[done] {"sequence": "dancetrack0094", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0094.npz", "frames": 603, "detections": 13435, "dets_per_frame": 22.28, "bytes": 10267290, "stage_a_seconds": 108.0, "stage_a_fps": 5.58}
+[run ] dancetrack0097: 1203 frames
+[done] {"sequence": "dancetrack0097", "path": "/home/panshul/zed-ps2-stagea/cache/DanceTrack/dancetrack/val/dancetrack0097.npz", "frames": 1203, "detections": 4651, "dets_per_frame": 3.87, "bytes": 3600122, "stage_a_seconds": 196.18, "stage_a_fps": 6.13}
+[1;34m[06:04:42][0m run.sh dancetrack finished. When all targets are done: bash scripts/dgx/finalize.sh

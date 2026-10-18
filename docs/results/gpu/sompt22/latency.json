@@ -1,0 +1,132 @@
+{
+  "config": {
+    "name": "bytetrack_like",
+    "detection": {
+      "high_thresh": 0.6,
+      "low_thresh": 0.1,
+      "new_track_thresh": 0.7
+    },
+    "association": {
+      "match_thresh": 0.9,
+      "second_match_thresh": 0.5,
+      "unconfirmed_match_thresh": 0.7,
+      "fuse_score": true,
+      "duplicate_iou_dist": 0.15,
+      "backend": "scipy",
+      "iou_plus_one": false
+    },
+    "lifecycle": {
+      "min_hits": 2,
+      "tentative_max_misses": 0,
+      "track_buffer": 30,
+      "scale_buffer_by_fps": false,
+      "confirm_on_first_frame": true,
+      "removal_lag": false,
+      "predict_tentative": true
+    },
+    "appearance": {
+      "enabled": false,
+      "alpha": 0.9,
+      "proximity_thresh": 0.5,
+      "appearance_thresh": 0.25,
+      "min_visibility": 0.0,
+      "cost_min_visibility": 0.0
+    },
+    "visibility": {
+      "estimator": "constant",
+      "occluder_min_score": 0.0,
+      "grid": 16,
+      "border": true,
+      "score_fusion": "none",
+      "soften_weight": 0.0,
+      "occluded_buffer_scale": 1.0,
+      "occluded_thresh": 0.5
+    },
+    "delayed": {
+      "enabled": false,
+      "max_delay_frames": 3,
+      "margin": 0.05,
+      "max_cluster": 4,
+      "max_hypotheses": 6,
+      "miss_penalty": 1.0,
+      "min_gain": 0.0,
+      "confirmed_only": false,
+      "same_tracks": false,
+      "score_scope": "cluster",
+      "birth_penalty": 0.0,
+      "trigger_max_visibility": 1.0,
+      "trigger_require_all": false
+    },
+    "kalman": {
+      "std_weight_position": 0.05,
+      "std_weight_velocity": 0.00625
+    },
+    "output": {
+      "min_box_area": 100.0,
+      "max_aspect_ratio": 1.6,
+      "report_tentative": false
+    },
+    "ocsort": {
+      "iou_threshold": 0.3,
+      "delta_t": 3,
+      "inertia": 0.2,
+      "use_byte": false,
+      "oru": true,
+      "ocr": true,
+      "asso": "iou",
+      "w_assoc_emb": 0.75,
+      "alpha_fixed_emb": 0.95,
+      "adaptive_weighting": true,
+      "aw_param": 0.5,
+      "tcm_first_weight": 1.0,
+      "tcm_byte_weight": 1.0
+    },
+    "cmc": {
+      "method": "none"
+    }
+  },
+  "combined": {
+    "frames": 7502,
+    "p50_ms": 1.820247,
+    "p95_ms": 4.081152349999999,
+    "max_ms": 47.914836,
+    "mean_ms": 2.1759596378299118
+  },
+  "per_sequence": {
+    "SOMPT22-01": {
+      "frames": 1800,
+      "p50_ms": 1.904212,
+      "p95_ms": 2.7564031999999994,
+      "max_ms": 23.370292,
+      "mean_ms": 2.0466149694444447
+    },
+    "SOMPT22-03": {
+      "frames": 1200,
+      "p50_ms": 1.281502,
+      "p95_ms": 2.0069461,
+      "max_ms": 5.173244,
+      "mean_ms": 1.34547428
+    },
+    "SOMPT22-06": {
+      "frames": 1800,
+      "p50_ms": 3.616751,
+      "p95_ms": 4.6825183,
+      "max_ms": 40.748015,
+      "mean_ms": 3.737392358888889
+    },
+    "SOMPT22-09": {
+      "frames": 1800,
+      "p50_ms": 1.727865,
+      "p95_ms": 2.40497375,
+      "max_ms": 47.914836,
+      "mean_ms": 1.7738809327777778
+    },
+    "SOMPT22-14": {
+      "frames": 902,
+      "p50_ms": 1.190764,
+      "p95_ms": 1.6239093999999996,
+      "max_ms": 2.473315,
+      "mean_ms": 1.2253671807095343
+    }
+  }
+}

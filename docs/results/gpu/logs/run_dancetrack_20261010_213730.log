@@ -1,0 +1,171 @@
+[1;34m[21:37:30][0m logging to /home/panshul/zed-ps2-stagea/logs/run_dancetrack_20261010_213730.log
+[1;34m[21:37:30][0m detector: x, batch 8, GPU 0
+[1;34m[21:37:30][0m downloading dancetrack_val.zip ...
+--2026-10-10 21:37:30--  https://huggingface.co/datasets/noahcao/dancetrack/resolve/main/val.zip
+Resolving huggingface.co (huggingface.co)... 108.159.15.3, 108.159.15.84, 108.159.15.21, ...
+Connecting to huggingface.co (huggingface.co)|108.159.15.3|:443... connected.
+HTTP request sent, awaiting response... 302 Found
+Location: https://us.aws.cdn.hf.co/xet-bridge-us/66edb8c26babd2a70524add5/06652c0eec4f5bd3a57646c20cad70e8b79c1c35bf16861a95aecc30b118e752?user_id=public&xip=gmyzmmuBGk0&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27val.zip%3B+filename%3D%22val.zip%22%3B&X-Xet-Cas-Uid=public&response-content-type=application%2Fzip&Expires=1791671851&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly91cy5hd3MuY2RuLmhmLmNvL3hldC1icmlkZ2UtdXMvNjZlZGI4YzI2YmFiZDJhNzA1MjRhZGQ1LzA2NjUyYzBlZWM0ZjViZDNhNTc2NDZjMjBjYWQ3MGU4Yjc5YzFjMzViZjE2ODYxYTk1YWVjYzMwYjExOGU3NTJcXD91c2VyX2lkPXB1YmxpYyZ4aXA9Z215em1tdUJHazAmcmVzcG9uc2UtY29udGVudC1kaXNwb3NpdGlvbj1pbmxpbmUlM0IrZmlsZW5hbWUlMkElM0RVVEYtOCUyNyUyN3ZhbC56aXAlM0IrZmlsZW5hbWUlM0QlMjJ2YWwuemlwJTIyJTNCJlgtWGV0LUNhcy1VaWQ9cHVibGljJnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbiUyRnppcCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiRXBvY2hUaW1lIjoxNzkxNjcxODUxfX19XX0_&Signature=MEYCIQCB0icI3itqUkL0vpohOV8sJ2jB53ODsPTeFo7jPycVNQIhAM1mFSoAacD7RabdZfyfueOri4s0fAvQdjTvIFUKQ1BM&Key-Pair-Id=01KXEF4KZ1B6FV465MAWR4M21F&Hash-Algorithm=SHA256 [following]
+--2026-10-10 21:37:31--  https://us.aws.cdn.hf.co/xet-bridge-us/66edb8c26babd2a70524add5/06652c0eec4f5bd3a57646c20cad70e8b79c1c35bf16861a95aecc30b118e752?user_id=public&xip=gmyzmmuBGk0&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27val.zip%3B+filename%3D%22val.zip%22%3B&X-Xet-Cas-Uid=public&response-content-type=application%2Fzip&Expires=1791671851&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly91cy5hd3MuY2RuLmhmLmNvL3hldC1icmlkZ2UtdXMvNjZlZGI4YzI2YmFiZDJhNzA1MjRhZGQ1LzA2NjUyYzBlZWM0ZjViZDNhNTc2NDZjMjBjYWQ3MGU4Yjc5YzFjMzViZjE2ODYxYTk1YWVjYzMwYjExOGU3NTJcXD91c2VyX2lkPXB1YmxpYyZ4aXA9Z215em1tdUJHazAmcmVzcG9uc2UtY29udGVudC1kaXNwb3NpdGlvbj1pbmxpbmUlM0IrZmlsZW5hbWUlMkElM0RVVEYtOCUyNyUyN3ZhbC56aXAlM0IrZmlsZW5hbWUlM0QlMjJ2YWwuemlwJTIyJTNCJlgtWGV0LUNhcy1VaWQ9cHVibGljJnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbiUyRnppcCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiRXBvY2hUaW1lIjoxNzkxNjcxODUxfX19XX0_&Signature=MEYCIQCB0icI3itqUkL0vpohOV8sJ2jB53ODsPTeFo7jPycVNQIhAM1mFSoAacD7RabdZfyfueOri4s0fAvQdjTvIFUKQ1BM&Key-Pair-Id=01KXEF4KZ1B6FV465MAWR4M21F&Hash-Algorithm=SHA256
+Resolving us.aws.cdn.hf.co (us.aws.cdn.hf.co)... 18.136.219.244, 47.130.32.119, 13.215.180.201, ...
+Connecting to us.aws.cdn.hf.co (us.aws.cdn.hf.co)|18.136.219.244|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 4209785614 (3.9G) [application/zip]
+Saving to: ‘/home/panshul/zed-ps2-stagea/downloads/dancetrack_val.zip’
+
+     0K ........ ........ ........ ........  0% 8.79M 7m33s
+ 32768K ........ ........ ........ ........  1% 18.5M 5m31s
+ 65536K ........ ........ ........ ........  2% 17.6M 4m53s
+ 98304K ........ ........ ........ ........  3% 13.6M 4m49s
+131072K ........ ........ ........ ........  3% 13.8M 4m46s
+163840K ........ ........ ........ ........  4% 19.7M 4m28s
+196608K ........ ........ ........ ........  5% 22.4M 4m12s
+229376K ........ ........ ........ ........  6% 15.4M 4m9s
+262144K ........ ........ ........ ........  7% 19.0M 4m2s
+294912K ........ ........ ........ ........  7% 17.5M 3m57s
+327680K ........ ........ ........ ........  8% 18.7M 3m51s
+360448K ........ ........ ........ ........  9% 14.2M 3m51s
+393216K ........ ........ ........ ........ 10% 20.1M 3m46s
+425984K ........ ........ ........ ........ 11% 23.3M 3m38s
+458752K ........ ........ ........ ........ 11% 21.9M 3m33s
+491520K ........ ........ ........ ........ 12% 19.7M 3m29s
+524288K ........ ........ ........ ........ 13% 15.6M 3m28s
+557056K ........ ........ ........ ........ 14% 22.7M 3m23s
+589824K ........ ........ ........ ........ 15% 17.7M 3m21s
+622592K ........ ........ ........ ........ 15% 21.1M 3m17s
+655360K ........ ........ ........ ........ 16% 17.6M 3m15s
+688128K ........ ........ ........ ........ 17% 23.1M 3m11s
+720896K ........ ........ ........ ........ 18% 16.4M 3m9s
+753664K ........ ........ ........ ........ 19% 20.0M 3m6s
+786432K ........ ........ ........ ........ 19% 13.4M 3m7s
+819200K ........ ........ ........ ........ 20% 19.5M 3m4s
+851968K ........ ........ ........ ........ 21% 20.4M 3m1s
+884736K ........ ........ ........ ........ 22% 21.7M 2m58s
+917504K ........ ........ ........ ........ 23% 20.3M 2m55s
+950272K ........ ........ ........ ........ 23% 21.5M 2m52s
+983040K ........ ........ ........ ........ 24% 23.2M 2m49s
+1015808K ........ ........ ........ ........ 25% 19.1M 2m47s
+1048576K ........ ........ ........ ........ 26% 19.2M 2m45s
+1081344K ........ ........ ........ ........ 27% 17.2M 2m43s
+1114112K ........ ........ ........ ........ 27% 18.5M 2m42s
+1146880K ........ ........ ........ ........ 28% 19.3M 2m39s
+1179648K ........ ........ ........ ........ 29% 21.7M 2m37s
+1212416K ........ ........ ........ ........ 30% 24.1M 2m34s
+1245184K ........ ........ ........ ........ 31% 21.0M 2m32s
+1277952K ........ ........ ........ ........ 31% 20.7M 2m30s
+1310720K ........ ........ ........ ........ 32% 17.3M 2m28s
+1343488K ........ ........ ........ ........ 33% 17.8M 2m26s
+1376256K ........ ........ ........ ........ 34% 19.1M 2m25s
+1409024K ........ ........ ........ ........ 35% 20.3M 2m22s
+1441792K ........ ........ ........ ........ 35% 24.5M 2m20s
+1474560K ........ ........ ........ ........ 36% 22.0M 2m18s
+1507328K ........ ........ ........ ........ 37% 20.0M 2m16s
+1540096K ........ ........ ........ ........ 38% 19.7M 2m14s
+1572864K ........ ........ ........ ........ 39% 18.3M 2m12s
+1605632K ........ ........ ........ ........ 39% 20.7M 2m10s
+1638400K ........ ........ ........ ........ 40% 20.8M 2m8s
+1671168K ........ ........ ........ ........ 41% 21.2M 2m6s
+1703936K ........ ........ ........ ........ 42% 21.6M 2m4s
+1736704K ........ ........ ........ ........ 43% 20.3M 2m2s
+1769472K ........ ........ ........ ........ 43% 15.5M 2m1s
+1802240K ........ ........ ........ ........ 44% 21.2M 1m59s
+1835008K ........ ........ ........ ........ 45% 23.7M 1m57s
+1867776K ........ ........ ........ ........ 46% 20.5M 1m55s
+1900544K ........ ........ ........ ........ 47% 21.1M 1m53s
+1933312K ........ ........ ........ ........ 47% 19.8M 1m51s
+1966080K ........ ........ ........ ........ 48% 19.0M 1m50s
+1998848K ........ ........ ........ ........ 49% 20.2M 1m48s
+2031616K ........ ........ ........ ........ 50% 19.3M 1m46s
+2064384K ........ ........ ........ ........ 51% 17.3M 1m44s
+2097152K ........ ........ ........ ........ 51% 20.2M 1m43s
+2129920K ........ ........ ........ ........ 52% 23.3M 1m41s
+2162688K ........ ........ ........ ........ 53% 23.1M 99s
+2195456K ........ ........ ........ ........ 54% 17.0M 97s
+2228224K ........ ........ ........ ........ 54% 24.3M 95s
+2260992K ........ ........ ........ ........ 55% 18.5M 93s
+2293760K ........ ........ ........ ........ 56% 23.2M 92s
+2326528K ........ ........ ........ ........ 57% 15.9M 90s
+2359296K ........ ........ ........ ........ 58% 15.5M 89s
+2392064K ........ ........ ........ ........ 58% 23.6M 87s
+2424832K ........ ........ ........ ........ 59% 19.3M 85s
+2457600K ........ ........ ........ ........ 60% 21.4M 83s
+2490368K ........ ........ ........ ........ 61% 21.2M 81s
+2523136K ........ ........ ........ ........ 62% 18.9M 80s
+2555904K ........ ........ ........ ........ 62% 18.2M 78s
+2588672K ........ ........ ........ ........ 63% 21.3M 76s
+2621440K ........ ........ ........ ........ 64% 19.1M 75s
+2654208K ........ ........ ........ ........ 65% 20.1M 73s
+2686976K ........ ........ ........ ........ 66% 17.3M 71s
+2719744K ........ ........ ........ ........ 66% 24.0M 70s
+2752512K ........ ........ ........ ........ 67% 23.4M 68s
+2785280K ........ ........ ........ ........ 68% 19.8M 66s
+2818048K ........ ........ ........ ........ 69% 20.0M 64s
+2850816K ........ ........ ........ ........ 70% 17.9M 63s
+2883584K ........ ........ ........ ........ 70% 21.5M 61s
+2916352K ........ ........ ........ ........ 71% 19.7M 59s
+2949120K ........ ........ ........ ........ 72% 24.3M 57s
+2981888K ........ ........ ........ ........ 73% 23.9M 56s
+3014656K ........ ........ ........ ........ 74% 19.2M 54s
+3047424K ........ ........ ........ ........ 74% 23.7M 52s
+3080192K ........ ........ ........ ........ 75% 19.5M 51s
+3112960K ........ ........ ........ ........ 76% 17.3M 49s
+3145728K ........ ........ ........ ........ 77% 19.4M 47s
+3178496K ........ ........ ........ ........ 78% 20.0M 46s
+3211264K ........ ........ ........ ........ 78% 19.9M 44s
+3244032K ........ ........ ........ ........ 79% 21.1M 42s
+3276800K ........ ........ ........ ........ 80% 22.4M 41s
+3309568K ........ ........ ........ ........ 81% 18.1M 39s
+3342336K ........ ........ ........ ........ 82% 15.0M 37s
+3375104K ........ ........ ........ ........ 82% 22.3M 36s
+3407872K ........ ........ ........ ........ 83% 23.8M 34s
+3440640K ........ ........ ........ ........ 84% 23.8M 32s
+3473408K ........ ........ ........ ........ 85% 21.0M 31s
+3506176K ........ ........ ........ ........ 86% 21.4M 29s
+3538944K ........ ........ ........ ........ 86% 17.0M 27s
+3571712K ........ ........ ........ ........ 87% 16.8M 26s
+3604480K ........ ........ ........ ........ 88% 20.9M 24s
+3637248K ........ ........ ........ ........ 89% 24.1M 22s
+3670016K ........ ........ ........ ........ 90% 21.8M 21s
+3702784K ........ ........ ........ ........ 90% 21.7M 19s
+3735552K ........ ........ ........ ........ 91% 23.8M 17s
+3768320K ........ ........ ........ ........ 92% 23.0M 16s
+3801088K ........ ........ ........ ........ 93% 14.4M 14s
+3833856K ........ ........ ........ ........ 94% 19.6M 12s
+3866624K ........ ........ ........ ........ 94% 20.7M 11s
+3899392K ........ ........ ........ ........ 95% 18.8M 9s
+3932160K ........ ........ ........ ........ 96% 19.7M 7s
+3964928K ........ ........ ........ ........ 97% 18.9M 6s
+3997696K ........ ........ ........ ........ 98% 19.7M 4s
+4030464K ........ ........ ........ ........ 98% 17.8M 2s
+4063232K ........ ........ ........ ........ 99% 17.1M 1s
+4096000K ........ ......                    100% 19.0M=3m27s
+
+2026-10-10 21:40:59 (19.4 MB/s) - ‘/home/panshul/zed-ps2-stagea/downloads/dancetrack_val.zip’ saved [4209785614/4209785614]
+
+[1;34m[21:40:59][0m extracting dancetrack_val.zip -> /home/panshul/zed-ps2-stagea/data/DanceTrack
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[run ] dancetrack0004: 1203 frames
+[ WARN:0@4.160] global loadsave.cpp:278 findDecoder imread_('/home/panshul/zed-ps2-stagea/data/DanceTrack/val/dancetrack0004/img1/000001.jpg'): can't open/read file: check file path/integrity
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 273, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 266, in main
+    run_many(sources, det, emb, a.out, dataset=a.dataset, split=a.split,
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 186, in run_many
+    cache = process_sequence(src, detector, embedder, dataset=dataset, split=split,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 86, in process_sequence
+    for batch in _batches(_prefetch(source, 4 * batch_size), batch_size):
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 62, in _batches
+    for x in it:
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 57, in _prefetch
+    raise err[0]
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 46, in work
+    for item in it:
+  File "/home/panshul/zed-ps2-tracker/models/frames.py", line 40, in __iter__
+    raise FileNotFoundError(self.path(f))
+FileNotFoundError: /home/panshul/zed-ps2-stagea/data/DanceTrack/val/dancetrack0004/img1/000001.jpg

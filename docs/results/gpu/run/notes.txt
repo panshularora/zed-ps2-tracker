@@ -1,0 +1,3 @@
+[02:53] phase3 (mot20): ByteTrack reproduction: NOT REPRODUCED; go/no-go v2: NO-GO; ran: ['mot17_val_half', 'mot20_val_half__mot17full_xdomain', 'mot20_val_half__sparsetrack_ablation']
+[02:53] results (mot20): /home/panshul/zed-ps2-stagea/final/zed_results_20261018_025340_laptop_mot20.tar.gz
+[05:36] phase3 (dancetrack): ByteTrack reproduction: NOT REPRODUCED; go/no-go v2: NO-GO; ran: ['mot17_val_half', 'mot20_val_half__mot17full_xdomain', 'mot20_val_half__sparsetrack_ablation', 'dancetrack_val']

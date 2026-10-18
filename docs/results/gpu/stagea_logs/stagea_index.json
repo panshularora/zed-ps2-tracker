@@ -1,0 +1,118 @@
+{
+ "caches": {
+  "DanceTrack/dancetrack/val": {
+   "dir": "/home/panshul/zed-ps2-stagea/stagea/cache/DanceTrack/dancetrack/val",
+   "dataset": "DanceTrack",
+   "split": "val",
+   "sequences": [
+    "dancetrack0004",
+    "dancetrack0005",
+    "dancetrack0007",
+    "dancetrack0010",
+    "dancetrack0014",
+    "dancetrack0018",
+    "dancetrack0019",
+    "dancetrack0025",
+    "dancetrack0026",
+    "dancetrack0030",
+    "dancetrack0034",
+    "dancetrack0035",
+    "dancetrack0041",
+    "dancetrack0043",
+    "dancetrack0047",
+    "dancetrack0058",
+    "dancetrack0063",
+    "dancetrack0065",
+    "dancetrack0073",
+    "dancetrack0077",
+    "dancetrack0079",
+    "dancetrack0081",
+    "dancetrack0090",
+    "dancetrack0094",
+    "dancetrack0097"
+   ],
+   "saw_eval_half": false,
+   "has_embeddings": true,
+   "gt_root": "/home/panshul/zed-ps2-stagea/stagea/gt/DanceTrack"
+  },
+  "MOT17/ablation/train": {
+   "dir": "/home/panshul/zed-ps2-stagea/stagea/cache/MOT17/ablation/train",
+   "dataset": "MOT17",
+   "split": "train",
+   "sequences": [
+    "MOT17-02-FRCNN",
+    "MOT17-04-FRCNN",
+    "MOT17-05-FRCNN",
+    "MOT17-09-FRCNN",
+    "MOT17-10-FRCNN",
+    "MOT17-11-FRCNN",
+    "MOT17-13-FRCNN"
+   ],
+   "saw_eval_half": false,
+   "has_embeddings": true,
+   "gt_root": "/home/panshul/zed-ps2-stagea/stagea/gt/MOT17"
+  },
+  "MOT20/mot17full_xdomain/train": {
+   "dir": "/home/panshul/zed-ps2-stagea/stagea/cache/MOT20/mot17full_xdomain/train",
+   "dataset": "MOT20",
+   "split": "train",
+   "sequences": [
+    "MOT20-01",
+    "MOT20-02",
+    "MOT20-03",
+    "MOT20-05"
+   ],
+   "saw_eval_half": false,
+   "has_embeddings": true,
+   "gt_root": "/home/panshul/zed-ps2-stagea/stagea/gt/MOT20"
+  },
+  "MOT20/sparsetrack_ablation/train": {
+   "dir": "/home/panshul/zed-ps2-stagea/stagea/cache/MOT20/sparsetrack_ablation/train",
+   "dataset": "MOT20",
+   "split": "train",
+   "sequences": [
+    "MOT20-01",
+    "MOT20-02",
+    "MOT20-03",
+    "MOT20-05"
+   ],
+   "saw_eval_half": false,
+   "has_embeddings": true,
+   "gt_root": "/home/panshul/zed-ps2-stagea/stagea/gt/MOT20"
+  },
+  "SOMPT22/mot17full/test": {
+   "dir": "/home/panshul/zed-ps2-stagea/stagea/cache/SOMPT22/mot17full/test",
+   "dataset": "SOMPT22",
+   "split": "test",
+   "sequences": [
+    "SOMPT22-01",
+    "SOMPT22-03",
+    "SOMPT22-06",
+    "SOMPT22-09",
+    "SOMPT22-14"
+   ],
+   "saw_eval_half": false,
+   "has_embeddings": true,
+   "gt_root": null
+  },
+  "SOMPT22/mot17full/train": {
+   "dir": "/home/panshul/zed-ps2-stagea/stagea/cache/SOMPT22/mot17full/train",
+   "dataset": "SOMPT22",
+   "split": "train",
+   "sequences": [
+    "SOMPT22-02",
+    "SOMPT22-04",
+    "SOMPT22-05",
+    "SOMPT22-07",
+    "SOMPT22-08",
+    "SOMPT22-10",
+    "SOMPT22-11",
+    "SOMPT22-12",
+    "SOMPT22-13"
+   ],
+   "saw_eval_half": false,
+   "has_embeddings": true,
+   "gt_root": "/home/panshul/zed-ps2-stagea/stagea/gt/SOMPT22/_seqs"
+  }
+ }
+}

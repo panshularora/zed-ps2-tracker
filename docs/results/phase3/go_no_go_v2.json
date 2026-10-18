@@ -1,0 +1,75 @@
+{
+ "verdict": "NO-GO",
+ "criteria": {
+  "1_idsw": false,
+  "2_identity": false,
+  "3_selectivity": false,
+  "4_compute": false,
+  "5_replication": false
+ },
+ "replication": {
+  "status": "fail",
+  "cache": "MOT20/sparsetrack_ablation/train",
+  "idsw_k0": 1462.0,
+  "idsw_k5": 1575.0
+ },
+ "rows": {
+  "k0": {
+   "name": "v2_k0",
+   "label": "k0",
+   "group": "sanity check",
+   "HOTA": 62.464018652033104,
+   "IDF1": 72.96692810067694,
+   "MOTA": 66.53182408610132,
+   "IDSW": 183.0,
+   "AssA": 64.94779471463758,
+   "DetA": 60.76681988042091,
+   "latency_source": "eval.latency",
+   "p50_ms": 1.740869,
+   "p95_ms": 5.363831449999999,
+   "max_ms": 17.610873,
+   "flag_rate": 0.0
+  },
+  "k3": {
+   "name": "v2_k3",
+   "label": "k3",
+   "group": "sanity check",
+   "HOTA": 62.22373581238468,
+   "IDF1": 72.18535799202141,
+   "MOTA": 66.46687697160884,
+   "IDSW": 196.0,
+   "AssA": 64.47300579541519,
+   "DetA": 60.74935286210936,
+   "latency_source": "eval.latency",
+   "p50_ms": 5.104069,
+   "p95_ms": 116.69495169999999,
+   "max_ms": 323.930863,
+   "flag_rate": 0.5075414781297134
+  },
+  "k5": {
+   "name": "v2_k5",
+   "label": "k5",
+   "group": "sanity check",
+   "HOTA": 61.94611695767042,
+   "IDF1": 71.93282661466831,
+   "MOTA": 66.57264798663945,
+   "IDSW": 198.0,
+   "AssA": 63.947353256946116,
+   "DetA": 60.71189124617257,
+   "latency_source": "eval.latency",
+   "p50_ms": 4.521064,
+   "p95_ms": 170.08938899999964,
+   "max_ms": 521.199211,
+   "flag_rate": 0.5067873303167421
+  }
+ },
+ "run_info": {
+  "run_profile": "laptop",
+  "run_gpu": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+  "run_gpu_mem_mib": "6144",
+  "run_detector": "yolox_x (ByteTrack) [bytetrack_ablation.pth.tar]",
+  "run_precision": "fp16",
+  "run_input_size": "800x1440",
+  "cache": "MOT17/ablation/train"
+ }
+}

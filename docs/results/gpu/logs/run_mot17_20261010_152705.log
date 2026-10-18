@@ -1,0 +1,14 @@
+[1;34m[15:27:05][0m logging to /home/panshul/zed-ps2-stagea/logs/run_mot17_20261010_152705.log
+[1;34m[15:27:05][0m detector: x, batch 1, GPU 0
+[1;34m[15:27:05][0m have MOT17.zip (5860214001 bytes)
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-02-FRCNN.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-04-FRCNN.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-05-FRCNN.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-09-FRCNN.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-10-FRCNN.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-11-FRCNN.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-13-FRCNN.npz (already complete)
+[1;34m[15:27:17][0m clip exists: /home/panshul/zed-ps2-stagea/clips/MOT17-04.mp4
+[1;34m[15:27:18][0m run.sh mot17 finished. When all targets are done: bash scripts/dgx/finalize.sh

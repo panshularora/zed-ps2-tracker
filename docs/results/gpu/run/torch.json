@@ -1,0 +1,10 @@
+{
+ "torch": "2.7.1+cu126",
+ "cuda_build": "12.6",
+ "cuda_available": true,
+ "cudnn": 90501,
+ "device": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+ "memory_mib": 6143,
+ "capability": "8.6",
+ "fp16_matmul_ok": true
+}

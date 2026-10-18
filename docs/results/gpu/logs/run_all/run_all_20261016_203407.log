@@ -1,0 +1,156 @@
+[1;34m[20:34:07][0m logging to /home/panshul/zed-ps2-stagea/run_all/logs/run_all_20261016_203407.log ; status: cat /home/panshul/zed-ps2-stagea/STATUS
+
+[1;35m[20:34:07] ===== stage preflight: GPU via nvidia-smi (WSL2), tools, disk, datasets, frozen files =====[0m
+[1;34m[20:34:07][0m WSL2 detected (6.6.87.2-microsoft-standard-WSL2); the GPU comes from the WINDOWS NVIDIA driver
+GPU 0: NVIDIA GeForce RTX 3050 6GB Laptop GPU (UUID: GPU-b060f840-bcab-5362-2ae9-bac4a27c6285)
+[1;34m[20:34:07][0m GPU 0: NVIDIA GeForce RTX 3050 6GB Laptop GPU, 6144 MiB; profile laptop; detector policy: auto (now: x); batch 1; phase-3 jobs 6
+[1;34m[20:34:07][0m under 8 GB: still YOLOX-X fp16, batch 1 at 800x1440; only a real CUDA out-of-memory error switches to YOLOX-S
+[1;34m[20:34:07][0m free disk under /home/panshul/zed-ps2-stagea: 904 GB
+[1;34m[20:34:07][0m dataset mot17: extracted
+[1;34m[20:34:07][0m dataset mot20: extracted
+[1;34m[20:34:07][0m dataset dancetrack: extracted
+[1;34m[20:34:07][0m SOMPT22: extracted at /home/panshul/zed-ps2-stagea/data/SOMPT22
+[1;34m[20:34:08][0m repo 7559df8 on main; frozen files unmodified
+[1;34m[20:34:08][0m stage setup: done earlier, skipped (--force=setup to redo)
+
+[1;35m[20:34:08] ===== stage gpucheck: torch/CUDA versions; torch sees the GPU (cu118 rebuild if not) =====[0m
+{"torch": "2.7.1+cu126", "cuda_build": "12.6", "cuda_available": true, "cudnn": 90501, "device": "NVIDIA GeForce RTX 3050 6GB Laptop GPU", "memory_mib": 6143, "capability": "8.6", "fp16_matmul_ok": true}
+
+[1;35m[20:34:12] ===== stage stagea_mot17: Stage A mot17: detector + re-ID caches =====[0m
+[1;34m[20:34:12][0m Stage A mot17 with detector x (batch 1)
+[1;34m[20:34:12][0m logging to /home/panshul/zed-ps2-stagea/logs/run_mot17_20261016_203412.log
+[1;34m[20:34:12][0m detector: x, batch 1, GPU 0
+[1;34m[20:34:12][0m have MOT17.zip (5860214001 bytes)
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-02-FRCNN.npz (already complete)
+[run ] MOT17-04-FRCNN: 1050 frames
+[done] {"sequence": "MOT17-04-FRCNN", "path": "/home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-04-FRCNN.npz", "frames": 1050, "detections": 49876, "dets_per_frame": 47.5, "bytes": 38190130, "stage_a_seconds": 252.94, "stage_a_fps": 4.15}
+[run ] MOT17-05-FRCNN: 837 frames
+[1;32m[20:38:38] NOTE:[0m Stage A measured 3.8 frames/s (detector + re-ID) over 1650 frames; rest of this dataset (3666 frames): ~16 min; rough extrapolation at the same fps (larger inputs run slower): MOT20 ~1 h 18 min, DanceTrack unknown
+[done] {"sequence": "MOT17-05-FRCNN", "path": "/home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-05-FRCNN.npz", "frames": 837, "detections": 10145, "dets_per_frame": 12.12, "bytes": 7863057, "stage_a_seconds": 146.65, "stage_a_fps": 5.71}
+[run ] MOT17-09-FRCNN: 525 frames
+[done] {"sequence": "MOT17-09-FRCNN", "path": "/home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-09-FRCNN.npz", "frames": 525, "detections": 7075, "dets_per_frame": 13.48, "bytes": 5400524, "stage_a_seconds": 94.12, "stage_a_fps": 5.58}
+[run ] MOT17-10-FRCNN: 654 frames
+[done] {"sequence": "MOT17-10-FRCNN", "path": "/home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-10-FRCNN.npz", "frames": 654, "detections": 20082, "dets_per_frame": 30.71, "bytes": 15584986, "stage_a_seconds": 132.68, "stage_a_fps": 4.93}
+[run ] MOT17-11-FRCNN: 900 frames
+[done] {"sequence": "MOT17-11-FRCNN", "path": "/home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-11-FRCNN.npz", "frames": 900, "detections": 12556, "dets_per_frame": 13.95, "bytes": 9569872, "stage_a_seconds": 160.22, "stage_a_fps": 5.62}
+[run ] MOT17-13-FRCNN: 750 frames
+[done] {"sequence": "MOT17-13-FRCNN", "path": "/home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-13-FRCNN.npz", "frames": 750, "detections": 14519, "dets_per_frame": 19.36, "bytes": 11379235, "stage_a_seconds": 139.01, "stage_a_fps": 5.4}
+[1;34m[20:49:07][0m clip exists: /home/panshul/zed-ps2-stagea/clips/MOT17-04.mp4
+[1;34m[20:49:07][0m run.sh mot17 finished. When all targets are done: bash scripts/dgx/finalize.sh
+
+[1;35m[20:49:07] ===== stage ingest_mot17: integrity check + make ingest -> $ZED_ROOT/stagea (all caches so far) =====[0m
+
+category         size
+cache         112.1 MB
+clips          57.4 MB
+gt              6.5 MB
+logs            0.1 MB
+weights_SHA256SUMS      0.0 MB
+TOTAL          0.18 GB   (43 files) -> /home/panshul/zed-ps2-stagea/bring_back
+
+INTEGRITY OK: 7 caches verified
+python -m eval.ingest --bring-back "/home/panshul/zed-ps2-stagea/bring_back" --dest /home/panshul/zed-ps2-stagea/stagea --data /home/panshul/zed-ps2-stagea/data \
+	--report docs/results/phase3 --results-dest data/dgx_results \
+	
+[ok] bring_back: 43 files, 176.2 MB, 7 caches verified
+
+cache folder                                  seqs  emb  gt_root
+MOT17/ablation/train                             7  yes  /home/panshul/zed-ps2-stagea/stagea/gt/MOT17
+
+INGEST OK
+
+[1;35m[20:49:14] ===== stage phase3_mot17: make phase3 (trackers, TrackEval, reproduction, go/no-go v2) + gate events + run-info stamp =====[0m
+[1;34m[20:49:14][0m make phase3 (jobs 6) with: --timeout-min MOT20=240
+python -m eval.phase3 --plan configs/phase3/plan.yaml --index /home/panshul/zed-ps2-stagea/stagea/index.json \
+	--out /home/panshul/zed-ps2-stagea/phase3/out --report /home/panshul/zed-ps2-stagea/phase3/report --jobs 6 --timeout-min MOT20=240
+### Ablation: MOT17 val-half, YOLOX-X bytetrack_ablation + OSNet-AIN re-ID
+
+| Group | Tracker | HOTA | IDF1 | MOTA | IDSW | AssA | DetA | p50 / p95 / max ms |
+|---|---|---|---|---|---|---|---|---|
+| baseline | ByteTrackLike (IoU) | 63.4 | 73.8 | 66.4 | 165 | 66.5 | 61.1 | 1.04 / 2.63 / 12.3 |
+| baseline | OC-SORT | 61.8 | 72.3 | 64.0 | 204 | 65.7 | 58.6 | 0.79 / 2.48 / 15.3 |
+| baseline | Deep OC-SORT (emb + CMC) | 63.3 | 74.6 | 64.6 | 125 | 68.2 | 59.2 | 1.39 / 4.60 / 15.1 |
+| baseline | Hybrid-SORT | 62.4 | 72.2 | 64.2 | 240 | 65.4 | 60.2 | 1.66 / 4.75 / 15.6 |
+| baseline | BoT-SORT (CMC, IoU) | 64.6 | 76.3 | 67.1 | 135 | 68.6 | 61.5 | 1.08 / 2.80 / 11.9 |
+| baseline | ByteTrackLike + re-ID | 62.5 | 73.0 | 66.5 | 183 | 64.9 | 60.8 | 1.30 / 3.64 / 13.1 |
+| baseline | BoT-SORT (CMC) + re-ID | 63.4 | 74.3 | 66.9 | 193 | 66.3 | 61.4 | 1.39 / 3.75 / 13.5 |
+| control | ByteTrackLike + re-ID, buffer 90 (control) | 62.3 | 73.1 | 66.6 | 172 | 64.8 | 60.7 | 1.36 / 3.63 / 13.6 |
+| ours | + re-ID + visibility (buffer) | 62.3 | 73.1 | 66.6 | 172 | 64.8 | 60.7 | 1.58 / 4.68 / 15.0 |
+| ours | + re-ID + appearance update gate (min_visibility) | 62.0 | 72.6 | 66.2 | 201 | 64.0 | 60.8 | 1.44 / 4.52 / 14.9 |
+| ours | + re-ID + appearance cost gate (cost_min_visibility) | 63.2 | 73.3 | 66.3 | 174 | 66.2 | 61.0 | 1.50 / 4.64 / 12.9 |
+| ours | + re-ID + visibility-gated appearance (full) | 63.2 | 73.9 | 66.2 | 167 | 66.2 | 61.0 | 1.57 / 4.63 / 13.6 |
+| control | BoT-SORT + re-ID, buffer 90 (control) | 63.3 | 74.4 | 66.9 | 183 | 66.1 | 61.4 | 1.43 / 3.71 / 13.1 |
+| ours | BoT-SORT + re-ID + visibility-gated appearance | 63.9 | 75.1 | 66.8 | 156 | 67.1 | 61.6 | 1.60 / 4.72 / 40.7 |
+
+waiting: mot20_val_half: no cache matching MOT20/*/train
+waiting: dancetrack_val: no cache matching DanceTrack/dancetrack/val
+| Tracker | gt / trk crossings | count error % | event P / R % | attribution error % | tailgates gt / trk | tailgate P / R % |
+|---|---|---|---|---|---|---|
+| gt as tracker (check) | 25 / 25 | 0.0 | 100.0 / 100.0 | 0.0 | 9 / 9 | 100.0 / 100.0 |
+| botsort | 25 / 28 | 12.0 | 67.9 / 76.0 | 31.6 | 9 / 7 | 85.7 / 66.7 |
+| botsort_reid | 25 / 31 | 24.0 | 64.5 / 80.0 | 40.0 | 9 / 9 | 77.8 / 77.8 |
+| botsort_reid_buffer90 | 25 / 36 | 44.0 | 58.3 / 84.0 | 38.1 | 9 / 12 | 66.7 / 88.9 |
+| botsort_reid_vis_gated | 25 / 32 | 28.0 | 62.5 / 80.0 | 25.0 | 9 / 9 | 77.8 / 77.8 |
+| bytetrack | 25 / 28 | 12.0 | 67.9 / 76.0 | 26.3 | 9 / 7 | 85.7 / 66.7 |
+| bytetrack_reid | 25 / 30 | 20.0 | 66.7 / 80.0 | 40.0 | 9 / 10 | 80.0 / 88.9 |
+| deep_ocsort | 25 / 25 | 0.0 | 72.0 / 72.0 | 16.7 | 9 / 5 | 100.0 / 55.6 |
+| hybrid_sort | 25 / 33 | 32.0 | 60.6 / 80.0 | 35.0 | 9 / 14 | 50.0 / 77.8 |
+| ocsort | 25 / 25 | 0.0 | 72.0 / 72.0 | 22.2 | 9 / 5 | 100.0 / 55.6 |
+| reid_buffer90 | 25 / 35 | 40.0 | 62.9 / 88.0 | 40.9 | 9 / 12 | 75.0 / 100.0 |
+| reid_costgate | 25 / 29 | 16.0 | 65.5 / 76.0 | 26.3 | 9 / 8 | 75.0 / 66.7 |
+| reid_minvis | 25 / 33 | 32.0 | 63.6 / 84.0 | 38.1 | 9 / 12 | 66.7 / 88.9 |
+| reid_vis | 25 / 35 | 40.0 | 62.9 / 88.0 | 40.9 | 9 / 12 | 75.0 / 100.0 |
+| reid_vis_gated | 25 / 37 | 48.0 | 56.8 / 84.0 | 23.8 | 9 / 11 | 72.7 / 88.9 |
+stamped 24 files under /home/panshul/zed-ps2-stagea/phase3/report
+ByteTrack reproduction: NOT REPRODUCED; go/no-go v2: NO-GO; ran: ['mot17_val_half']
+waiting: mot20_val_half: no cache matching MOT20/*/train
+waiting: dancetrack_val: no cache matching DanceTrack/dancetrack/val
+[1;32m[20:49:23] NOTE:[0m phase3 (mot17): ByteTrack reproduction: NOT REPRODUCED; go/no-go v2: NO-GO; ran: ['mot17_val_half']
+
+[1;35m[20:49:23] ===== stage finalize_mot17: finalize.sh --results: one tar + manifest + sha256 -> $ZED_ROOT/final/ =====[0m
+/home/panshul/zed-ps2-stagea/final/zed_results_20261016_204923_laptop_mot17.tar.gz  (2.03 MB, 97 files)
+verdicts: {'go_no_go_v2': 'NO-GO', 'reproduction': 'NOT REPRODUCED'}
+RESULTS BUNDLE OK: /home/panshul/zed-ps2-stagea/final/zed_results_20261016_204923_laptop_mot17.tar.gz
+[1;32m[20:49:23] NOTE:[0m results (mot17): /home/panshul/zed-ps2-stagea/final/zed_results_20261016_204923_laptop_mot17.tar.gz
+
+[1;35m[20:49:23] ===== stage stagea_mot20: Stage A mot20: detector + re-ID caches =====[0m
+[1;34m[20:49:23][0m Stage A mot20 with detector x (batch 1)
+[1;34m[20:49:23][0m logging to /home/panshul/zed-ps2-stagea/logs/run_mot20_20261016_204923.log
+[1;34m[20:49:23][0m detector: x, batch 1, GPU 0
+[1;34m[20:49:23][0m have MOT20.zip (5028926248 bytes)
+[1;34m[20:49:23][0m MOT20 variants: sparsetrack_ablation mot17full_xdomain
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[run ] MOT20-01: 429 frames
+[done] {"sequence": "MOT20-01", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-01.npz", "frames": 429, "detections": 21725, "dets_per_frame": 50.64, "bytes": 16929777, "stage_a_seconds": 119.68, "stage_a_fps": 3.58}
+[run ] MOT20-02: 2782 frames
+[done] {"sequence": "MOT20-02", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-02.npz", "frames": 2782, "detections": 163640, "dets_per_frame": 58.82, "bytes": 127318992, "stage_a_seconds": 875.76, "stage_a_fps": 3.18}
+[run ] MOT20-03: 2405 frames
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 278, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 271, in main
+    run_many(sources, det, emb, a.out, dataset=a.dataset, split=a.split,
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 186, in run_many
+    cache = process_sequence(src, detector, embedder, dataset=dataset, split=split,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 99, in process_sequence
+    embs.append(embedder(img, boxes[-1]))
+                ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-tracker/models/osnet_embedder.py", line 102, in __call__
+    feats.append(torch.nn.functional.normalize(f, dim=1).cpu().numpy())
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+[1;31m[21:18:02] ERROR:[0m Stage A mot20 failed (exit 1); the log above names the cause (/home/panshul/zed-ps2-stagea/run_all/stagea_mot20.out). Re-run to resume: finished sequences are kept.
+
+[1;31mFAILED at stage stagea_mot20 (exit 1).[0m Fix the cause above, then re-run the same command:
+finished stages are skipped. Status: cat /home/panshul/zed-ps2-stagea/STATUS   Log: /home/panshul/zed-ps2-stagea/run_all/logs/run_all_20261016_203407.log

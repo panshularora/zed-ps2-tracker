@@ -1,0 +1,33 @@
+[1;34m[20:49:23][0m logging to /home/panshul/zed-ps2-stagea/logs/run_mot20_20261016_204923.log
+[1;34m[20:49:23][0m detector: x, batch 1, GPU 0
+[1;34m[20:49:23][0m have MOT20.zip (5028926248 bytes)
+[1;34m[20:49:23][0m MOT20 variants: sparsetrack_ablation mot17full_xdomain
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[run ] MOT20-01: 429 frames
+[done] {"sequence": "MOT20-01", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-01.npz", "frames": 429, "detections": 21725, "dets_per_frame": 50.64, "bytes": 16929777, "stage_a_seconds": 119.68, "stage_a_fps": 3.58}
+[run ] MOT20-02: 2782 frames
+[done] {"sequence": "MOT20-02", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-02.npz", "frames": 2782, "detections": 163640, "dets_per_frame": 58.82, "bytes": 127318992, "stage_a_seconds": 875.76, "stage_a_fps": 3.18}
+[run ] MOT20-03: 2405 frames
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 278, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 271, in main
+    run_many(sources, det, emb, a.out, dataset=a.dataset, split=a.split,
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 186, in run_many
+    cache = process_sequence(src, detector, embedder, dataset=dataset, split=split,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 99, in process_sequence
+    embs.append(embedder(img, boxes[-1]))
+                ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-tracker/models/osnet_embedder.py", line 102, in __call__
+    feats.append(torch.nn.functional.normalize(f, dim=1).cpu().numpy())
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+

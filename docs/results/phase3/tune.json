@@ -1,0 +1,74 @@
+{
+ "split": "train_half",
+ "criterion": [
+  "IDF1",
+  "HOTA"
+ ],
+ "chosen": {
+  "tau_update": 0.5,
+  "tau_cost": 0.7
+ },
+ "sweeps": {
+  "tau_update": [
+   {
+    "value": 0.0,
+    "HOTA": 70.79087179969747,
+    "IDF1": 80.48308320753041,
+    "IDSW": 254.0
+   },
+   {
+    "value": 0.3,
+    "HOTA": 70.77228293856271,
+    "IDF1": 80.42528245576635,
+    "IDSW": 261.0
+   },
+   {
+    "value": 0.5,
+    "HOTA": 71.23713608784746,
+    "IDF1": 80.89721950786178,
+    "IDSW": 275.0
+   },
+   {
+    "value": 0.7,
+    "HOTA": 71.23323526620526,
+    "IDF1": 80.89468447981808,
+    "IDSW": 275.0
+   }
+  ],
+  "tau_cost": [
+   {
+    "value": 0.0,
+    "HOTA": 70.79087179969747,
+    "IDF1": 80.48308320753041,
+    "IDSW": 254.0
+   },
+   {
+    "value": 0.3,
+    "HOTA": 70.51364605304012,
+    "IDF1": 79.96340347666971,
+    "IDSW": 253.0
+   },
+   {
+    "value": 0.5,
+    "HOTA": 71.00444621449603,
+    "IDF1": 80.43914657760565,
+    "IDSW": 247.0
+   },
+   {
+    "value": 0.7,
+    "HOTA": 71.05276887635374,
+    "IDF1": 80.50778196290243,
+    "IDSW": 250.0
+   }
+  ]
+ },
+ "run_info": {
+  "run_profile": "laptop",
+  "run_gpu": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+  "run_gpu_mem_mib": "6144",
+  "run_detector": "yolox_x (ByteTrack) [bytetrack_ablation.pth.tar]",
+  "run_precision": "fp16",
+  "run_input_size": "800x1440",
+  "cache": "MOT17/ablation/train"
+ }
+}

@@ -1,0 +1,23 @@
+[1;34m[03:02:24][0m logging to /home/panshul/zed-ps2-stagea/logs/run_mot20_20261010_030224.log
+[1;34m[03:02:24][0m detector: x, batch 8, GPU 0
+[1;34m[03:02:24][0m have MOT20.zip (5028926248 bytes)
+[1;34m[03:02:24][0m MOT20 variants: sparsetrack_ablation mot17full_xdomain mot20full_SAW_EVAL_HALF
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[run ] MOT20-01: 429 frames
+[done] {"sequence": "MOT20-01", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-01.npz", "frames": 429, "detections": 21720, "dets_per_frame": 50.63, "bytes": 16939751, "stage_a_seconds": 109.19, "stage_a_fps": 3.93}
+[run ] MOT20-02: 2782 frames
+[done] {"sequence": "MOT20-02", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-02.npz", "frames": 2782, "detections": 163653, "dets_per_frame": 58.83, "bytes": 127450693, "stage_a_seconds": 739.91, "stage_a_fps": 3.76}
+[run ] MOT20-03: 2405 frames
+[done] {"sequence": "MOT20-03", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-03.npz", "frames": 2405, "detections": 346078, "dets_per_frame": 143.9, "bytes": 269729580, "stage_a_seconds": 1003.97, "stage_a_fps": 2.4}
+[run ] MOT20-05: 3315 frames
+[done] {"sequence": "MOT20-05", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-05.npz", "frames": 3315, "detections": 727278, "dets_per_frame": 219.39, "bytes": 571489558, "stage_a_seconds": 1802.26, "stage_a_fps": 1.84}
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[run ] MOT20-01: 429 frames
+[done] {"sequence": "MOT20-01", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-01.npz", "frames": 429, "detections": 21282, "dets_per_frame": 49.61, "bytes": 16543370, "stage_a_seconds": 114.98, "stage_a_fps": 3.73}
+[run ] MOT20-02: 2782 frames
+[done] {"sequence": "MOT20-02", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-02.npz", "frames": 2782, "detections": 158351, "dets_per_frame": 56.92, "bytes": 123026059, "stage_a_seconds": 772.46, "stage_a_fps": 3.6}
+[run ] MOT20-03: 2405 frames
+[done] {"sequence": "MOT20-03", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-03.npz", "frames": 2405, "detections": 338178, "dets_per_frame": 140.61, "bytes": 263139570, "stage_a_seconds": 1016.47, "stage_a_fps": 2.37}
+[run ] MOT20-05: 3315 frames

@@ -1,0 +1,4 @@
+{"sequence": "MOT20-01", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-01.npz", "frames": 429, "detections": 21286, "dets_per_frame": 49.62, "bytes": 16531889, "stage_a_seconds": 132.5, "stage_a_fps": 3.24}
+{"sequence": "MOT20-02", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-02.npz", "frames": 2782, "detections": 158363, "dets_per_frame": 56.92, "bytes": 122908466, "stage_a_seconds": 894.77, "stage_a_fps": 3.11}
+{"sequence": "MOT20-03", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-03.npz", "frames": 2405, "detections": 338196, "dets_per_frame": 140.62, "bytes": 262890722, "stage_a_seconds": 1198.48, "stage_a_fps": 2.01}
+{"sequence": "MOT20-05", "path": "/home/panshul/zed-ps2-stagea/cache/MOT20/mot17full_xdomain/train/MOT20-05.npz", "frames": 3315, "detections": 732879, "dets_per_frame": 221.08, "bytes": 574924277, "stage_a_seconds": 2275.82, "stage_a_fps": 1.46}

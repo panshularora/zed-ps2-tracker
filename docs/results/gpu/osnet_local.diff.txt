@@ -1,0 +1,13 @@
+diff --git a/models/osnet_embedder.py b/models/osnet_embedder.py
+index 0590ba1..30abc36 100644
+--- a/models/osnet_embedder.py
++++ b/models/osnet_embedder.py
+@@ -24,7 +24,7 @@ class OsnetConfig:
+     """torchreid checkpoint; None = random init (CPU smoke tests only)."""
+     arch: str = "osnet_ain_x1_0"
+     input_hw: tuple[int, int] = (256, 128)
+-    batch_size: int = 256
++    batch_size: int = 16
+     device: str = "cuda"
+     fp16: bool = True
+     trained_on: str = "MSMT17 (combineall)"

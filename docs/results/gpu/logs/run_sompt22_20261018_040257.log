@@ -1,0 +1,45 @@
+[1;34m[04:02:57][0m logging to /home/panshul/zed-ps2-stagea/logs/run_sompt22_20261018_040257.log
+[1;34m[04:02:57][0m detector: x, batch 1, GPU 0
+[1;34m[04:02:57][0m SOMPT22 already extracted at /home/panshul/zed-ps2-stagea/data/SOMPT22
+train: 9 sequences ['SOMPT22-02', 'SOMPT22-04', 'SOMPT22-05', 'SOMPT22-07', 'SOMPT22-08', 'SOMPT22-10', 'SOMPT22-11', 'SOMPT22-12', 'SOMPT22-13']
+test: 5 sequences ['SOMPT22-01', 'SOMPT22-03', 'SOMPT22-06', 'SOMPT22-09', 'SOMPT22-14']
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[run ] SOMPT22-02: 600 frames
+[done] {"sequence": "SOMPT22-02", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-02.npz", "frames": 600, "detections": 16483, "dets_per_frame": 27.47, "bytes": 12856146, "stage_a_seconds": 130.06, "stage_a_fps": 4.61}
+[run ] SOMPT22-04: 1800 frames
+[done] {"sequence": "SOMPT22-04", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-04.npz", "frames": 1800, "detections": 39029, "dets_per_frame": 21.68, "bytes": 30060986, "stage_a_seconds": 368.21, "stage_a_fps": 4.89}
+[run ] SOMPT22-05: 1800 frames
+[done] {"sequence": "SOMPT22-05", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-05.npz", "frames": 1800, "detections": 72372, "dets_per_frame": 40.21, "bytes": 56653409, "stage_a_seconds": 442.03, "stage_a_fps": 4.07}
+[run ] SOMPT22-07: 1800 frames
+[done] {"sequence": "SOMPT22-07", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-07.npz", "frames": 1800, "detections": 117317, "dets_per_frame": 65.18, "bytes": 90182209, "stage_a_seconds": 546.67, "stage_a_fps": 3.29}
+[run ] SOMPT22-08: 1800 frames
+[done] {"sequence": "SOMPT22-08", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-08.npz", "frames": 1800, "detections": 124174, "dets_per_frame": 68.99, "bytes": 97114213, "stage_a_seconds": 555.88, "stage_a_fps": 3.24}
+[run ] SOMPT22-10: 1800 frames
+[done] {"sequence": "SOMPT22-10", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-10.npz", "frames": 1800, "detections": 128137, "dets_per_frame": 71.19, "bytes": 98957505, "stage_a_seconds": 568.85, "stage_a_fps": 3.16}
+[run ] SOMPT22-11: 1800 frames
+[done] {"sequence": "SOMPT22-11", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-11.npz", "frames": 1800, "detections": 56953, "dets_per_frame": 31.64, "bytes": 42777247, "stage_a_seconds": 408.05, "stage_a_fps": 4.41}
+[run ] SOMPT22-12: 1800 frames
+[done] {"sequence": "SOMPT22-12", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-12.npz", "frames": 1800, "detections": 95447, "dets_per_frame": 53.03, "bytes": 73259822, "stage_a_seconds": 499.72, "stage_a_fps": 3.6}
+[run ] SOMPT22-13: 900 frames
+[done] {"sequence": "SOMPT22-13", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/train/SOMPT22-13.npz", "frames": 900, "detections": 12758, "dets_per_frame": 14.18, "bytes": 9654511, "stage_a_seconds": 166.88, "stage_a_fps": 5.39}
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[run ] SOMPT22-01: 1800 frames
+[done] {"sequence": "SOMPT22-01", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/test/SOMPT22-01.npz", "frames": 1800, "detections": 69690, "dets_per_frame": 38.72, "bytes": 54108336, "stage_a_seconds": 442.27, "stage_a_fps": 4.07}
+[run ] SOMPT22-03: 1200 frames
+[done] {"sequence": "SOMPT22-03", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/test/SOMPT22-03.npz", "frames": 1200, "detections": 20509, "dets_per_frame": 17.09, "bytes": 15599625, "stage_a_seconds": 234.85, "stage_a_fps": 5.11}
+[run ] SOMPT22-06: 1800 frames
+[done] {"sequence": "SOMPT22-06", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/test/SOMPT22-06.npz", "frames": 1800, "detections": 151868, "dets_per_frame": 84.37, "bytes": 117724115, "stage_a_seconds": 624.61, "stage_a_fps": 2.88}
+[run ] SOMPT22-09: 1800 frames
+[done] {"sequence": "SOMPT22-09", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/test/SOMPT22-09.npz", "frames": 1800, "detections": 70118, "dets_per_frame": 38.95, "bytes": 54501002, "stage_a_seconds": 441.79, "stage_a_fps": 4.07}
+[run ] SOMPT22-14: 902 frames
+[done] {"sequence": "SOMPT22-14", "path": "/home/panshul/zed-ps2-stagea/cache/SOMPT22/mot17full/test/SOMPT22-14.npz", "frames": 902, "detections": 20893, "dets_per_frame": 23.16, "bytes": 15976467, "stage_a_seconds": 190.91, "stage_a_fps": 4.72}
+SOMPT22-01: 1800 frames, p50 1.90 ms, p95 2.76 ms, max 23.37 ms
+SOMPT22-03: 1200 frames, p50 1.28 ms, p95 2.01 ms, max 5.17 ms
+SOMPT22-06: 1800 frames, p50 3.62 ms, p95 4.68 ms, max 40.75 ms
+SOMPT22-09: 1800 frames, p50 1.73 ms, p95 2.40 ms, max 47.91 ms
+SOMPT22-14: 902 frames, p50 1.19 ms, p95 1.62 ms, max 2.47 ms
+wrote /home/panshul/zed-ps2-stagea/results/SOMPT22/bytetrack_like_test_results.zip
+[1;34m[05:30:29][0m encoding /home/panshul/zed-ps2-stagea/clips/SOMPT22-02.mp4 at 30 fps
+[1;34m[05:30:37][0m run.sh sompt22 finished. When all targets are done: bash scripts/dgx/finalize.sh

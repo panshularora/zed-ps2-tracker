@@ -1,0 +1,374 @@
+[1;34m[16:19:04][0m logging to /home/panshul/zed-ps2-stagea/logs/setup_20261009_161904.log
+index, name, memory.total [MiB], driver_version, compute_cap
+0, NVIDIA GeForce RTX 3050 6GB Laptop GPU, 6144 MiB, 581.86, 8.6
+[1;34m[16:19:04][0m free disk under /home/panshul/zed-ps2-stagea: 944 GB (need ~60 GB for everything, ~25 GB for MOT17+MOT20)
+[1;34m[16:19:04][0m creating env with uv
+Downloading cpython-3.11.17-linux-x86_64-gnu (download) (29.4MiB)
+ Downloaded cpython-3.11.17-linux-x86_64-gnu (download)
+Using CPython 3.11.17
+Creating virtual environment at: /home/panshul/zed-ps2-stagea/env
+Activate with: source /home/panshul/zed-ps2-stagea/env/bin/activate
+Using Python 3.11.17 environment at: /home/panshul/zed-ps2-stagea/env
+Resolved 4 packages in 459ms
+Downloading pip (1.7MiB)
+ Downloaded pip
+Prepared 4 packages in 9.63s
+Installed 4 packages in 18ms
+ + packaging==26.3
+ + pip==26.2.1
+ + setuptools==84.0.0
+ + wheel==0.48.0
+[1;34m[16:19:17][0m installing torch 2.7.1 (cu126)
+Using Python 3.11.17 environment at: /home/panshul/zed-ps2-stagea/env
+Resolved 28 packages in 3.96s
+Downloading nvidia-cusolver-cu12 (150.9MiB)
+Downloading networkx (2.0MiB)
+Downloading sympy (6.0MiB)
+Downloading nvidia-cufile-cu12 (1.1MiB)
+Downloading nvidia-cuda-nvrtc-cu12 (22.6MiB)
+Downloading nvidia-cusparse-cu12 (206.5MiB)
+Downloading pillow (6.6MiB)
+Downloading numpy (16.1MiB)
+Downloading nvidia-nccl-cu12 (192.0MiB)
+Downloading torch (784.1MiB)
+Downloading torchvision (7.1MiB)
+Downloading triton (148.5MiB)
+Downloading nvidia-cublas-cu12 (374.9MiB)
+Downloading nvidia-nvjitlink-cu12 (18.8MiB)
+ Downloaded nvidia-cufile-cu12
+Downloading nvidia-cusparselt-cu12 (149.5MiB)
+Downloading nvidia-curand-cu12 (53.7MiB)
+Downloading nvidia-cufft-cu12 (190.9MiB)
+Downloading nvidia-cuda-cupti-cu12 (8.5MiB)
+Downloading nvidia-cudnn-cu12 (544.5MiB)
+ Downloaded torchvision
+ Downloaded nvidia-cuda-nvrtc-cu12
+ Downloaded nvidia-cusolver-cu12
+ Downloaded triton
+ Downloaded nvidia-cuda-cupti-cu12
+ Downloaded nvidia-nvjitlink-cu12
+ Downloaded nvidia-cusparse-cu12
+ Downloaded torch
+ Downloaded networkx
+ Downloaded nvidia-nccl-cu12
+ Downloaded nvidia-curand-cu12
+ Downloaded nvidia-cudnn-cu12
+ Downloaded nvidia-cusparselt-cu12
+ Downloaded nvidia-cublas-cu12
+ Downloaded nvidia-cufft-cu12
+ Downloaded sympy
+ Downloaded pillow
+ Downloaded numpy
+Prepared 27 packages in 6m 53s
+Installed 27 packages in 306ms
+ + filelock==3.32.3
+ + fsspec==2026.7.0
+ + jinja2==3.1.6
+ + markupsafe==3.0.3
+ + mpmath==1.3.0
+ + networkx==3.6.1
+ + numpy==2.4.6
+ + nvidia-cublas-cu12==12.6.4.1
+ + nvidia-cuda-cupti-cu12==12.6.80
+ + nvidia-cuda-nvrtc-cu12==12.6.77
+ + nvidia-cuda-runtime-cu12==12.6.77
+ + nvidia-cudnn-cu12==9.5.1.17
+ + nvidia-cufft-cu12==11.3.0.4
+ + nvidia-cufile-cu12==1.11.1.6
+ + nvidia-curand-cu12==10.3.7.77
+ + nvidia-cusolver-cu12==11.7.1.2
+ + nvidia-cusparse-cu12==12.5.4.2
+ + nvidia-cusparselt-cu12==0.6.3
+ + nvidia-nccl-cu12==2.26.2
+ + nvidia-nvjitlink-cu12==12.6.85
+ + nvidia-nvtx-cu12==12.6.77
+ + pillow==12.3.0
+ + sympy==1.14.0
+ + torch==2.7.1+cu126
+ + torchvision==0.22.1+cu126
+ + triton==3.3.1
+ + typing-extensions==4.16.0
+Using Python 3.11.17 environment at: /home/panshul/zed-ps2-stagea/env
+Resolved 65 packages in 52.39s
+Downloading scipy (33.7MiB)
+Downloading numpy (16.0MiB)
+Downloading grpcio (6.9MiB)
+Downloading opencv-python-headless (58.4MiB)
+Downloading matplotlib (9.4MiB)
+Downloading tensorboard-data-server (6.3MiB)
+Downloading h5py (4.8MiB)
+Downloading tensorboard (5.3MiB)
+Downloading imageio-ffmpeg (28.1MiB)
+Downloading fonttools (5.2MiB)
+Downloading kiwisolver (1.4MiB)
+ Downloaded kiwisolver
+ Downloaded h5py
+ Downloaded fonttools
+ Downloaded tensorboard
+ Downloaded tensorboard-data-server
+ Downloaded grpcio
+ Downloaded matplotlib
+ Downloaded numpy
+ Downloaded imageio-ffmpeg
+ Downloaded scipy
+ Downloaded opencv-python-headless
+Prepared 38 packages in 36m 18s
+Uninstalled 1 package in 78ms
+Installed 38 packages in 80ms
+ + absl-py==2.5.1
+ + beautifulsoup4==4.15.0
+ + certifi==2026.7.22
+ + charset-normalizer==3.5.2
+ + contourpy==1.3.3
+ + cycler==0.12.1
+ + fonttools==4.66.1
+ + future==1.0.0
+ + gdown==6.4.2
+ + grpcio==1.84.0
+ + h5py==3.16.0
+ + idna==3.20
+ + imageio-ffmpeg==0.6.0
+ + kiwisolver==1.5.1
+ + loguru==0.7.3
+ + markdown==3.11
+ + matplotlib==3.11.2
+ + ninja==1.13.2
+ - numpy==2.4.6
+ + numpy==2.2.6
+ + opencv-python-headless==5.0.0.93
+ + protobuf==7.36.2
+ + pycocotools==2.0.11
+ + pyparsing==3.3.3
+ + pysocks==1.7.1
+ + python-dateutil==2.9.0.post0
+ + pyyaml==6.0.3
+ + requests==2.34.2
+ + scipy==1.17.1
+ + six==1.17.0
+ + soupsieve==2.10
+ + tabulate==0.10.0
+ + tensorboard==2.21.0
+ + tensorboard-data-server==0.7.2
+ + thop==0.1.1.post2209072238
+ + tqdm==4.70.1
+ + urllib3==2.8.0
+ + werkzeug==3.1.9
+ + yacs==0.1.8
+Using Python 3.11.17 environment at: /home/panshul/zed-ps2-stagea/env
+Resolved 4 packages in 251ms
+   Building zed-ps2-tracker @ file:///home/panshul/zed-ps2-tracker
+      Built zed-ps2-tracker @ file:///home/panshul/zed-ps2-tracker
+Prepared 1 package in 1.22s
+Installed 1 package in 4ms
+ + zed-ps2-tracker==0.1.0 (from file:///home/panshul/zed-ps2-tracker)
+torch 2.7.1+cu126 cuda 12.6 -> NVIDIA GeForce RTX 3050 6GB Laptop GPU
+[1;34m[17:13:01][0m ByteTrack @ d1bf019
+[1;34m[17:14:43][0m deep-person-reid @ f8cd150
+[1;34m[17:14:43][0m downloading bytetrack_ablation.pth.tar ...
+--2026-10-09 17:14:43--  https://drive.usercontent.google.com/download?export=download&confirm=t&id=1iqhM-6V_r1FpOlOzrdP_Ejshgk0DxOob
+Resolving drive.usercontent.google.com (drive.usercontent.google.com)... 142.251.222.193, 2404:6800:4007:821::2001
+Connecting to drive.usercontent.google.com (drive.usercontent.google.com)|142.251.222.193|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 792835795 (756M) [application/octet-stream]
+Saving to: ‘/home/panshul/zed-ps2-stagea/weights/bytetrack_ablation.pth.tar’
+
+     0K ........ ........ ........ ........  4%  418K 29m34s
+ 32768K ........ ........ ........ ........  8%  399K 28m56s
+ 65536K ........ ........ ........ ........ 12%  596K 24m42s
+ 98304K ........ ........ ........ ........ 16%  402K 24m17s
+131072K ........ ........ ........ ........ 21%  686K 21m25s
+163840K ........ ........ ........ ........ 25%  423K 20m41s
+196608K ........ ........ ........ ........ 29%  713K 18m32s
+229376K ........ ........ ........ ........ 33%  657K 16m52s
+262144K ........ ........ ........ ........ 38% 1.44M 14m38s
+294912K ........ ........ ........ ........ 42%  514K 13m43s
+327680K ........ ........ ........ ........ 46%  521K 12m46s
+360448K ........ ........ ........ ........ 50%  437K 11m59s
+393216K ........ ........ ........ ........ 55%  551K 10m55s
+425984K ........ ........ ........ ........ 59%  816K 9m39s
+458752K ........ ........ ........ ........ 63%  644K 8m33s
+491520K ........ ........ ........ ........ 67%  462K 7m39s
+524288K ........ ........ ........ ........ 71%  643K 6m35s
+557056K ........ ........ ........ ........ 76%  387K 5m44s
+589824K ........ ........ ........ ........ 80%  539K 4m43s
+622592K ........ ........ ........ ........ 84%  469K 3m43s
+655360K ........ ........ ........ ........ 88%  524K 2m42s
+688128K ........ ........ ........ ........ 93%  549K 1m40s
+720896K ........ ........ ........ ........ 97%  624K 38s
+753664K ........ ........ ....             100%  604K=23m58s
+
+2026-10-09 17:37:15 (538 KB/s) - ‘/home/panshul/zed-ps2-stagea/weights/bytetrack_ablation.pth.tar’ saved [792835795/792835795]
+
+[1;34m[17:37:15][0m downloading bytetrack_x_mot17.pth.tar ...
+--2026-10-09 17:37:15--  https://drive.usercontent.google.com/download?export=download&confirm=t&id=1P4mY0Yyd3PPTybgZkjMYhFri88nTmJX5
+Resolving drive.usercontent.google.com (drive.usercontent.google.com)... 142.251.222.193, 2404:6800:4007:835::2001
+Connecting to drive.usercontent.google.com (drive.usercontent.google.com)|142.251.222.193|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 792835731 (756M) [application/octet-stream]
+Saving to: ‘/home/panshul/zed-ps2-stagea/weights/bytetrack_x_mot17.pth.tar’
+
+     0K ........ ........ ........ ........  4%  580K 21m19s
+ 32768K ........ ........ ........ ........  8% 22.8M 10m26s
+ 65536K ........ ........ ........ ........ 12% 21.8M 6m48s
+ 98304K ........ ........ ........ ........ 16% 22.2M 4m58s
+131072K ........ ........ ........ ........ 21% 1.58M 5m2s
+163840K ........ ........ ........ ........ 25% 19.6M 4m3s
+196608K ........ ........ ........ ........ 29%  836K 4m50s
+229376K ........ ........ ........ ........ 33%  620K 5m41s
+262144K ........ ........ ........ ........ 38%  803K 5m50s
+294912K ........ ........ ........ ........ 42% 1.72M 5m19s
+327680K ........ ........ ........ ........ 46%  580K 5m34s
+360448K ........ ........ ........ ........ 50%  664K 5m29s
+393216K ........ ........ ........ ........ 55%  752K 5m14s
+425984K ........ ........ ........ ........ 59%  712K 4m55s
+458752K ........ ........ ........ ........ 63%  464K 4m48s
+491520K ........ ........ ........ ........ 67%  470K 4m32s
+524288K ........ ........ ........ ........ 71% 1.43M 3m51s
+557056K ........ ........ ........ ........ 76% 20.2M 3m6s
+589824K ........ ........ ........ ........ 80% 22.7M 2m25s
+622592K ........ ........ ........ ........ 84% 1.42M 1m52s
+655360K ........ ........ ........ ........ 88%  669K 83s
+688128K ........ ........ ........ ........ 93% 1.80M 51s
+720896K ........ ........ ........ ........ 97%  712K 20s
+753664K ........ ........ ....             100%  863K=12m35s
+
+2026-10-09 17:48:53 (1.00 MB/s) - ‘/home/panshul/zed-ps2-stagea/weights/bytetrack_x_mot17.pth.tar’ saved [792835731/792835731]
+
+[1;34m[17:48:53][0m downloading bytetrack_x_mot20.pth.tar ...
+--2026-10-09 17:48:53--  https://drive.usercontent.google.com/download?export=download&confirm=t&id=1HX2_JpMOjOIj1Z9rJjoet9XNy_cCAs5U
+Resolving drive.usercontent.google.com (drive.usercontent.google.com)... 142.251.43.193, 2404:6800:4007:835::2001
+Connecting to drive.usercontent.google.com (drive.usercontent.google.com)|142.251.43.193|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 792835731 (756M) [application/octet-stream]
+Saving to: ‘/home/panshul/zed-ps2-stagea/weights/bytetrack_x_mot20.pth.tar’
+
+     0K ........ ........ ........ ........  4%  513K 24m7s
+ 32768K ........ ........ ........ ........  8%  493K 23m30s
+ 65536K ........ ........ ........ ........ 12%  669K 20m33s
+ 98304K ........ ........ ........ ........ 16% 8.00M 15m0s
+131072K ........ ........ ........ ........ 21% 11.0M 11m34s
+163840K ........ ........ ........ ........ 25% 12.0M 9m15s
+196608K ........ ........ ........ ........ 29% 1.90M 8m9s
+229376K ........ ........ ........ ........ 33%  782K 8m4s
+262144K ........ ........ ........ ........ 38%  601K 8m11s
+294912K ........ ........ ........ ........ 42% 21.4M 6m54s
+327680K ........ ........ ........ ........ 46% 23.2M 5m50s
+360448K ........ ........ ........ ........ 50% 10.9M 4m59s
+393216K ........ ........ ........ ........ 55% 4.63M 4m18s
+425984K ........ ........ ........ ........ 59% 4.61M 3m41s
+458752K ........ ........ ........ ........ 63%  711K 3m32s
+491520K ........ ........ ........ ........ 67%  863K 3m14s
+524288K ........ ........ ........ ........ 71% 5.09M 2m41s
+557056K ........ ........ ........ ........ 76%  942K 2m20s
+589824K ........ ........ ........ ........ 80%  442K 2m7s
+622592K ........ ........ ........ ........ 84%  833K 1m42s
+655360K ........ ........ ........ ........ 88% 4.92M 71s
+688128K ........ ........ ........ ........ 93% 7.24M 42s
+720896K ........ ........ ........ ........ 97% 11.4M 16s
+753664K ........ ........ ....             100% 15.2M=9m36s
+
+2026-10-09 17:57:45 (1.31 MB/s) - ‘/home/panshul/zed-ps2-stagea/weights/bytetrack_x_mot20.pth.tar’ saved [792835731/792835731]
+
+[1;34m[17:57:45][0m downloading dancetrack_bytetrack_x.pth.tar ...
+--2026-10-09 17:57:45--  https://huggingface.co/noahcao/dancetrack_models/resolve/main/bytetrack_models/bytetrack_model.pth.tar
+Resolving huggingface.co (huggingface.co)... 108.159.15.97, 108.159.15.84, 108.159.15.21, ...
+Connecting to huggingface.co (huggingface.co)|108.159.15.97|:443... connected.
+HTTP request sent, awaiting response... 302 Found
+Location: https://us.aws.cdn.hf.co/xet-bridge-us/66edbea1f8989549ddc2b4cf/a7dfacf01c832191234798b7832e0e2d94cfb9b5891d115c42fb33ea9dbeca7d?response-content-disposition=inline%3B+filename*%3DUTF-8%27%27bytetrack_model.pth.tar%3B+filename%3D%22bytetrack_model.pth.tar%22%3B&user_id=public&X-Xet-Cas-Uid=public&response-content-type=application%2Fx-tar&xip=E3LL1Rzm2D0&Expires=1791572264&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly91cy5hd3MuY2RuLmhmLmNvL3hldC1icmlkZ2UtdXMvNjZlZGJlYTFmODk4OTU0OWRkYzJiNGNmL2E3ZGZhY2YwMWM4MzIxOTEyMzQ3OThiNzgzMmUwZTJkOTRjZmI5YjU4OTFkMTE1YzQyZmIzM2VhOWRiZWNhN2RcXD9yZXNwb25zZS1jb250ZW50LWRpc3Bvc2l0aW9uPWlubGluZSUzQitmaWxlbmFtZSUyQSUzRFVURi04JTI3JTI3Ynl0ZXRyYWNrX21vZGVsLnB0aC50YXIlM0IrZmlsZW5hbWUlM0QlMjJieXRldHJhY2tfbW9kZWwucHRoLnRhciUyMiUzQiZ1c2VyX2lkPXB1YmxpYyZYLVhldC1DYXMtVWlkPXB1YmxpYyZyZXNwb25zZS1jb250ZW50LXR5cGU9YXBwbGljYXRpb24lMkZ4LXRhciZ4aXA9RTNMTDFSem0yRDAiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkVwb2NoVGltZSI6MTc5MTU3MjI2NH19fV19&Signature=MEUCIGOXHzIts2GwYtCJxQkytCrV3CA1Usy-PAGD4ti37zRLAiEAz1Edt6DPdItf8BjyBEPzCbqCSMCpp2M3MbbH48ixly8_&Key-Pair-Id=01KXEF4KZ1B6FV465MAWR4M21F&Hash-Algorithm=SHA256 [following]
+--2026-10-09 17:57:46--  https://us.aws.cdn.hf.co/xet-bridge-us/66edbea1f8989549ddc2b4cf/a7dfacf01c832191234798b7832e0e2d94cfb9b5891d115c42fb33ea9dbeca7d?response-content-disposition=inline%3B+filename*%3DUTF-8%27%27bytetrack_model.pth.tar%3B+filename%3D%22bytetrack_model.pth.tar%22%3B&user_id=public&X-Xet-Cas-Uid=public&response-content-type=application%2Fx-tar&xip=E3LL1Rzm2D0&Expires=1791572264&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly91cy5hd3MuY2RuLmhmLmNvL3hldC1icmlkZ2UtdXMvNjZlZGJlYTFmODk4OTU0OWRkYzJiNGNmL2E3ZGZhY2YwMWM4MzIxOTEyMzQ3OThiNzgzMmUwZTJkOTRjZmI5YjU4OTFkMTE1YzQyZmIzM2VhOWRiZWNhN2RcXD9yZXNwb25zZS1jb250ZW50LWRpc3Bvc2l0aW9uPWlubGluZSUzQitmaWxlbmFtZSUyQSUzRFVURi04JTI3JTI3Ynl0ZXRyYWNrX21vZGVsLnB0aC50YXIlM0IrZmlsZW5hbWUlM0QlMjJieXRldHJhY2tfbW9kZWwucHRoLnRhciUyMiUzQiZ1c2VyX2lkPXB1YmxpYyZYLVhldC1DYXMtVWlkPXB1YmxpYyZyZXNwb25zZS1jb250ZW50LXR5cGU9YXBwbGljYXRpb24lMkZ4LXRhciZ4aXA9RTNMTDFSem0yRDAiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkVwb2NoVGltZSI6MTc5MTU3MjI2NH19fV19&Signature=MEUCIGOXHzIts2GwYtCJxQkytCrV3CA1Usy-PAGD4ti37zRLAiEAz1Edt6DPdItf8BjyBEPzCbqCSMCpp2M3MbbH48ixly8_&Key-Pair-Id=01KXEF4KZ1B6FV465MAWR4M21F&Hash-Algorithm=SHA256
+Resolving us.aws.cdn.hf.co (us.aws.cdn.hf.co)... 3.0.71.232, 47.131.129.243, 13.214.85.108, ...
+Connecting to us.aws.cdn.hf.co (us.aws.cdn.hf.co)|3.0.71.232|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 792835731 (756M) [application/x-tar]
+Saving to: ‘/home/panshul/zed-ps2-stagea/weights/dancetrack_bytetrack_x.pth.tar’
+
+     0K ........ ........ ........ ........  4% 8.41M 86s
+ 32768K ........ ........ ........ ........  8% 9.24M 79s
+ 65536K ........ ........ ........ ........ 12% 8.70M 75s
+ 98304K ........ ........ ........ ........ 16% 9.88M 70s
+131072K ........ ........ ........ ........ 21% 8.22M 67s
+163840K ........ ........ ........ ........ 25% 8.59M 64s
+196608K ........ ........ ........ ........ 29% 9.90M 59s
+229376K ........ ........ ........ ........ 33% 9.50M 55s
+262144K ........ ........ ........ ........ 38% 10.1M 51s
+294912K ........ ........ ........ ........ 42% 9.86M 47s
+327680K ........ ........ ........ ........ 46% 8.46M 44s
+360448K ........ ........ ........ ........ 50% 8.86M 41s
+393216K ........ ........ ........ ........ 55% 9.13M 37s
+425984K ........ ........ ........ ........ 59% 11.9M 33s
+458752K ........ ........ ........ ........ 63% 10.7M 30s
+491520K ........ ........ ........ ........ 67% 9.82M 26s
+524288K ........ ........ ........ ........ 71% 9.28M 23s
+557056K ........ ........ ........ ........ 76% 7.61M 19s
+589824K ........ ........ ........ ........ 80% 8.40M 16s
+622592K ........ ........ ........ ........ 84% 8.30M 13s
+655360K ........ ........ ........ ........ 88% 8.91M 9s
+688128K ........ ........ ........ ........ 93% 10.7M 6s
+720896K ........ ........ ........ ........ 97% 9.77M 2s
+753664K ........ ........ ....             100% 10.9M=82s
+
+2026-10-09 17:59:01 (9.25 MB/s) - ‘/home/panshul/zed-ps2-stagea/weights/dancetrack_bytetrack_x.pth.tar’ saved [792835731/792835731]
+
+[1;34m[17:59:01][0m downloading sparsetrack_mot20_ablation.pth.tar ...
+--2026-10-09 17:59:01--  https://drive.usercontent.google.com/download?export=download&confirm=t&id=1F2XwyYKj1kefLPUFRHxgnpaAmEwyoocw
+Resolving drive.usercontent.google.com (drive.usercontent.google.com)... 142.251.222.193, 2404:6800:4007:835::2001
+Connecting to drive.usercontent.google.com (drive.usercontent.google.com)|142.251.222.193|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 792835731 (756M) [application/octet-stream]
+Saving to: ‘/home/panshul/zed-ps2-stagea/weights/sparsetrack_mot20_ablation.pth.tar’
+
+     0K ........ ........ ........ ........  4%  533K 23m12s
+ 32768K ........ ........ ........ ........  8%  559K 21m39s
+ 65536K ........ ........ ........ ........ 12%  451K 22m6s
+ 98304K ........ ........ ........ ........ 16% 5.92M 16m13s
+131072K ........ ........ ........ ........ 21% 3.16M 12m56s
+163840K ........ ........ ........ ........ 25% 23.5M 10m16s
+196608K ........ ........ ........ ........ 29% 18.5M 8m22s
+229376K ........ ........ ........ ........ 33% 20.9M 6m56s
+262144K ........ ........ ........ ........ 38% 22.8M 5m48s
+294912K ........ ........ ........ ........ 42% 20.4M 4m54s
+327680K ........ ........ ........ ........ 46% 22.0M 4m10s
+360448K ........ ........ ........ ........ 50% 20.6M 3m32s
+393216K ........ ........ ........ ........ 55% 20.8M 3m0s
+425984K ........ ........ ........ ........ 59% 14.8M 2m33s
+458752K ........ ........ ........ ........ 63% 3.58M 2m13s
+491520K ........ ........ ........ ........ 67% 17.9M 1m51s
+524288K ........ ........ ........ ........ 71% 19.9M 92s
+557056K ........ ........ ........ ........ 76% 11.2M 74s
+589824K ........ ........ ........ ........ 80% 19.6M 58s
+622592K ........ ........ ........ ........ 84% 23.0M 44s
+655360K ........ ........ ........ ........ 88% 22.5M 30s
+688128K ........ ........ ........ ........ 93% 20.5M 18s
+720896K ........ ........ ........ ........ 97% 19.5M 7s
+753664K ........ ........ ....             100% 1.54M=4m19s
+
+2026-10-09 18:03:01 (2.92 MB/s) - ‘/home/panshul/zed-ps2-stagea/weights/sparsetrack_mot20_ablation.pth.tar’ saved [792835731/792835731]
+
+[1;34m[18:03:01][0m downloading osnet_ain_x1_0_msmt17.pth ...
+--2026-10-09 18:03:01--  https://drive.usercontent.google.com/download?export=download&confirm=t&id=1SigwBE6mPdqiJMqhuIY4aqC7--5CsMal
+Resolving drive.usercontent.google.com (drive.usercontent.google.com)... 142.251.222.193, 2404:6800:4007:835::2001
+Connecting to drive.usercontent.google.com (drive.usercontent.google.com)|142.251.222.193|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 17293009 (16M) [application/octet-stream]
+Saving to: ‘/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth’
+
+     0K ........ ........                  100% 17.6M=0.9s
+
+2026-10-09 18:03:05 (17.6 MB/s) - ‘/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth’ saved [17293009/17293009]
+
+26cb8d2808664e5068a4c812d53becbc948b47fd6eacf2b45db049ab40c48b1a  ./bytetrack_ablation.pth.tar
+e3945f3523fde1e107708aacd64dab0670c34e371d136e54587cac7a50d3cfba  ./bytetrack_x_mot17.pth.tar
+021d7bc47fe20ae690007454cd2192df6237c2f4446ae92737a79523de89de64  ./bytetrack_x_mot20.pth.tar
+b8d1afba08f801f3fe2cb122faf3fc9af6c7856405a0da94cf91cdd5eb9b3321  ./dancetrack_bytetrack_x.pth.tar
+8a07e8da38946f7cee37f4561617bf8b6d2fe8f3a4027852893ea092e46d919f  ./osnet_ain_x1_0_msmt17.pth
+1fe6d4b6dc211481d5351ba3c8942466e4f72baae3d6f8e9081290e5afe10be8  ./sparsetrack_mot20_ablation.pth.tar
+[ok] bytetrack_ablation.pth.tar: 0 dets on noise, 161.2 ms
+[ok] bytetrack_x_mot17.pth.tar: 0 dets on noise, 156.4 ms
+[ok] bytetrack_x_mot20.pth.tar: 0 dets on noise, 175.9 ms
+[ok] dancetrack_bytetrack_x.pth.tar: 0 dets on noise, 150.9 ms
+[ok] sparsetrack_mot20_ablation.pth.tar: 0 dets on noise, 177.6 ms
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[ok] osnet_ain_x1_0: (2, 512), |e|=[0.9999899  0.99995977]
+SELFTEST OK
+[1;34m[18:04:02][0m SETUP OK. Next: bash scripts/dgx/run.sh mot17

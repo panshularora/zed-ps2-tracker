@@ -1,0 +1,42 @@
+[1;34m[21:35:47][0m logging to /home/panshul/zed-ps2-stagea/logs/run_dancetrack_20261010_213547.log
+[1;34m[21:35:47][0m detector: x, batch 8, GPU 0
+[1;34m[21:35:47][0m downloading dancetrack_val.zip ...
+--2026-10-10 21:35:47--  https://huggingface.co/datasets/noahcao/dancetrack/resolve/main/val.zip
+Resolving huggingface.co (huggingface.co)... 108.159.15.97, 108.159.15.84, 108.159.15.3, ...
+Connecting to huggingface.co (huggingface.co)|108.159.15.97|:443... connected.
+HTTP request sent, awaiting response... 302 Found
+Location: https://us.aws.cdn.hf.co/xet-bridge-us/66edb8c26babd2a70524add5/06652c0eec4f5bd3a57646c20cad70e8b79c1c35bf16861a95aecc30b118e752?user_id=public&xip=gmyzmmuBGk0&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27val.zip%3B+filename%3D%22val.zip%22%3B&response-content-type=application%2Fzip&Expires=1791671747&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly91cy5hd3MuY2RuLmhmLmNvL3hldC1icmlkZ2UtdXMvNjZlZGI4YzI2YmFiZDJhNzA1MjRhZGQ1LzA2NjUyYzBlZWM0ZjViZDNhNTc2NDZjMjBjYWQ3MGU4Yjc5YzFjMzViZjE2ODYxYTk1YWVjYzMwYjExOGU3NTJcXD91c2VyX2lkPXB1YmxpYyZ4aXA9Z215em1tdUJHazAmWC1YZXQtQ2FzLVVpZD1wdWJsaWMmcmVzcG9uc2UtY29udGVudC1kaXNwb3NpdGlvbj1pbmxpbmUlM0IrZmlsZW5hbWUlMkElM0RVVEYtOCUyNyUyN3ZhbC56aXAlM0IrZmlsZW5hbWUlM0QlMjJ2YWwuemlwJTIyJTNCJnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbiUyRnppcCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiRXBvY2hUaW1lIjoxNzkxNjcxNzQ3fX19XX0_&Signature=MEYCIQCJrMHKVVEQPBGfVgrf18jWtkBJW5ojZfm4-BO6AR0iDAIhANPxf1y8NfCihZpsFY3KWJydXJDUlYR-Rh1kJgYGMhvt&Key-Pair-Id=01KXEF4KZ1B6FV465MAWR4M21F&Hash-Algorithm=SHA256 [following]
+--2026-10-10 21:35:47--  https://us.aws.cdn.hf.co/xet-bridge-us/66edb8c26babd2a70524add5/06652c0eec4f5bd3a57646c20cad70e8b79c1c35bf16861a95aecc30b118e752?user_id=public&xip=gmyzmmuBGk0&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27val.zip%3B+filename%3D%22val.zip%22%3B&response-content-type=application%2Fzip&Expires=1791671747&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly91cy5hd3MuY2RuLmhmLmNvL3hldC1icmlkZ2UtdXMvNjZlZGI4YzI2YmFiZDJhNzA1MjRhZGQ1LzA2NjUyYzBlZWM0ZjViZDNhNTc2NDZjMjBjYWQ3MGU4Yjc5YzFjMzViZjE2ODYxYTk1YWVjYzMwYjExOGU3NTJcXD91c2VyX2lkPXB1YmxpYyZ4aXA9Z215em1tdUJHazAmWC1YZXQtQ2FzLVVpZD1wdWJsaWMmcmVzcG9uc2UtY29udGVudC1kaXNwb3NpdGlvbj1pbmxpbmUlM0IrZmlsZW5hbWUlMkElM0RVVEYtOCUyNyUyN3ZhbC56aXAlM0IrZmlsZW5hbWUlM0QlMjJ2YWwuemlwJTIyJTNCJnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbiUyRnppcCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiRXBvY2hUaW1lIjoxNzkxNjcxNzQ3fX19XX0_&Signature=MEYCIQCJrMHKVVEQPBGfVgrf18jWtkBJW5ojZfm4-BO6AR0iDAIhANPxf1y8NfCihZpsFY3KWJydXJDUlYR-Rh1kJgYGMhvt&Key-Pair-Id=01KXEF4KZ1B6FV465MAWR4M21F&Hash-Algorithm=SHA256
+Resolving us.aws.cdn.hf.co (us.aws.cdn.hf.co)... 13.215.180.201, 13.214.85.108, 54.254.163.78, ...
+Connecting to us.aws.cdn.hf.co (us.aws.cdn.hf.co)|13.215.180.201|:443... connected.
+HTTP request sent, awaiting response... 206 Partial Content
+Length: 4209785614 (3.9G), 702442254 (670M) remaining [application/zip]
+Saving to: ‘/home/panshul/zed-ps2-stagea/downloads/dancetrack_val.zip’
+
+         [ skipping 3407872K ]
+3407872K ,,,,,,,, ,,,,,,,, ........ ........ 83% 20.0M 69s
+3440640K ........ ........ ........ ........ 84% 19.0M 43s
+3473408K ........ ........ ........ ........ 85% 18.0M 38s
+3506176K ........ ........ ........ ........ 86% 18.3M 34s
+3538944K ........ ........ ........ ........ 86% 15.3M 33s
+3571712K ........ ........ ........ ........ 87% 12.0M 33s
+3604480K ........ ........ ........ ........ 88% 9.65M 33s
+3637248K ........ ........ ........ ........ 89% 10.8M 32s
+3670016K ........ ........ ........ ........ 90% 9.27M 31s
+3702784K ........ ........ ........ ........ 90% 9.28M 30s
+3735552K ........ ........ ........ ........ 91% 9.76M 28s
+3768320K ........ ........ ........ ........ 92% 11.6M 25s
+3801088K ........ ........ ........ ........ 93% 5.81M 25s
+3833856K ........ ........ ........ ........ 94% 7.28M 23s
+3866624K ........ ........ ........ ........ 94% 6.42M 20s
+3899392K ........ ........ ........ ........ 95% 9.66M 17s
+3932160K ........ ........ ........ ........ 96% 11.2M 14s
+3964928K ........ ........ ........ ........ 97% 11.0M 11s
+3997696K ........ ........ ........ ........ 98% 19.6M 8s
+4030464K ........ ........ ........ ........ 98% 22.7M 4s
+4063232K ........ ........ ........ ........ 99% 21.4M 1s
+4096000K ........ ......                    100% 24.2M=60s
+
+2026-10-10 21:36:48 (11.2 MB/s) - ‘/home/panshul/zed-ps2-stagea/downloads/dancetrack_val.zip’ saved [4209785614/4209785614]
+
+[1;31m[21:36:48] ERROR:[0m dancetrack_val.zip: got 4779124080 bytes, expected 4209785614. Re-run to resume.

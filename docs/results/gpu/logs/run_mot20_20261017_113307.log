@@ -1,0 +1,64 @@
+[1;34m[11:33:07][0m logging to /home/panshul/zed-ps2-stagea/logs/run_mot20_20261017_113307.log
+[1;34m[11:33:07][0m detector: x, batch 1, GPU 0
+[1;34m[11:33:07][0m have MOT20.zip (5028926248 bytes)
+[1;34m[11:33:07][0m MOT20 variants: sparsetrack_ablation mot17full_xdomain
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-01.npz (already complete)
+[skip] /home/panshul/zed-ps2-stagea/cache/MOT20/sparsetrack_ablation/train/MOT20-02.npz (already complete)
+[run ] MOT20-03: 2405 frames
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 278, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 271, in main
+    run_many(sources, det, emb, a.out, dataset=a.dataset, split=a.split,
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 186, in run_many
+    cache = process_sequence(src, detector, embedder, dataset=dataset, split=split,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-tracker/models/stage_a.py", line 99, in process_sequence
+    embs.append(embedder(img, boxes[-1]))
+                ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-tracker/models/osnet_embedder.py", line 101, in __call__
+    f = self.model(x).float()
+        ^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-stagea/env/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-stagea/env/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-stagea/src/deep-person-reid/torchreid/models/osnet_ain.py", line 433, in forward
+    x = self.featuremaps(x)
+        ^^^^^^^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-stagea/src/deep-person-reid/torchreid/models/osnet_ain.py", line 422, in featuremaps
+    x = self.conv1(x)
+        ^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-stagea/env/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-stagea/env/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-stagea/src/deep-person-reid/torchreid/models/osnet_ain.py", line 56, in forward
+    x = self.conv(x)
+        ^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-stagea/env/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-stagea/env/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-stagea/env/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 554, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/panshul/zed-ps2-stagea/env/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 549, in _conv_forward
+    return F.conv2d(
+           ^^^^^^^^^
+RuntimeError: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+

@@ -1,0 +1,12 @@
+[1;34m[16:13:57][0m logging to /home/panshul/zed-ps2-stagea/run_all/logs/run_all_20261009_161357.log ; status: cat /home/panshul/zed-ps2-stagea/STATUS
+
+[1;35m[16:13:57] ===== stage preflight: GPU via nvidia-smi (WSL2), tools, disk, datasets, frozen files =====[0m
+[1;34m[16:13:57][0m WSL2 detected (6.6.87.2-microsoft-standard-WSL2); the GPU comes from the WINDOWS NVIDIA driver
+GPU 0: NVIDIA GeForce RTX 3050 6GB Laptop GPU (UUID: GPU-b060f840-bcab-5362-2ae9-bac4a27c6285)
+[1;34m[16:14:00][0m GPU 0: NVIDIA GeForce RTX 3050 6GB Laptop GPU, 6144 MiB; profile laptop; detector policy: auto (now: x); batch 1; phase-3 jobs 6
+[1;34m[16:14:00][0m under 8 GB: still YOLOX-X fp16, batch 1 at 800x1440; only a real CUDA out-of-memory error switches to YOLOX-S
+[1;34m[16:14:00][0m free disk under /home/panshul/zed-ps2-stagea: 944 GB
+[1;31m[16:14:31] ERROR:[0m dataset mot17 is not present and https://motchallenge.net/data/MOT17.zip is unreachable. Put the archive at /home/panshul/zed-ps2-stagea/downloads/MOT17.zip (from any connected machine), or run: bash run.sh download mot17
+
+[1;31mFAILED at stage preflight (exit 1).[0m Fix the cause above, then re-run the same command:
+finished stages are skipped. Status: cat /home/panshul/zed-ps2-stagea/STATUS   Log: /home/panshul/zed-ps2-stagea/run_all/logs/run_all_20261009_161357.log

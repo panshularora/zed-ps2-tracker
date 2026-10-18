@@ -1,0 +1,533 @@
+[
+ {
+  "name": "v2_k0",
+  "label": "k0",
+  "group": "sanity check",
+  "HOTA": 62.464018652033104,
+  "IDF1": 72.96692810067694,
+  "MOTA": 66.53182408610132,
+  "IDSW": 183.0,
+  "AssA": 64.94779471463758,
+  "DetA": 60.76681988042091,
+  "latency_source": "eval.latency",
+  "p50_ms": 1.740869,
+  "p95_ms": 5.363831449999999,
+  "max_ms": 17.610873,
+  "stress": {
+   "tracker": "v2_k0",
+   "benchmark": "MOT17",
+   "sequences": [
+    "MOT17-02-FRCNN",
+    "MOT17-04-FRCNN",
+    "MOT17-05-FRCNN",
+    "MOT17-09-FRCNN",
+    "MOT17-10-FRCNN",
+    "MOT17-11-FRCNN",
+    "MOT17-13-FRCNN"
+   ],
+   "visibility": [
+    {
+     "bin": "0.00-0.25",
+     "gt": 13794,
+     "share": 0.25596585637409536,
+     "tp": 6597,
+     "fn": 7197,
+     "idsw": 102,
+     "idtp": 4914,
+     "recall": 0.47825141365811225,
+     "id_recall": 0.3562418442801218,
+     "idsw_per_1k_gt": 7.394519356241844
+    },
+    {
+     "bin": "0.25-0.50",
+     "gt": 9550,
+     "share": 0.1772128409723511,
+     "tp": 6477,
+     "fn": 3073,
+     "idsw": 34,
+     "idtp": 5669,
+     "recall": 0.6782198952879581,
+     "id_recall": 0.5936125654450262,
+     "idsw_per_1k_gt": 3.56020942408377
+    },
+    {
+     "bin": "0.50-0.75",
+     "gt": 8198,
+     "share": 0.15212469845982557,
+     "tp": 7124,
+     "fn": 1074,
+     "idsw": 17,
+     "idtp": 6255,
+     "recall": 0.8689924371797999,
+     "id_recall": 0.7629909734081484,
+     "idsw_per_1k_gt": 2.0736765064649916
+    },
+    {
+     "bin": "0.75-1.00",
+     "gt": 22348,
+     "share": 0.41469660419372795,
+     "tp": 21175,
+     "fn": 1173,
+     "idsw": 30,
+     "idtp": 19864,
+     "recall": 0.9475120816180419,
+     "id_recall": 0.8888491140146769,
+     "idsw_per_1k_gt": 1.3424020046536602
+    },
+    {
+     "bin": "=0 (subset)",
+     "gt": 5891,
+     "share": 0.10931527185006494,
+     "tp": 2126,
+     "fn": 3765,
+     "idsw": 59,
+     "idtp": 1379,
+     "recall": 0.36088949244610424,
+     "id_recall": 0.23408589373620778,
+     "idsw_per_1k_gt": 10.01527754201324
+    }
+   ],
+   "density_edges": [
+    0,
+    9,
+    13,
+    34
+   ],
+   "density": [
+    {
+     "bin": "0-8",
+     "frames": 600,
+     "gt": 3752,
+     "fp": 292,
+     "fn": 800,
+     "idsw": 10,
+     "idtp": 2735,
+     "idfp": 509,
+     "idfn": 1017,
+     "mota": 70.62899786780383,
+     "idf1": 78.18753573470555,
+     "recall": 78.67803837953092,
+     "idsw_per_1k_gt": 2.6652452025586353
+    },
+    {
+     "bin": "9-12",
+     "frames": 719,
+     "gt": 7280,
+     "fp": 630,
+     "fn": 1362,
+     "idsw": 36,
+     "idtp": 4840,
+     "idfp": 1708,
+     "idfn": 2440,
+     "mota": 72.14285714285714,
+     "idf1": 70.00289268151576,
+     "recall": 81.29120879120879,
+     "idsw_per_1k_gt": 4.945054945054945
+    },
+    {
+     "bin": "13-33",
+     "frames": 652,
+     "gt": 13262,
+     "fp": 969,
+     "fn": 3602,
+     "idsw": 75,
+     "idtp": 7795,
+     "idfp": 2834,
+     "idfn": 5467,
+     "mota": 64.96757653445935,
+     "idf1": 65.25469842199992,
+     "recall": 72.83969235409441,
+     "idsw_per_1k_gt": 5.655255617553913
+    },
+    {
+     "bin": "34+",
+     "frames": 681,
+     "gt": 29596,
+     "fp": 3445,
+     "fn": 6753,
+     "idsw": 62,
+     "idtp": 21332,
+     "idfp": 4956,
+     "idfn": 8264,
+     "mota": 65.33315312880119,
+     "idf1": 76.34385512848043,
+     "recall": 77.182727395594,
+     "idsw_per_1k_gt": 2.0948776861738074
+    }
+   ],
+   "totals": {
+    "TP": 41373,
+    "FN": 12517,
+    "IDSW": 183,
+    "IDTP": 36702,
+    "FP": 5336,
+    "IDFP": 10007,
+    "IDFN": 17188
+   },
+   "verified_against_trackeval": true
+  },
+  "run_info": {
+   "run_profile": "laptop",
+   "run_gpu": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+   "run_gpu_mem_mib": "6144",
+   "run_detector": "yolox_x (ByteTrack) [bytetrack_ablation.pth.tar]",
+   "run_precision": "fp16",
+   "run_input_size": "800x1440",
+   "cache": "MOT17/ablation/train"
+  }
+ },
+ {
+  "name": "v2_k3",
+  "label": "k3",
+  "group": "sanity check",
+  "HOTA": 62.22373581238468,
+  "IDF1": 72.18535799202141,
+  "MOTA": 66.46687697160884,
+  "IDSW": 196.0,
+  "AssA": 64.47300579541519,
+  "DetA": 60.74935286210936,
+  "latency_source": "eval.latency",
+  "p50_ms": 5.104069,
+  "p95_ms": 116.69495169999999,
+  "max_ms": 323.930863,
+  "stress": {
+   "tracker": "v2_k3",
+   "benchmark": "MOT17",
+   "sequences": [
+    "MOT17-02-FRCNN",
+    "MOT17-04-FRCNN",
+    "MOT17-05-FRCNN",
+    "MOT17-09-FRCNN",
+    "MOT17-10-FRCNN",
+    "MOT17-11-FRCNN",
+    "MOT17-13-FRCNN"
+   ],
+   "visibility": [
+    {
+     "bin": "0.00-0.25",
+     "gt": 13794,
+     "share": 0.25596585637409536,
+     "tp": 6500,
+     "fn": 7294,
+     "idsw": 110,
+     "idtp": 4977,
+     "recall": 0.47121937074090187,
+     "id_recall": 0.3608090474119182,
+     "idsw_per_1k_gt": 7.974481658692185
+    },
+    {
+     "bin": "0.25-0.50",
+     "gt": 9550,
+     "share": 0.1772128409723511,
+     "tp": 6510,
+     "fn": 3040,
+     "idsw": 34,
+     "idtp": 5657,
+     "recall": 0.6816753926701571,
+     "id_recall": 0.5923560209424084,
+     "idsw_per_1k_gt": 3.56020942408377
+    },
+    {
+     "bin": "0.50-0.75",
+     "gt": 8198,
+     "share": 0.15212469845982557,
+     "tp": 7185,
+     "fn": 1013,
+     "idsw": 24,
+     "idtp": 6056,
+     "recall": 0.8764332764088802,
+     "id_recall": 0.7387167601854111,
+     "idsw_per_1k_gt": 2.927543303244694
+    },
+    {
+     "bin": "0.75-1.00",
+     "gt": 22348,
+     "share": 0.41469660419372795,
+     "tp": 21127,
+     "fn": 1221,
+     "idsw": 28,
+     "idtp": 19590,
+     "recall": 0.945364238410596,
+     "id_recall": 0.8765885090388401,
+     "idsw_per_1k_gt": 1.2529085376767497
+    },
+    {
+     "bin": "=0 (subset)",
+     "gt": 5891,
+     "share": 0.10931527185006494,
+     "tp": 2110,
+     "fn": 3781,
+     "idsw": 62,
+     "idtp": 1380,
+     "recall": 0.3581734849770837,
+     "id_recall": 0.23425564420302156,
+     "idsw_per_1k_gt": 10.524528942454591
+    }
+   ],
+   "density_edges": [
+    0,
+    9,
+    13,
+    34
+   ],
+   "density": [
+    {
+     "bin": "0-8",
+     "frames": 600,
+     "gt": 3752,
+     "fp": 291,
+     "fn": 806,
+     "idsw": 15,
+     "idtp": 2507,
+     "idfp": 730,
+     "idfn": 1245,
+     "mota": 70.36247334754798,
+     "idf1": 71.74130776935183,
+     "recall": 78.5181236673774,
+     "idsw_per_1k_gt": 3.997867803837953
+    },
+    {
+     "bin": "9-12",
+     "frames": 719,
+     "gt": 7280,
+     "fp": 620,
+     "fn": 1381,
+     "idsw": 33,
+     "idtp": 4701,
+     "idfp": 1818,
+     "idfn": 2579,
+     "mota": 72.06043956043956,
+     "idf1": 68.1353721284151,
+     "recall": 81.03021978021978,
+     "idsw_per_1k_gt": 4.532967032967033
+    },
+    {
+     "bin": "13-33",
+     "frames": 652,
+     "gt": 13262,
+     "fp": 978,
+     "fn": 3631,
+     "idsw": 78,
+     "idtp": 7636,
+     "idfp": 2973,
+     "idfn": 5626,
+     "mota": 64.65842256069973,
+     "idf1": 63.97721084160697,
+     "recall": 72.62102247021565,
+     "idsw_per_1k_gt": 5.88146584225607
+    },
+    {
+     "bin": "34+",
+     "frames": 681,
+     "gt": 29596,
+     "fp": 3418,
+     "fn": 6750,
+     "idsw": 70,
+     "idtp": 21436,
+     "idfp": 4828,
+     "idfn": 8160,
+     "mota": 65.40748749831057,
+     "idf1": 76.74901539563194,
+     "recall": 77.1928639005271,
+     "idsw_per_1k_gt": 2.3651844843897822
+    }
+   ],
+   "totals": {
+    "TP": 41322,
+    "FN": 12568,
+    "IDSW": 196,
+    "IDTP": 36280,
+    "FP": 5307,
+    "IDFP": 10349,
+    "IDFN": 17610
+   },
+   "verified_against_trackeval": true
+  },
+  "run_info": {
+   "run_profile": "laptop",
+   "run_gpu": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+   "run_gpu_mem_mib": "6144",
+   "run_detector": "yolox_x (ByteTrack) [bytetrack_ablation.pth.tar]",
+   "run_precision": "fp16",
+   "run_input_size": "800x1440",
+   "cache": "MOT17/ablation/train"
+  }
+ },
+ {
+  "name": "v2_k5",
+  "label": "k5",
+  "group": "sanity check",
+  "HOTA": 61.94611695767042,
+  "IDF1": 71.93282661466831,
+  "MOTA": 66.57264798663945,
+  "IDSW": 198.0,
+  "AssA": 63.947353256946116,
+  "DetA": 60.71189124617257,
+  "latency_source": "eval.latency",
+  "p50_ms": 4.521064,
+  "p95_ms": 170.08938899999964,
+  "max_ms": 521.199211,
+  "stress": {
+   "tracker": "v2_k5",
+   "benchmark": "MOT17",
+   "sequences": [
+    "MOT17-02-FRCNN",
+    "MOT17-04-FRCNN",
+    "MOT17-05-FRCNN",
+    "MOT17-09-FRCNN",
+    "MOT17-10-FRCNN",
+    "MOT17-11-FRCNN",
+    "MOT17-13-FRCNN"
+   ],
+   "visibility": [
+    {
+     "bin": "0.00-0.25",
+     "gt": 13794,
+     "share": 0.25596585637409536,
+     "tp": 6523,
+     "fn": 7271,
+     "idsw": 108,
+     "idtp": 4947,
+     "recall": 0.4728867623604466,
+     "id_recall": 0.35863418877772946,
+     "idsw_per_1k_gt": 7.8294910830796
+    },
+    {
+     "bin": "0.25-0.50",
+     "gt": 9550,
+     "share": 0.1772128409723511,
+     "tp": 6489,
+     "fn": 3061,
+     "idsw": 35,
+     "idtp": 5561,
+     "recall": 0.6794764397905759,
+     "id_recall": 0.582303664921466,
+     "idsw_per_1k_gt": 3.6649214659685865
+    },
+    {
+     "bin": "0.50-0.75",
+     "gt": 8198,
+     "share": 0.15212469845982557,
+     "tp": 7182,
+     "fn": 1016,
+     "idsw": 26,
+     "idtp": 6054,
+     "recall": 0.8760673334959747,
+     "id_recall": 0.738472798243474,
+     "idsw_per_1k_gt": 3.1715052451817516
+    },
+    {
+     "bin": "0.75-1.00",
+     "gt": 22348,
+     "share": 0.41469660419372795,
+     "tp": 21156,
+     "fn": 1192,
+     "idsw": 29,
+     "idtp": 19590,
+     "recall": 0.9466618936817612,
+     "id_recall": 0.8765885090388401,
+     "idsw_per_1k_gt": 1.297655271165205
+    },
+    {
+     "bin": "=0 (subset)",
+     "gt": 5891,
+     "share": 0.10931527185006494,
+     "tp": 2102,
+     "fn": 3789,
+     "idsw": 60,
+     "idtp": 1384,
+     "recall": 0.3568154812425734,
+     "id_recall": 0.2349346460702767,
+     "idsw_per_1k_gt": 10.185028008827024
+    }
+   ],
+   "density_edges": [
+    0,
+    9,
+    13,
+    34
+   ],
+   "density": [
+    {
+     "bin": "0-8",
+     "frames": 600,
+     "gt": 3752,
+     "fp": 291,
+     "fn": 806,
+     "idsw": 15,
+     "idtp": 2499,
+     "idfp": 738,
+     "idfn": 1253,
+     "mota": 70.36247334754798,
+     "idf1": 71.51237659178709,
+     "recall": 78.5181236673774,
+     "idsw_per_1k_gt": 3.997867803837953
+    },
+    {
+     "bin": "9-12",
+     "frames": 719,
+     "gt": 7280,
+     "fp": 619,
+     "fn": 1381,
+     "idsw": 35,
+     "idtp": 4668,
+     "idfp": 1850,
+     "idfn": 2612,
+     "mota": 72.0467032967033,
+     "idf1": 67.66197999710103,
+     "recall": 81.03021978021978,
+     "idsw_per_1k_gt": 4.8076923076923075
+    },
+    {
+     "bin": "13-33",
+     "frames": 652,
+     "gt": 13262,
+     "fp": 955,
+     "fn": 3604,
+     "idsw": 75,
+     "idtp": 7736,
+     "idfp": 2877,
+     "idfn": 5526,
+     "mota": 65.05806062434021,
+     "idf1": 64.8041884816754,
+     "recall": 72.82461167244759,
+     "idsw_per_1k_gt": 5.655255617553913
+    },
+    {
+     "bin": "34+",
+     "frames": 681,
+     "gt": 29596,
+     "fp": 3411,
+     "fn": 6749,
+     "idsw": 73,
+     "idtp": 21249,
+     "idfp": 5009,
+     "idfn": 8347,
+     "mota": 65.42438167319908,
+     "idf1": 76.08765710602643,
+     "recall": 77.1962427355048,
+     "idsw_per_1k_gt": 2.466549533720773
+    }
+   ],
+   "totals": {
+    "TP": 41350,
+    "FN": 12540,
+    "IDSW": 198,
+    "IDTP": 36152,
+    "FP": 5276,
+    "IDFP": 10474,
+    "IDFN": 17738
+   },
+   "verified_against_trackeval": true
+  },
+  "run_info": {
+   "run_profile": "laptop",
+   "run_gpu": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+   "run_gpu_mem_mib": "6144",
+   "run_detector": "yolox_x (ByteTrack) [bytetrack_ablation.pth.tar]",
+   "run_precision": "fp16",
+   "run_input_size": "800x1440",
+   "cache": "MOT17/ablation/train"
+  }
+ }
+]

@@ -1,0 +1,66 @@
+{
+ "plan": "configs/phase3/plan.yaml",
+ "ran": [
+  {
+   "id": "mot17_val_half",
+   "cache": "MOT17/ablation/train",
+   "saw_eval_half": false,
+   "laptop_detector": false
+  },
+  {
+   "id": "mot20_val_half__mot17full_xdomain",
+   "cache": "MOT20/mot17full_xdomain/train",
+   "saw_eval_half": false,
+   "laptop_detector": false
+  },
+  {
+   "id": "mot20_val_half__sparsetrack_ablation",
+   "cache": "MOT20/sparsetrack_ablation/train",
+   "saw_eval_half": false,
+   "laptop_detector": false
+  },
+  {
+   "id": "dancetrack_val",
+   "cache": "DanceTrack/dancetrack/val",
+   "saw_eval_half": false,
+   "laptop_detector": false
+  }
+ ],
+ "waiting": [],
+ "tune_cache": "MOT17/ablation/train",
+ "tuned": {
+  "tau_update": 0.5,
+  "tau_cost": 0.7
+ },
+ "reproduction": {
+  "reference": {
+   "MOTA": 76.6,
+   "IDF1": 79.3,
+   "IDSW": 159,
+   "FP": 3358,
+   "FN": 9081
+  },
+  "ours": {
+   "MOTA": 66.42048617554278,
+   "IDF1": 73.80798552784597,
+   "IDSW": 165.0,
+   "FP": 5379.0,
+   "FN": 12552.0
+  },
+  "within_tolerance": {
+   "MOTA": false,
+   "IDF1": false
+  },
+  "verdict": "NOT REPRODUCED"
+ },
+ "go_no_go_v2": "NO-GO",
+ "run_info": {
+  "run_profile": "laptop",
+  "run_gpu": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+  "run_gpu_mem_mib": "6144",
+  "run_detector": "bytetrack_ablation.pth.tar; bytetrack_x_mot17.pth.tar; dancetrack_bytetrack_x.pth.tar; sparsetrack_mot20_ablation.pth.tar",
+  "run_precision": "see detectors",
+  "run_input_size": "see detectors",
+  "cache": null
+ }
+}

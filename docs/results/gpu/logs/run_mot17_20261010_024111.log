@@ -1,0 +1,21 @@
+[1;34m[02:41:11][0m logging to /home/panshul/zed-ps2-stagea/logs/run_mot17_20261010_024111.log
+[1;34m[02:41:11][0m detector: x, batch 8, GPU 0
+[1;34m[02:41:11][0m have MOT17.zip (5860214001 bytes)
+Successfully loaded pretrained weights from "/home/panshul/zed-ps2-stagea/weights/osnet_ain_x1_0_msmt17.pth"
+** The following layers are discarded due to unmatched keys or layer size: ['classifier.weight', 'classifier.bias']
+[run ] MOT17-02-FRCNN: 600 frames
+[done] {"sequence": "MOT17-02-FRCNN", "path": "/home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-02-FRCNN.npz", "frames": 600, "detections": 30739, "dets_per_frame": 51.23, "bytes": 24145412, "stage_a_seconds": 137.94, "stage_a_fps": 4.35}
+[run ] MOT17-04-FRCNN: 1050 frames
+[done] {"sequence": "MOT17-04-FRCNN", "path": "/home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-04-FRCNN.npz", "frames": 1050, "detections": 49875, "dets_per_frame": 47.5, "bytes": 38207341, "stage_a_seconds": 237.89, "stage_a_fps": 4.41}
+[run ] MOT17-05-FRCNN: 837 frames
+[done] {"sequence": "MOT17-05-FRCNN", "path": "/home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-05-FRCNN.npz", "frames": 837, "detections": 10144, "dets_per_frame": 12.12, "bytes": 7866399, "stage_a_seconds": 143.9, "stage_a_fps": 5.82}
+[run ] MOT17-09-FRCNN: 525 frames
+[done] {"sequence": "MOT17-09-FRCNN", "path": "/home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-09-FRCNN.npz", "frames": 525, "detections": 7073, "dets_per_frame": 13.47, "bytes": 5404698, "stage_a_seconds": 87.98, "stage_a_fps": 5.97}
+[run ] MOT17-10-FRCNN: 654 frames
+[done] {"sequence": "MOT17-10-FRCNN", "path": "/home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-10-FRCNN.npz", "frames": 654, "detections": 20083, "dets_per_frame": 30.71, "bytes": 15600995, "stage_a_seconds": 119.18, "stage_a_fps": 5.49}
+[run ] MOT17-11-FRCNN: 900 frames
+[done] {"sequence": "MOT17-11-FRCNN", "path": "/home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-11-FRCNN.npz", "frames": 900, "detections": 12558, "dets_per_frame": 13.95, "bytes": 9581139, "stage_a_seconds": 144.72, "stage_a_fps": 6.22}
+[run ] MOT17-13-FRCNN: 750 frames
+[done] {"sequence": "MOT17-13-FRCNN", "path": "/home/panshul/zed-ps2-stagea/cache/MOT17/ablation/train/MOT17-13-FRCNN.npz", "frames": 750, "detections": 14520, "dets_per_frame": 19.36, "bytes": 11389704, "stage_a_seconds": 126.48, "stage_a_fps": 5.93}
+[1;34m[02:58:16][0m encoding /home/panshul/zed-ps2-stagea/clips/MOT17-04.mp4 at 30 fps
+[1;34m[02:58:24][0m run.sh mot17 finished. When all targets are done: bash scripts/dgx/finalize.sh

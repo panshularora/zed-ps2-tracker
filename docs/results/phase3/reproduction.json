@@ -1,0 +1,30 @@
+{
+ "reference": {
+  "MOTA": 76.6,
+  "IDF1": 79.3,
+  "IDSW": 159,
+  "FP": 3358,
+  "FN": 9081
+ },
+ "ours": {
+  "MOTA": 66.42048617554278,
+  "IDF1": 73.80798552784597,
+  "IDSW": 165.0,
+  "FP": 5379.0,
+  "FN": 12552.0
+ },
+ "within_tolerance": {
+  "MOTA": false,
+  "IDF1": false
+ },
+ "verdict": "NOT REPRODUCED",
+ "run_info": {
+  "run_profile": "laptop",
+  "run_gpu": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+  "run_gpu_mem_mib": "6144",
+  "run_detector": "yolox_x (ByteTrack) [bytetrack_ablation.pth.tar]",
+  "run_precision": "fp16",
+  "run_input_size": "800x1440",
+  "cache": "MOT17/ablation/train"
+ }
+}
