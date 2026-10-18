@@ -1,5 +1,6 @@
 """Synthetic gate scene: determinism, detector behaviour and the NDJSON stream."""
 
+import itertools
 import json
 
 import numpy as np
@@ -181,3 +182,27 @@ def test_keep_play_ours_wins_only_inside_its_memory_range():
         3.0: (False, True),
         3.5: (False, False),
     }
+
+
+def test_keep_play_hide_of_person_1_is_measured_inside_stress_map_win_range():
+    """The on-screen line measures the hide from the frames; it must sit in 1-2.5 s (Stress Map:
+    ours better in every cell with hide 1.0-2.5 s, docs/results/stress/stress_map.json)."""
+    xs = frames(SimParams(play="keep"))
+    vis = [p[3] for x in xs if x["type"] == "frame" for p in x["people"] if p[0] == 1]
+    runs, run = [], 0
+    for v in vis:
+        if v == 0:
+            run += 1
+        elif run:
+            runs.append(run)
+            run = 0
+    assert runs == [45]
+    assert 1.0 <= runs[0] / 30.0 <= 2.5
+
+
+def test_keep_world_has_no_sideways_jump_when_person_1_reappears():
+    """World fix: #1 steps back out at walking pace (no jump on the first visible frame)."""
+    xs = [x for x in frames(SimParams(play="keep")) if x["type"] == "frame"]
+    pos = [(p[1], p[3]) for x in xs for p in x["people"] if p[0] == 1]
+    step = max(abs(b[0] - a[0]) for a, b in itertools.pairwise(pos) if a[1] == 0 and b[1] == 1)
+    assert step <= 45.0 / 30.0 + 1e-6

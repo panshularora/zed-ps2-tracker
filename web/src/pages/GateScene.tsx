@@ -6,7 +6,7 @@ import { differences, paneStats, type Diff } from "../compare/gateDiff";
 import { neutralColor } from "../lib/scenarios";
 import {
   DEFAULTS, PANES, RECORDED_SECONDS, beatCopy, firstKeepId, involvedBetween, isDefault, personIdLabel, readStream, recentEvents, recordingUrl, streamUrl,
-  type Beat, type IdKind, type PaneKey, type PlayKind, type SimControls, type SimEnd, type SimFrame, type SimMeta,
+  type Beat, type IdKind, type PaneKey, type PlayKind, type SimControls, type SimEnd, type SimFrame, type SimMeta, measuredHideS,
 } from "../lib/gateSim";
 
 const GATE = "#F5A524";
@@ -248,12 +248,16 @@ function paintPane(ctx: CanvasRenderingContext2D, cw: number, ch: number, meta: 
 }
 
 /** Where this hide sits on the Stress Map (synthetic grid: ours wins for hides of 1–2.5 s). */
-export function hideRangeText(hiddenS: number): string {
-  const s = `#1 is hidden for ${Number(hiddenS.toFixed(2))} s`;
+export function hideRangeText(hiddenS: number, frames?: number): string {
+  const s = `#1 is hidden for ${Number(hiddenS.toFixed(2))} s${frames ? ` (${frames} frames, measured)` : ""}`;
   return hiddenS >= 1 && hiddenS <= 2.5
-    ? `${s}, inside the range where our rule wins (about 1–2.5 s). Longer hides: see Stress Map.`
-    : `${s}, outside the range where our rule wins (about 1–2.5 s). See Stress Map.`;
+    ? `${s}, inside the 1–2.5 s range where our rule wins on the Stress Map.`
+    : `${s}, outside the 1–2.5 s range where our rule wins on the Stress Map.`;
 }
+
+/** What changed in this simulated world (and why), shown under the scene. */
+export const WORLD_FIX_TEXT =
+  "World fix: #1 now steps back out at walking pace instead of jumping sideways on its first visible frame, and walks straight, mostly covered, when its box drops, as people do. The trackers were not changed.";
 
 function GateSceneLive() {
   const [ctl, setCtl] = useState<SimControls>(DEFAULTS);
@@ -380,6 +384,9 @@ function GateSceneLive() {
     setDiffAt(k);
     setPlaying(true);
   }, [meta, cmp]);
+  // measured from the frames received so far (cheap: a few hundred frames), re-read every render
+  const hideS = meta && meta.focus != null ? measuredHideS(frames.current, meta.focus, meta.fps) : null;
+  const hide = meta && hideS != null ? { s: hideS, frames: Math.round(hideS * meta.fps) } : null;
   const fr = frames.current[ui.idx];
   const atEnd = !!end && ui.idx >= frames.current.length - 1;
   const set = (k: "seed" | "density" | "occlusion" | "noise") => (e: React.ChangeEvent<HTMLInputElement>) => setCtl((c) => ({ ...c, [k]: Number(e.target.value) }));
@@ -416,7 +423,8 @@ function GateSceneLive() {
       )}
       {error && <div className="panel muted" role="alert" data-testid="scene-error" style={{ padding: 12 }}>{error}</div>}
       <p className="gs-caption" data-testid="gate-caption"><b className="base">Left: ByteTrack</b>, the published tracker we start from. <b className="ours">Right: ours</b> = BoT-SORT + a rule that remembers a hidden person longer.</p>
-      {ctl.play === "keep" && typeof meta?.params.occlusion_s === "number" && <p className="gs-caption muted" data-testid="hide-range">{hideRangeText(meta.params.occlusion_s)}</p>}
+      {ctl.play === "keep" && hide != null && <p className="gs-caption muted" data-testid="hide-range">{hideRangeText(hide.s, hide.frames)}</p>}
+      {ctl.play === "keep" && <p className="gs-caption muted" data-testid="world-fix">{WORLD_FIX_TEXT}</p>}
       {cmp && (
         <div className="cmp-strip tabular" data-testid="compare-strip">
           <div><div className="k">Same seed {meta?.params.seed} · {end ? "whole run" : "so far"}</div><div className="row"><b className="base">ByteTrack (left)</b><b className="ours">ours (right)</b></div></div>

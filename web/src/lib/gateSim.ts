@@ -127,3 +127,22 @@ export function personIdLabel(vis: boolean, tid: number | null | undefined, keep
   if (now != null) return { text: `ID #${now}`, kind: "ok" };
   return { text: "no ID", kind: "none" };
 }
+
+/**
+ * How long person ``pid`` was hidden, measured from the frames themselves: the longest completed
+ * run of frames with the ground-truth "visible" flag at 0, divided by fps. ``null`` until that
+ * person has been hidden and seen again (so the number is never a guess).
+ */
+export function measuredHideS(frames: SimFrame[], pid: number, fps: number): number | null {
+  let run = 0;
+  let best = 0;
+  for (const fr of frames) {
+    const p = fr.people.find((q) => q[0] === pid);
+    if (p && p[3] === 0) run += 1;
+    else {
+      if (p && run > best) best = run;
+      run = 0;
+    }
+  }
+  return best > 0 && fps > 0 ? best / fps : null;
+}

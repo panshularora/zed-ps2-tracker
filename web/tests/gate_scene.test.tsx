@@ -1,7 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { beatCopy, firstKeepId, involvedBetween, isDefault, lineSplitter, personIdLabel, readStream, recentEvents, recordingUrl, streamUrl, DEFAULTS, type SimFrame } from "../src/lib/gateSim";
-import GateScene, { hideRangeText } from "../src/pages/GateScene";
+import GateScene, { hideRangeText, WORLD_FIX_TEXT } from "../src/pages/GateScene";
+import { measuredHideS } from "../src/lib/gateSim";
 
 const pane = (events: [number, number, number, number, number][] = [], counted = 0) => ({ ids: [[1, 4]] as [number, number][], extra: [], held: [] as [number, number, number][], events, counted, id_changes: events.length });
 const frame = (f: number, ev: [number, number, number, number, number][] = []): SimFrame => ({ type: "frame", f, people: [[1, 10, 10, 1]], dets: [], true_count: 1, beat: null, focus: null, bytetrack: pane(ev, 2), ours: pane() });
@@ -49,8 +50,24 @@ describe("gate sim client", () => {
 
 describe("gate scene hide range line", () => {
   it("says whether the hide is inside the Stress Map winning range", () => {
-    expect(hideRangeText(1.5)).toBe("#1 is hidden for 1.5 s, inside the range where our rule wins (about 1–2.5 s). Longer hides: see Stress Map.");
-    expect(hideRangeText(3.5)).toMatch(/outside the range/);
+    expect(hideRangeText(1.5, 45)).toBe("#1 is hidden for 1.5 s (45 frames, measured), inside the 1–2.5 s range where our rule wins on the Stress Map.");
+    expect(hideRangeText(3.5)).toMatch(/outside the 1–2.5 s range/);
+    expect(WORLD_FIX_TEXT).toMatch(/instead of jumping sideways/);
+    expect(WORLD_FIX_TEXT).toMatch(/trackers were not changed/);
+  });
+  it("measures the hide from the frames, only once the person is seen again", () => {
+    const at = (f: number, vis: number): SimFrame => ({ ...frame(f), people: [[1, 10, 10, vis]] });
+    expect(measuredHideS([at(1, 1), at(2, 0), at(3, 0)], 1, 30)).toBeNull();
+    expect(measuredHideS([at(1, 1), at(2, 0), at(3, 0), at(4, 1)], 1, 2)).toBe(1);
+    expect(measuredHideS([at(1, 1)], 2, 30)).toBeNull();
+  });
+  it("the committed keep recording hides #1 for 45 frames = 1.5 s, inside 1–2.5 s", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const lines = readFileSync(resolve(__dirname, "../public/offline/gate-keep.ndjson"), "utf8").trim().split("\n").map((l) => JSON.parse(l));
+    const s = measuredHideS(lines.filter((l) => l.type === "frame"), lines[0].focus, lines[0].fps);
+    expect(s).toBeCloseTo(1.5, 6);
+    expect(hideRangeText(s as number, 45)).toMatch(/inside the 1–2.5 s range/);
   });
 });
 
