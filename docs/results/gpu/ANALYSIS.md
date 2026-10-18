@@ -220,9 +220,20 @@ on; the 16 Oct MOT17 run shows a clean tree.
 
 ## 6. What to say in the pitch
 
-* The tracker runs on a laptop GPU end to end on MOT17, MOT20 and DanceTrack.
-* Our visibility gate fixes the damage re-ID does in crowds on every dataset (MOT20: 67.5 → 69.5 HOTA,
-  1278 → 1019 IDSW vs ByteTrack + re-ID), and is best-or-tied on clean MOT20.
-* It is not the best tracker overall: BoT-SORT (IoU) wins MOT17, Hybrid-SORT wins DanceTrack.
-* The ByteTrack baseline is 10.2 MOTA below the paper, so all GPU numbers are provisional.
-* The delayed-decision idea is a pre-registered NO-GO on all five criteria and is dropped.
+Never "beats ByteTrack" or "best tracker" overall: BoT-SORT without re-ID beats ours on MOT17
+(HOTA 64.6 vs 63.9) and Hybrid-SORT wins DanceTrack val (57.4) and MOT20 with the MOT17-trained
+detector (62.9).
+
+1. **Lead finding: the visibility rule stops re-ID from hurting.** MOT20 val-half, SparseTrack
+   detector: ByteTrack 69.4 HOTA → ByteTrack + re-ID 67.5 → ours (re-ID + visibility-gated
+   appearance) 69.5, the best HOTA in that setting (IDSW 1011 → 1278 → 1019). MOT17 val-half:
+   ByteTrack + re-ID 62.5 → ours 63.2.
+2. **Second beat: the Stress Map** (synthetic gate): ours keeps the ID for hides of about 1–2.5 s
+   at every crowd size; past 3 s its memory runs out.
+3. **Where we lose.** DanceTrack: Hybrid-SORT 57.4 vs ours 54.3 HOTA. MOT20 frame latency: ours
+   p95 87–95 ms (the two ours rows) vs 13.7 ms for ByteTrack (IoU) on the SparseTrack cache. The ByteTrack baseline is
+   NOT REPRODUCED (MOTA 66.4 vs 76.6, IDF1 73.8 vs 79.3), so every GPU score is provisional.
+4. **NO-GO as discipline.** The delay-K idea was pre-registered and failed all five checks: IDSW
+   183 → 198 instead of −10 %, IDF1 73.0 → 71.9, fired on 51 % of frames vs a 10 % limit, p95
+   170 ms vs 20 ms, MOT20 IDSW 1462 → 1575. So it was dropped.
+5. The tracker runs end to end on a laptop GPU (RTX 3050 6 GB) on MOT17, MOT20 and DanceTrack.

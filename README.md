@@ -16,7 +16,8 @@ This is Zed Digital problem statement 2 (PS-2): every person crossing a crowded 
 >
 > **GPU run (laptop RTX 3050, 16–18 Oct 2026), provisional:** YOLOX-X + OSNet re-ID on MOT17,
 > MOT20 and DanceTrack are in [Results (GPU)](#results-gpu-laptop-yolox-x--re-id-provisional).
-> ByteTrack reproduction: **NOT REPRODUCED** (MOTA 66.4 vs 76.6 in the paper); go/no-go v2 for the
+> Main finding: the visibility rule stops re-ID from hurting (MOT20: 69.4 → 67.5 with re-ID → 69.5
+> ours); not the best tracker overall (BoT-SORT wins MOT17, Hybrid-SORT DanceTrack). ByteTrack reproduction: **NOT REPRODUCED** (MOTA 66.4 vs 76.6 in the paper); go/no-go v2 for the
 > delayed decision: **NO-GO** (all five pre-registered criteria failed). Write-up:
 > [docs/results/gpu/ANALYSIS.md](docs/results/gpu/ANALYSIS.md).
 
@@ -184,22 +185,36 @@ The GPU side is in [docs/dgx_runbook.md](docs/dgx_runbook.md) (checked, step by 
 | MOT17 val-half (`bytetrack_ablation`) | ByteTrackLike | 63.4 | 73.8 | 66.4 | 165 | 66.5 |
 | | BoT-SORT (CMC, IoU) | **64.6** | **76.3** | **67.1** | 135 | **68.6** |
 | | Deep OC-SORT | 63.3 | 74.6 | 64.6 | **125** | 68.2 |
+| | ByteTrackLike + re-ID | 62.5 | 73.0 | 66.5 | 183 | 64.9 |
+| | ours: ByteTrack + re-ID + visibility gate | 63.2 | 73.9 | 66.2 | 167 | 66.2 |
 | | ours: BoT-SORT + re-ID + visibility gate | 63.9 | 75.1 | 66.8 | 156 | 67.1 |
 | MOT20 val-half (`sparsetrack_ablation`) | ByteTrackLike | 69.4 | 84.1 | 87.9 | **1011** | 66.8 |
 | | BoT-SORT (CMC, IoU) | 69.3 | 83.9 | 87.9 | 1162 | 66.5 |
+| | ByteTrackLike + re-ID | 67.5 | 81.1 | 87.7 | 1278 | 63.5 |
 | | ours: ByteTrack + re-ID + visibility gate | **69.5** | **84.5** | 87.9 | 1019 | **66.9** |
 | | ours: BoT-SORT + re-ID + visibility gate | 69.2 | 84.0 | 87.9 | 1162 | 66.3 |
+| MOT20 val-half (`bytetrack_x_mot17`, MOT17-trained) | ByteTrackLike | 60.8 | 76.8 | 79.6 | 1070 | 58.6 |
+| | Hybrid-SORT | **62.9** | **79.9** | **82.6** | 1471 | **60.6** |
+| | ours: ByteTrack + re-ID + visibility gate | 60.9 | 77.5 | 79.8 | **1039** | 58.8 |
 | DanceTrack val (`dancetrack_bytetrack_x`) | ByteTrackLike | 52.5 | 54.9 | 88.1 | 1775 | 36.3 |
 | | BoT-SORT (IoU) | 52.3 | 53.2 | 88.1 | 1934 | 35.9 |
 | | Hybrid-SORT | **57.4** | **58.5** | 87.3 | **1667** | **42.9** |
 | | ours: BoT-SORT + re-ID + visibility gate | 54.3 | 55.8 | 88.1 | 1897 | 38.8 |
 
-No single tracker wins: BoT-SORT (IoU) on MOT17, ours (ByteTrack base) by a hair on MOT20,
-Hybrid-SORT on DanceTrack. What the visibility gate does reliably is undo the damage raw re-ID
-does in crowds (MOT20: ByteTrack + re-ID 67.5 HOTA / 1278 IDSW → 69.5 / 1019 with the gate).
-**Go/no-go v2 (delayed decision): NO-GO**, K = 5 vs K = 0 on MOT17: IDSW 183 → 198 (needed ≤ 164.7),
-IDF1 73.0 → 71.9, trigger on 50.7 % of frames (≤ 10 %), p95 170 ms (≤ 20 ms); MOT20 IDSW
-1462 → 1575. A second MOT20 cache whose detector saw the evaluation half is excluded.
+**What we found: the visibility rule stops re-ID from hurting.** On MOT20 with the SparseTrack
+detector, ByteTrack 69.4 HOTA → ByteTrack + re-ID 67.5 → ours 69.5 (the best HOTA in that setting;
+IDSW 1011 → 1278 → 1019). On MOT17: ByteTrack + re-ID 62.5 → ours 63.2. It is **not** the best
+tracker overall: BoT-SORT without re-ID beats ours on MOT17 (HOTA 64.6 vs 63.9), and Hybrid-SORT
+wins DanceTrack val (57.4 vs 54.3) and MOT20 with the MOT17-trained detector (62.9). The second
+beat is the Stress Map (synthetic gate: ours keeps the ID for hides of about 1–2.5 s).
+
+**Where we lose:** DanceTrack (Hybrid-SORT); frame latency on MOT20 (ours p95 87–95 ms vs 13.7 ms
+for ByteTrack); and the ByteTrack baseline is not reproduced (MOTA 66.4 vs 76.6, IDF1 73.8 vs 79.3),
+so all GPU scores are provisional.
+
+**A pre-registered idea we dropped (NO-GO).** Delayed decisions (K = 5 vs K = 0) failed all five
+pre-registered checks: IDSW 183 → 198 instead of −10 %, IDF1 73.0 → 71.9, fired on 51 % of frames
+(limit 10 %), p95 170 ms (limit 20 ms), MOT20 IDSW 1462 → 1575.
 
 ## Results (phase 2): MOT17 val-half, public FRCNN detections, no re-ID
 
