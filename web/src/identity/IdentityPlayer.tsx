@@ -10,13 +10,14 @@ import { applyContent, letterbox, stageAspect, stageToSource } from "../lib/lett
 const SWAP_FILL = "#8A929C";
 
 export const STEP_PAUSE_MS = 1800;
-const ZOOM = 1.6, ZOOM_MS = 500, TRAIL_S = 1.5, DIM = 0.35;
+const ZOOM = 1.6, ZOOM_MS = 500, TRAIL_S = 1.5;
+export const OTHER_ALPHA = 0.4, OTHER_GREY = "#8A929C";
 const GATE = "#F5A524";
 const ease = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 
 /** Counters live in a bar outside the frame: a single row "IN n · OUT n". */
-/** Every tracked person gets a solid chip in its ID colour (dark text); only a number that is
- *  not seen for a moment is slightly see-through. Focus only changes the box, never the chip. */
+/** The focus person gets a solid chip in its ID colour and a 2 px box; everyone else is a thin grey
+ *  outline at 40 % with no chip (a possible swap is never dimmed). */
 /** Solid chips; the chip of a hidden person is dimmed (their box is dashed at the last-seen spot). */
 export const chipAlpha = (state: Drawn["state"]) => (state === "hidden" ? 0.5 : 1);
 
@@ -272,8 +273,9 @@ export function paintFrame(ctx: CanvasRenderingContext2D, cw: number, ch: number
   if (src) ctx.drawImage(src, 0, 0, d.width, d.height);
   const px = 1 / s;
   if (d.gate) {
-    ctx.strokeStyle = GATE; ctx.lineWidth = 3 * px; ctx.setLineDash([12 * px, 6 * px]);
-    ctx.beginPath(); ctx.moveTo(...d.gate.a); ctx.lineTo(...d.gate.b); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = GATE; ctx.lineWidth = 3 * px;
+    ctx.beginPath(); ctx.moveTo(...d.gate.a); ctx.lineTo(...d.gate.b); ctx.stroke();
+    gateLabels(ctx, d.gate, px);
   }
   const hasFocus = focus.size > 0;
   const swapIds = new Set(all.filter((b) => b.state === "swap").map((b) => b.id));
@@ -296,8 +298,18 @@ export function paintFrame(ctx: CanvasRenderingContext2D, cw: number, ch: number
   }
   const items: { id: number; box: XYWH; text: string; w: number; h: number; d: Drawn }[] = [];
   for (const b of all) {
+    if (!isF(b.id)) {
+      // not the focus person: thin grey outline at 40 %, no chip
+      ctx.globalAlpha = OTHER_ALPHA;
+      ctx.strokeStyle = OTHER_GREY; ctx.lineWidth = 1 * px;
+      if (b.state === "hidden") ctx.setLineDash([8 * px, 6 * px]);
+      ctx.strokeRect(...b.box);
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      continue;
+    }
     const c = neutralColor(b.id);
-    ctx.globalAlpha = isF(b.id) ? 1 : DIM;
+    ctx.globalAlpha = 1;
     ctx.strokeStyle = c; ctx.lineWidth = 2 * px;
     if (b.state === "hidden" || b.state === "swap") ctx.setLineDash([8 * px, 6 * px]);
     ctx.strokeRect(...b.box);
@@ -337,5 +349,25 @@ export function paintFrame(ctx: CanvasRenderingContext2D, cw: number, ch: number
     }
   }
   ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+/** IN / OUT arrows on the gate line (eval/gate_events.py: IN = the line's left-hand normal). */
+export function gateNormal(g: { a: [number, number]; b: [number, number] }): [number, number] {
+  const dx = g.b[0] - g.a[0], dy = g.b[1] - g.a[1], L = Math.hypot(dx, dy) || 1;
+  return [-dy / L, dx / L];
+}
+function gateLabels(ctx: CanvasRenderingContext2D, g: { a: [number, number]; b: [number, number] }, px: number) {
+  const [nx, ny] = gateNormal(g);
+  const mx = g.a[0] + (g.b[0] - g.a[0]) * 0.9, my = g.a[1] + (g.b[1] - g.a[1]) * 0.9;
+  const k = 26 * px;
+  ctx.save();
+  ctx.font = `700 ${13 * px}px Inter, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillStyle = GATE; ctx.strokeStyle = GATE; ctx.lineWidth = 2 * px;
+  for (const [sgn, label] of [[1, "IN"], [-1, "OUT"]] as const) {
+    const tx = mx + nx * k * sgn, ty = my + ny * k * sgn;
+    ctx.beginPath(); ctx.moveTo(mx + nx * 6 * px * sgn, my + ny * 6 * px * sgn); ctx.lineTo(tx - nx * 9 * px * sgn, ty - ny * 9 * px * sgn); ctx.stroke();
+    ctx.fillText(label, tx + nx * 4 * px * sgn, ty + ny * 4 * px * sgn);
+  }
   ctx.restore();
 }

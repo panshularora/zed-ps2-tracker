@@ -51,18 +51,18 @@ describe("only the focus person's event is text on the frame", () => {
     for (const b of all) expect(frameTag(b, false)).toBeNull();
   });
 
-  it("painted text = one '#N' chip per person + exactly one tag (focus #14); no 'still … hidden', no swap sentence", () => {
+  it("painted text = a chip only for the focus person (#14) and a possible swap (#7) + exactly one tag; no 'still … hidden', no swap sentence", () => {
     const { ctx, texts } = recorder();
     paintFrame(ctx, 1000, 600, d, null, [0, 0, 1000, 600], all, null, new Set([14]), 1, new Map());
-    expect(texts.filter((t) => /^#\d+$/.test(t)).sort()).toEqual(["#14", "#20", "#3", "#5", "#7"]);
-    expect(texts.filter((t) => !/^#\d+$/.test(t))).toEqual(["kept #14"]);
+    expect(texts.filter((t) => /^#\d+$/.test(t)).sort()).toEqual(["#14", "#7"]);
+    expect(texts.filter((t) => !/^#\d+$/.test(t) && t !== "IN" && t !== "OUT")).toEqual(["kept #14"]);
     expect(texts.join(" ")).not.toMatch(/still|hidden|possible swap|given to|not checked/);
   });
 
   it("following someone moves the single tag to them", () => {
     const { ctx, texts } = recorder();
     paintFrame(ctx, 1000, 600, d, null, [0, 0, 1000, 600], all, 7, new Set([14]), 1, new Map());
-    expect(texts.filter((t) => !/^#\d+$/.test(t))).toEqual(["swap? #7"]);
+    expect(texts.filter((t) => !/^#\d+$/.test(t) && t !== "IN" && t !== "OUT")).toEqual(["swap? #7"]);
   });
 
   it("other people's events go to the caption bar instead", () => {
@@ -108,5 +108,12 @@ describe("rail thumbnails", () => {
     expect(img.parentElement!.className).toContain("thumb-frame");
     expect(img.style.objectFit).toBe("cover");
     expect(THUMB_CROP.objectFit).toBe("cover");
+  });
+});
+
+describe("gate line direction labels", () => {
+  it("IN is the line's left-hand normal (eval/gate_events.py), so a left-to-right line has IN below", async () => {
+    const { gateNormal } = await import("../src/identity/IdentityPlayer");
+    expect(gateNormal({ a: [0, 540], b: [1920, 540] }).map((v) => Math.round(v * 1000) / 1000)).toEqual([-0, 1]);
   });
 });

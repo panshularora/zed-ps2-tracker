@@ -4,7 +4,8 @@ Adds a ``guide`` block to ``web/public/scenarios/<clip>.json``:
 
 * ``gate``: the counting line. Candidates are fixed fractions of the frame (image geometry only);
   the one people walk across most often (summed over BOTH trackers, so neither is favoured) wins.
-* ``events[run]``: gate crossings (``eval.gate_events.crossings``, 10 px hysteresis), ``lost`` /
+* ``events[run]``: gate crossings (``eval.gate_events.crossings``, 10 px hysteresis; none in the
+  first ``SETTLE_S`` of the clip, see below), ``lost`` /
   ``back`` (same ID returns after a gap) and ``renumber`` (one tracker changed the number while the
   other kept it: the precomputed disagreements).
 * ``moments``: EVERY moment where at least one tracker changed a person's number (``RULE``), with
@@ -24,6 +25,10 @@ import numpy as np
 from eval.gate_events import Gate, crossings
 
 HYST_PX = 10.0
+# No crossing is counted in the first second of a clip: people already in view on frame 1 were
+# mid-stride when the video started, so the tracker has not seen which side they came from (on the
+# turnstile clip a box shrinking at the frame edge "crossed" on frame 4). Same rule for both runs.
+SETTLE_S = 1.0
 GAP_S = 0.5  # same-ID gap that counts as "lost then back"
 
 # (name, a, b) as fractions of width / height
@@ -97,7 +102,11 @@ def annotate(data: dict[str, Any]) -> dict[str, Any]:
     fps_t = meta["src_fps"] / meta["stride"]
     rows = {k: rows_of(v["frames"]) for k, v in data["runs"].items()}
     gate = pick_gate(rows, w, h)
-    cross = {k: crossings(r, gate, HYST_PX) if len(r) else [] for k, r in rows.items()}
+    settle = 1 + SETTLE_S * fps_t
+    cross = {
+        k: [e for e in crossings(r, gate, HYST_PX) if e.frame >= settle] if len(r) else []
+        for k, r in rows.items()
+    }
     events: dict[str, list[dict[str, Any]]] = {}
     for k, r in rows.items():
         ev = [{"t": "cross", "f": e.frame, "id": e.track_id, "dir": e.direction} for e in cross[k]]

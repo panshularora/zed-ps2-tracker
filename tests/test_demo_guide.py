@@ -61,3 +61,22 @@ def test_renumber_needs_same_place() -> None:
     far = rows.copy()
     far[far[:, 1] == 5, 2] += 800  # new number appears elsewhere: a different person
     assert renumbers(far, 5.0) == []
+
+
+def test_no_crossing_counted_in_the_first_second():
+    """A box present on frame 1 that slides across the line in the first second is not counted."""
+    import json
+    from pathlib import Path
+
+    from scripts.demo.guide import SETTLE_S
+
+    root = Path(__file__).resolve().parents[1]
+    for cid in ("subway_turnstile", "shibuya_crossing"):
+        d = json.loads((root / f"web/public/scenarios/{cid}.json").read_text())
+        fps = d["meta"]["src_fps"] / d["meta"]["stride"]
+        g = annotate(d)
+        assert g == d["guide"]  # committed guide is what the code produces
+        for run in ("baseline", "ours"):
+            crosses = [e for e in g["events"][run] if e["t"] == "cross"]
+            assert crosses
+            assert min(e["f"] for e in crosses) >= 1 + SETTLE_S * fps

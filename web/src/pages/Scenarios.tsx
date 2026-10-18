@@ -99,7 +99,8 @@ export function ScenarioView({ replay, credit, introId }: { replay: ReplayData; 
   return (
     <div className="player" data-testid="scenario-player">
       <div className="g-head" style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-        <h3 className="g-title" style={{ margin: 0 }}>{replay.title}</h3>
+        <h3 className="g-title" style={{ margin: 0 }} data-testid="scenario-heading">{replay.problem ?? replay.title}</h3>
+        {replay.problem && <span className="muted" data-testid="scenario-clip-title">{replay.title}</span>}
         <Tag kind={replay.kind} />
         <Link to={`/dashboard/scenarios/compare?clip=${encodeURIComponent(replay.kind === "measured" ? `bench:${replay.id}` : replay.id)}`} className="muted" style={{ marginLeft: "auto", fontSize: 13 }} data-testid="real-compare-link">Compare on real clips →</Link>
         <Link to="/dashboard/live" className="muted" style={{ fontSize: 13 }} data-testid="compare-link">Gate scene (synthetic) →</Link>

@@ -49,6 +49,8 @@ export interface ReplayData {
   credit?: string;
   /** one-line framing shown under the title */
   caption?: string;
+  /** the Scenarios rail name of this clip (e.g. "Counting at a gate"); the heading leads with it */
+  problem?: string;
 }
 
 export const SHORT: Record<RunKey, string> = { baseline: "ByteTrack", ours: "ours" };
@@ -78,6 +80,7 @@ export function fromScenario(
   return {
     id: m.id,
     title: m.title,
+    problem: m.problem,
     caption: m.caption,
     kind: m.kind,
     width: m.width,

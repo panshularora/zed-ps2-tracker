@@ -209,3 +209,18 @@ describe("scenarios tab", () => {
     expect(screen.getByText("IDSW").getAttribute("data-tip")).toMatch(/ID switches/);
   });
 });
+
+describe("Counting at a gate: rail, heading and the first second", () => {
+  it("heading leads with the rail name and nothing is counted at 00:00", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const { fromScenario, countsAt } = await import("../src/guided/model");
+    const raw = JSON.parse(readFileSync(resolve(__dirname, "../public/scenarios/subway_turnstile.json"), "utf8"));
+    const d = fromScenario(raw, null, null);
+    expect(d.problem).toBe("Counting at a gate");
+    expect(d.title).toBe("Subway turnstiles");
+    const oneSecond = Math.floor(d.fps);
+    expect(countsAt(d.events.ours, oneSecond)).toEqual({ in: 0, out: 0 });
+    expect(countsAt(d.events.baseline, oneSecond)).toEqual({ in: 0, out: 0 });
+  });
+});
