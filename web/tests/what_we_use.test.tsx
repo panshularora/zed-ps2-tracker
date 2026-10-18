@@ -8,8 +8,8 @@ describe("What we use", () => {
     render(<MemoryRouter><WhatWeUse /></MemoryRouter>);
     for (const id of ["mot17", "mot20", "dancetrack", "pexels"]) expect(screen.getByTestId(`wwu-ds-${id}`)).toBeTruthy();
     expect(screen.getByTestId("wwu-ds-mot17").textContent).toContain("CC BY-NC-SA 3.0");
-    expect(screen.getByTestId("wwu-ds-dancetrack").textContent).toContain("not run yet");
-    expect(screen.getByTestId("wwu-ds-mot20").textContent).toContain("leaked, excluded");
+    expect(screen.getByTestId("wwu-ds-dancetrack").textContent).toContain("ran (1 run)");
+    expect(screen.getByTestId("wwu-ds-mot20").textContent).toContain("ran (2 runs)");
     expect(screen.getByTestId("wwu-models").textContent).toMatch(/YOLOX-X.*ByteTrack.*BoT-SORT.*visibility/s);
     expect(screen.getByTestId("wwu-models").textContent).toContain("switched off in every result");
     expect(screen.getByTestId("wwu-metrics").textContent).toMatch(/HOTA.*IDF1.*IDSW.*MOTA/s);

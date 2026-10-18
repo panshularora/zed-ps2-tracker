@@ -3,7 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { Term } from "../src/components/Term";
 import { frameAt, markerLabel, markers, neutralColor, NEUTRAL_IDS, type ScenarioData, seekBefore } from "../src/lib/scenarios";
 import { FoundChecks, VerdictPill } from "../src/components/Checks";
-import { checks, cleanRuns, LEAK_NOTE, loadSummary, methodResult, PENDING, showProvisionalBanner, type SummaryFile } from "../src/lib/summary";
+import { checks, cleanRuns, loadSummary, methodResult, PENDING, showProvisionalBanner, type SummaryFile } from "../src/lib/summary";
 import { LandingView } from "../src/pages/Landing";
 import { ScenarioPlayer, ScenarioRail } from "../src/pages/Scenarios";
 
@@ -43,13 +43,17 @@ describe("what we found (docs/results/summary.json)", () => {
     const c = checks(s);
     expect(c.map((x) => x.id)).toEqual(["leak", "reproduction", "go_no_go", "latency"]);
     expect(c.map((x) => x.pill)).toEqual(["PASS", "NOT REPRODUCED", "NO-GO", "PENDING"]);
-    const leak = c[0].evidence.find((e) => e.struck);
-    expect(leak?.text).toBe("mot20_val_half__mot20full_SAW_EVAL_HALF");
-    expect(leak?.struck).toBe(LEAK_NOTE);
+    expect(c[0].evidence.find((e) => e.struck)).toBeUndefined();
+    expect(c[0].evidence.map((e) => e.text)).toEqual([
+      "mot17_val_half",
+      "mot20_val_half__mot17full_xdomain",
+      "mot20_val_half__sparsetrack_ablation",
+      "dancetrack_val",
+    ]);
     expect(c[1].evidence[0].text).toBe("MOTA 66.4 vs 76.6 published");
     expect(c[1].evidence.map((e) => e.text)).toContain("FN 12,552 vs 9,081 published");
     expect(cleanRuns(s).some((r) => r.saw_eval_half)).toBe(false);
-    expect(cleanRuns(s)).toHaveLength(3);
+    expect(cleanRuns(s)).toHaveLength(4);
     expect(methodResult(s).pending).toBe(true);
     expect(showProvisionalBanner(s)).toBe(true);
   });
@@ -58,7 +62,8 @@ describe("what we found (docs/results/summary.json)", () => {
     expect(screen.getByTestId("provisional-banner").textContent).toBe("Provisional · detector setup being fixed");
     const cards = screen.getAllByTestId("check-card");
     expect(cards).toHaveLength(4);
-    expect(cards[0].querySelector("s")?.textContent).toBe("mot20_val_half__mot20full_SAW_EVAL_HALF");
+    expect(cards[0].querySelector("s")).toBeNull();
+    expect(cards[0].textContent).toContain("dancetrack_val");
     const pills = screen.getAllByTestId("pill");
     expect(pills.map((p) => p.getAttribute("data-state"))).toEqual(["PASS", "NOT REPRODUCED", "NO-GO", "PENDING"]);
     expect(pills[1].textContent).toBe("✕ NOT REPRODUCED");

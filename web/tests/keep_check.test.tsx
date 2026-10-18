@@ -119,7 +119,11 @@ describe("MOT20 status in Results", () => {
     expect(md).toContain(`HOTA ${k0.HOTA}, IDF1 ${k0.IDF1}, MOTA ${k0.MOTA}, IDSW ${k0.IDSW}`);
     expect(Number(parseOracle(readFileSync("../docs/evaluation.md", "utf8"))?.HOTA)).toBeGreaterThan(90);
     const s = mot20Status();
-    expect(s.runs.map((r) => r.leaked)).toEqual([false, true, false]);
+    expect(s.runs.map((r) => r.leaked)).toEqual([false, false]);
+    expect(s.runs.map((r) => r.id)).toEqual([
+      "mot20_val_half__mot17full_xdomain",
+      "mot20_val_half__sparsetrack_ablation",
+    ]);
     expect(s.viewerExport).toBe(false);
   });
 });

@@ -64,16 +64,22 @@ describe("compare model", () => {
 });
 
 describe("overall dataset table (summary.json only)", () => {
-  it("uses the committed summary: ByteTrack MOT17 reproduction provisional, DanceTrack not run, Pexels no ground truth", () => {
+  it("uses the committed summary: MOT17/MOT20/DanceTrack GPU rows provisional, Pexels no ground truth", () => {
     const rows = datasetRows(loadSummary());
     const by = Object.fromEntries(rows.map((r) => [r.id, r]));
     expect(rows.map((r) => r.id)).toEqual(["mot17", "mot20", "dancetrack", "sompt22", "pexels", "synthetic"]);
     expect(by.sompt22.cells.ours.tag).toBe("not run yet");
     expect(by.mot17.cells.bytetrack.tag).toBe("provisional");
-    expect(by.mot17.cells.bytetrack.values).toEqual([{ label: "MOTA", value: "66.4" }, { label: "IDF1", value: "73.8" }, { label: "IDSW", value: "165" }]);
-    expect(by.mot17.cells.ours.tag).toBe("ran, no metric in summary.json");
-    expect(by.mot20.status).toContain("1 leaked, excluded");
-    expect(by.dancetrack.cells.botsort.tag).toBe("not run yet");
+    expect(by.mot17.cells.bytetrack.values).toEqual([
+      { label: "HOTA", value: "63.4" },
+      { label: "IDF1", value: "73.8" },
+      { label: "MOTA", value: "66.4" },
+      { label: "IDSW", value: "165" },
+    ]);
+    expect(by.mot17.cells.ours.tag).toBe("provisional");
+    expect(by.mot20.status).toContain("ran (2 runs)");
+    expect(by.mot20.status).not.toContain("leaked");
+    expect(by.dancetrack.cells.botsort.tag).toBe("provisional");
     expect(by.pexels.cells.ours.tag).toBe("no ground truth");
     expect(by.synthetic.cells.ours.tag).toBe("not run yet"); // without the recorded run passed in
   });

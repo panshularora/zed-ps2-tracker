@@ -1,1 +1,86 @@
-{"plan":"configs/phase3/plan.yaml","ran":[{"id":"mot17_val_half","cache":"MOT17/ablation/train","saw_eval_half":false,"laptop_detector":false},{"id":"mot20_val_half__mot17full_xdomain","cache":"MOT20/mot17full_xdomain/train","saw_eval_half":false,"laptop_detector":false},{"id":"mot20_val_half__mot20full_SAW_EVAL_HALF","cache":"MOT20/mot20full_SAW_EVAL_HALF/train","saw_eval_half":true,"laptop_detector":false},{"id":"mot20_val_half__sparsetrack_ablation","cache":"MOT20/sparsetrack_ablation/train","saw_eval_half":false,"laptop_detector":false}],"waiting":["dancetrack_val: no cache matching DanceTrack/dancetrack/val"],"tune_cache":"MOT17/ablation/train","tuned":{"tau_update":0.5,"tau_cost":0.7},"reproduction":{"reference":{"MOTA":76.6,"IDF1":79.3,"IDSW":159,"FP":3358,"FN":9081},"ours":{"MOTA":66.42,"IDF1":73.81,"IDSW":165,"FP":5379,"FN":12552},"within_tolerance":{"MOTA":false,"IDF1":false},"verdict":"NOT REPRODUCED"},"go_no_go_v2":"NO-GO"}
+{
+  "plan": "configs/phase3/plan.yaml",
+  "ran": [
+    {
+      "id": "mot17_val_half",
+      "cache": "MOT17/ablation/train",
+      "saw_eval_half": false,
+      "laptop_detector": false
+    },
+    {
+      "id": "mot20_val_half__mot17full_xdomain",
+      "cache": "MOT20/mot17full_xdomain/train",
+      "saw_eval_half": false,
+      "laptop_detector": false
+    },
+    {
+      "id": "mot20_val_half__sparsetrack_ablation",
+      "cache": "MOT20/sparsetrack_ablation/train",
+      "saw_eval_half": false,
+      "laptop_detector": false
+    },
+    {
+      "id": "dancetrack_val",
+      "cache": "DanceTrack/dancetrack/val",
+      "saw_eval_half": false,
+      "laptop_detector": false
+    }
+  ],
+  "waiting": [],
+  "tune_cache": "MOT17/ablation/train",
+  "tuned": { "tau_update": 0.5, "tau_cost": 0.7 },
+  "reproduction": {
+    "reference": { "MOTA": 76.6, "IDF1": 79.3, "IDSW": 159, "FP": 3358, "FN": 9081 },
+    "ours": { "MOTA": 66.42048617554278, "IDF1": 73.80798552784597, "IDSW": 165.0, "FP": 5379.0, "FN": 12552.0 },
+    "within_tolerance": { "MOTA": false, "IDF1": false },
+    "verdict": "NOT REPRODUCED"
+  },
+  "go_no_go_v2": "NO-GO",
+  "run_info": {
+    "run_profile": "laptop",
+    "run_gpu": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+    "run_gpu_mem_mib": "6144",
+    "run_detector": "bytetrack_ablation.pth.tar; bytetrack_x_mot17.pth.tar; dancetrack_bytetrack_x.pth.tar; sparsetrack_mot20_ablation.pth.tar",
+    "run_precision": "see detectors",
+    "run_input_size": "see detectors",
+    "cache": null
+  },
+  "metrics": {
+    "mot17.bytetrack.HOTA": 63.4,
+    "mot17.bytetrack.IDF1": 73.8,
+    "mot17.bytetrack.MOTA": 66.4,
+    "mot17.bytetrack.IDSW": 165,
+    "mot17.botsort.HOTA": 64.6,
+    "mot17.botsort.IDF1": 76.3,
+    "mot17.botsort.MOTA": 67.1,
+    "mot17.botsort.IDSW": 135,
+    "mot17.ours.HOTA": 63.9,
+    "mot17.ours.IDF1": 75.1,
+    "mot17.ours.MOTA": 66.8,
+    "mot17.ours.IDSW": 156,
+    "mot20.bytetrack.HOTA": 69.4,
+    "mot20.bytetrack.IDF1": 84.1,
+    "mot20.bytetrack.MOTA": 87.9,
+    "mot20.bytetrack.IDSW": 1011,
+    "mot20.botsort.HOTA": 69.3,
+    "mot20.botsort.IDF1": 83.9,
+    "mot20.botsort.MOTA": 87.9,
+    "mot20.botsort.IDSW": 1162,
+    "mot20.ours.HOTA": 69.2,
+    "mot20.ours.IDF1": 84.0,
+    "mot20.ours.MOTA": 87.9,
+    "mot20.ours.IDSW": 1162,
+    "dancetrack.bytetrack.HOTA": 52.5,
+    "dancetrack.bytetrack.IDF1": 54.9,
+    "dancetrack.bytetrack.MOTA": 88.1,
+    "dancetrack.bytetrack.IDSW": 1775,
+    "dancetrack.botsort.HOTA": 52.3,
+    "dancetrack.botsort.IDF1": 53.2,
+    "dancetrack.botsort.MOTA": 88.1,
+    "dancetrack.botsort.IDSW": 1934,
+    "dancetrack.ours.HOTA": 54.3,
+    "dancetrack.ours.IDF1": 55.8,
+    "dancetrack.ours.MOTA": 88.1,
+    "dancetrack.ours.IDSW": 1897
+  }
+}
