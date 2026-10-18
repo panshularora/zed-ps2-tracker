@@ -206,7 +206,7 @@ detector, ByteTrack 69.4 HOTA → ByteTrack + re-ID 67.5 → ours 69.5 (the best
 IDSW 1011 → 1278 → 1019). On MOT17: ByteTrack + re-ID 62.5 → ours 63.2. It is **not** the best
 tracker overall: BoT-SORT without re-ID beats ours on MOT17 (HOTA 64.6 vs 63.9), and Hybrid-SORT
 wins DanceTrack val (57.4 vs 54.3) and MOT20 with the MOT17-trained detector (62.9). The second
-beat is the Stress Map (synthetic gate: ours keeps the ID for hides of about 1–2.5 s).
+beat is the Stress Map (synthetic gate: ours keeps the ID for hides of about 1–2.5 s; the Gate scene world fix does not touch its generator, see [docs/gate_scene_vs_stress_map.md](docs/gate_scene_vs_stress_map.md)).
 
 **Where we lose:** DanceTrack (Hybrid-SORT); frame latency on MOT20 (ours p95 87–95 ms vs 13.7 ms
 for ByteTrack); and the ByteTrack baseline is not reproduced (MOTA 66.4 vs 76.6, IDF1 73.8 vs 79.3),
