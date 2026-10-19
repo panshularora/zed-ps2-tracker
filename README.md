@@ -332,6 +332,12 @@ python -m uvicorn serve.app:app --host 127.0.0.1 --port 8000
 Second window: `cd web; npm ci; npm run dev` → http://localhost:5173  
 Or `npm run build` and use http://127.0.0.1:8000 (serves `web/dist`).
 
+To keep the API running after this window closes (logon task, auto-restart if `/api/health` fails):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\windows\install_keep_alive.ps1
+```
+
 A fresh clone already plays Scenarios from committed 720p cuts in `web/public/demo/` (~11 MB). `make clips blur` is optional.
 
 ### Research commands
